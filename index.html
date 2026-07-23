@@ -81,7 +81,23 @@
   .stage .strip{display:flex; gap:8px; overflow-x:auto; padding:10px 16px; border-top:1px solid #263041;}
   .stage .strip img{height:52px; border-radius:4px; border:2px solid transparent; cursor:pointer; background:#fff;}
   .stage .strip img.on{border-color:var(--accent);}
+  .fh{display:block; font-size:11.5px; color:var(--ink-faint); margin-top:3px; line-height:1.35;}
+  .req{font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--red); background:var(--red-bg); padding:1px 5px; border-radius:8px; margin-left:4px;}
   .drop{border:1px dashed var(--line); border-radius:10px; padding:1.1rem; text-align:center; color:var(--ink-soft); font-size:13px; background:var(--card);}
+  /* field guide */
+  .guide{margin:-.2rem 0 1rem;}
+  .guidetoggle{display:flex; align-items:center; gap:8px; width:100%; text-align:left; background:var(--accent-bg); border:1px solid #cfe0ef; border-radius:8px; padding:8px 11px; font-size:13px; font-weight:600; color:var(--accent); cursor:pointer;}
+  .guidetoggle:hover{filter:brightness(.98);}
+  .guidetoggle .gi{width:17px; height:17px; border-radius:50%; background:var(--accent); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .guidetoggle .gchev{margin-left:auto; transition:transform .15s; font-size:11px;}
+  .guidetoggle .gchev.open{transform:rotate(90deg);}
+  .guidebody{border:1px solid var(--line); border-top:none; border-radius:0 0 8px 8px; padding:.85rem 1rem; background:var(--card); margin-top:-4px;}
+  .guidebody .gintro{font-size:13px; color:var(--ink-soft); margin:0 0 10px;}
+  .guidebody dl{margin:0; display:grid; grid-template-columns:auto 1fr; gap:5px 14px; font-size:13px;}
+  .guidebody dt{font-weight:600; color:var(--ink); white-space:nowrap;}
+  .guidebody dd{margin:0; color:var(--ink-soft);}
+  .guidebody dd b{color:var(--ink); font-weight:600;}
+  @media (max-width:620px){ .guidebody dl{grid-template-columns:1fr; gap:2px;} .guidebody dd{margin-bottom:8px;} }
   .storagebar{height:6px; border-radius:4px; background:var(--line-soft); overflow:hidden; margin-top:6px;}
   .storagebar i{display:block; height:100%; background:var(--accent);}
   .sync{display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:3px 10px; border-radius:20px;}
@@ -263,14 +279,36 @@
         <button class="primary small" id="addbtn">+ Add entry</button>
       </div>
       <div class="panel hidden" id="form">
+        <div class="guide">
+          <button class="guidetoggle" id="guidetoggle" type="button">
+            <span class="gi">?</span><span>What do these fields mean?</span><span class="gchev" id="gchev">&#9656;</span>
+          </button>
+          <div class="guidebody hidden" id="guidebody">
+            <p class="gintro">Fill these in as if a teammate who wasn't in your meetings has to understand it on Monday morning.</p>
+            <dl>
+              <dt>Brand</dt><dd>The client or store this work is for &mdash; e.g. <i>Acme Co.</i> Leave blank for internal work.</dd>
+              <dt>Platform</dt><dd>Where it's happening: Shopee, Lazada, TikTok Shop, Amazon.</dd>
+              <dt>Region</dt><dd>Market or territory &mdash; PH, SG, APAC, NA.</dd>
+              <dt>Status</dt><dd><b>Active</b> = ongoing this week. <b>In progress</b> = actively being worked right now. <b>Done</b> = finished, no follow-up needed.</dd>
+              <dt>Priority</dt><dd><b>High</b> = blocks someone or has a hard deadline. <b>Medium</b> = normal. <b>Low</b> = nice to have.</dd>
+              <dt>Category</dt><dd>The bucket of work. Pick <i>Others</i> only if nothing fits, then describe it in Remarks.</dd>
+              <dt>Focus this week</dt><dd><b>Required.</b> One short line on what you're actually doing &mdash; "Fix rejected listings for Acme", not "listings".</dd>
+              <dt>Members</dt><dd>Who is doing the work. Separate names with commas. Only you (or an admin) can change this after saving.</dd>
+              <dt>Blockers / notes</dt><dd>Anything stopping you, and who you're waiting on. Leave blank if nothing is stuck.</dd>
+              <dt>Update</dt><dd>The latest progress since last week, so leads don't have to ask.</dd>
+              <dt>Attachment</dt><dd>Optional screenshot as evidence &mdash; a ticket, dashboard, or error message.</dd>
+              <dt>Flag for discussion</dt><dd>Tick this to surface the entry for the team to talk through in the next sync.</dd>
+            </dl>
+          </div>
+        </div>
         <div class="grid g3">
           <div><label class="fl">Brand</label><input id="f-brand" placeholder="e.g. Acme Co." /></div>
           <div><label class="fl">Platform</label><input id="f-platform" placeholder="e.g. Shopee, Lazada, Amazon" /></div>
           <div><label class="fl">Region</label><input id="f-region" placeholder="e.g. NA, EU, APAC" /></div>
-          <div><label class="fl">Status</label><select id="f-status"><option>Active</option><option>In progress</option><option>Done</option></select></div>
+          <div><label class="fl">Status</label><select id="f-status"><option>Active</option><option>In progress</option><option>Done</option></select><span class="fh">Done = no follow-up needed</span></div>
         </div>
         <div class="grid g3" style="margin-top:12px;">
-          <div><label class="fl">Priority</label><select id="f-prio"><option>Low</option><option selected>Medium</option><option>High</option></select></div>
+          <div><label class="fl">Priority</label><select id="f-prio"><option>Low</option><option selected>Medium</option><option>High</option></select><span class="fh">High = blocked or hard deadline</span></div>
           <div><label class="fl">Category</label><select id="f-category">
             <option value="" disabled selected>Choose in the dropdown</option>
             <option>Account health</option>
@@ -285,15 +323,15 @@
             <option>Special launch</option>
             <option>Others</option>
           </select></div>
-          <div><label class="fl">Focus this week</label><input id="f-focus" placeholder="What you're working on" /></div>
-          <div id="f-member-wrap"><label class="fl">Members</label><input id="f-member" placeholder="Comma-separated names" /><span class="uphint" id="f-member-lock"></span></div>
+          <div><label class="fl">Focus this week <span class="req">required</span></label><input id="f-focus" placeholder="e.g. Fix rejected listings for Acme" /><span class="fh">One specific line, not just a topic</span></div>
+          <div id="f-member-wrap"><label class="fl">Members</label><input id="f-member" placeholder="e.g. Ana, Ben" /><span class="fh">Separate names with commas</span><span class="uphint" id="f-member-lock"></span></div>
         </div>
         <div class="grid g2 hidden" id="f-remarks-row" style="margin-top:12px;">
           <div style="grid-column:1 / -1;"><label class="fl">Remarks (for "Others")</label><input id="f-remarks" placeholder="Describe the category" /></div>
         </div>
         <div class="grid g2" style="margin-top:12px;">
-          <div><label class="fl">Blockers / notes (optional)</label><input id="f-blockers" placeholder="Anything stuck?" /></div>
-          <div><label class="fl">Update (optional)</label><input id="f-update" placeholder="Latest progress note" /></div>
+          <div><label class="fl">Blockers / notes (optional)</label><input id="f-blockers" placeholder="e.g. Waiting on infra access" /><span class="fh">What's stopping you, and who you're waiting on</span></div>
+          <div><label class="fl">Update (optional)</label><input id="f-update" placeholder="e.g. Escalated Monday, awaiting reply" /><span class="fh">Progress since last week</span></div>
         </div>
         <div style="margin-top:12px;">
           <label class="fl">Attachment (optional)</label>
@@ -927,10 +965,30 @@ function openForm(entry){
   if(entry&&entry.img){ pv.src=entry.img; pv.classList.remove("hidden"); document.getElementById("upstatus").textContent="Current image attached. Choose a file to replace."; }
   else{ pv.classList.add("hidden"); document.getElementById("upstatus").textContent="PNG/JPG. Uploaded when you save."; }
   document.getElementById("savebtn").textContent=entry?"Update entry":"Save entry";
+  initGuide();
   document.getElementById("form").classList.remove("hidden");
   document.getElementById("form").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 document.getElementById("addbtn").onclick=()=>openForm(null);
+// Field guide: open by default the first few times, then remember the choice.
+function guideKey(){ return "ttGuide_"+(me?me.id:"anon"); }
+function setGuide(open){
+  document.getElementById("guidebody").classList.toggle("hidden",!open);
+  document.getElementById("gchev").classList.toggle("open",open);
+  try{ localStorage.setItem(guideKey(), open?"1":"0"); }catch(e){}
+}
+document.getElementById("guidetoggle").onclick=()=>{
+  setGuide(document.getElementById("guidebody").classList.contains("hidden"));
+};
+function initGuide(){
+  let pref=null;
+  try{ pref=localStorage.getItem(guideKey()); }catch(e){}
+  if(pref===null){
+    // new user: show it until they've filed a few entries
+    const mine=state.entries.filter(x=>(x.createdBy||x.by)===me.name).length;
+    setGuide(mine<3);
+  } else setGuide(pref==="1");
+}
 function syncRemarksRow(){
   const isOther=document.getElementById("f-category").value==="Others";
   document.getElementById("f-remarks-row").classList.toggle("hidden", !isOther);
@@ -1227,6 +1285,26 @@ function colorFrom(node,theme){
   if(sys) return applyMods(sysColor(sys),sys);
   return null;
 }
+function strokeOf(spPr,theme){
+  if(!spPr) return null;
+  const ln=kid(spPr,"ln");
+  if(!ln) return null;
+  if(kid(ln,"noFill")) return null;
+  const sf=kid(ln,"solidFill");
+  const col=sf?colorFrom(sf,theme):null;
+  if(!col) return null;
+  const wEmu=ln.getAttribute("w");
+  let w=wEmu?(+wEmu/EMU):1;
+  if(!w||w<0.4) w=0.75;
+  const dash=kid(ln,"prstDash");
+  const dv=dash?dash.getAttribute("val"):null;
+  let dasharray=null;
+  if(dv==="dash") dasharray=(w*4)+","+(w*3);
+  else if(dv==="sysDash") dasharray=(w*3)+","+(w*2);
+  else if(dv==="dot"||dv==="sysDot") dasharray=w+","+(w*2);
+  else if(dv==="lgDash") dasharray=(w*8)+","+(w*3);
+  return {color:col,w:w,dash:dasharray};
+}
 function fillOf(spPr,theme){
   if(!spPr) return null;
   if(kid(spPr,"noFill")) return null;
@@ -1336,10 +1414,15 @@ function buildTextShape(node,theme,ctx,inherited){
                   bullet:bulletFor(key,pPr,bulletOff,buChar,runs,lvl,ctx)});
     });
   }
-  if(!paras.length && !fill) return null;
+  const stroke=strokeOf(spPr,theme);
+  let prst=null;
+  const pg=spPr?kid(spPr,"prstGeom"):null;
+  if(pg) prst=pg.getAttribute("prst");
+  const adj=pg?(deep(pg,"gd")?+((deep(pg,"gd").getAttribute("fmla")||"").replace(/[^0-9]/g,""))||null:null):null;
+  if(!paras.length && !fill && !stroke) return null;
   const anchor=(deep(txBody,"bodyPr")&&deep(txBody,"bodyPr").getAttribute("anchor"))||
                (inheritedSp&&deep(kid(inheritedSp,"txBody"),"bodyPr")&&deep(kid(inheritedSp,"txBody"),"bodyPr").getAttribute("anchor"))||"t";
-  return {kind:"text",geom:geom,fill:fill,paras:paras,anchor:anchor};
+  return {kind:"text",geom:geom,fill:fill,stroke:stroke,prst:prst,adj:adj,paras:paras,anchor:anchor};
 }
 function bulletFor(key,pPr,bulletOff,buChar,runs,lvl,ctx){
   if(!runs.length||bulletOff) return null;
@@ -1415,9 +1498,46 @@ function wrapRuns(runs,maxW){
   return lines.length?lines:[[]];
 }
 function svgEsc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function shapePath(sh,g){
+  const f=sh.fill?' fill="'+sh.fill+'"':' fill="none"';
+  const st=sh.stroke?' stroke="'+sh.stroke.color+'" stroke-width="'+sh.stroke.w+'"'+
+      (sh.stroke.dash?' stroke-dasharray="'+sh.stroke.dash+'"':'')+' stroke-linejoin="round"':'';
+  if(!sh.fill&&!sh.stroke) return "";
+  const x=g.x,y=g.y,w=Math.max(0,g.w),h=Math.max(0,g.h);
+  const p=sh.prst||"rect";
+  const rot=g.rot?' transform="rotate('+g.rot.toFixed(2)+' '+(x+w/2)+' '+(y+h/2)+')"':'';
+  const A=(...v)=>v.map(n=>(+n).toFixed(2)).join(" ");
+  if(/^(ellipse|circle)$/.test(p))
+    return '<ellipse cx="'+(x+w/2)+'" cy="'+(y+h/2)+'" rx="'+(w/2)+'" ry="'+(h/2)+'"'+f+st+rot+'/>';
+  if(/^roundRect|round1Rect|round2SameRect|round2DiagRect$/.test(p)){
+    const r=Math.min(w,h)*0.16;
+    return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="'+r+'" ry="'+r+'"'+f+st+rot+'/>';
+  }
+  if(p==="triangle")
+    return '<polygon points="'+A(x+w/2,y)+","+A(x+w,y+h)+","+A(x,y+h)+'"'+f+st+rot+'/>';
+  if(p==="rtTriangle")
+    return '<polygon points="'+A(x,y)+","+A(x,y+h)+","+A(x+w,y+h)+'"'+f+st+rot+'/>';
+  if(p==="diamond")
+    return '<polygon points="'+A(x+w/2,y)+","+A(x+w,y+h/2)+","+A(x+w/2,y+h)+","+A(x,y+h/2)+'"'+f+st+rot+'/>';
+  if(p==="line"||p==="straightConnector1")
+    return '<line x1="'+x+'" y1="'+y+'" x2="'+(x+w)+'" y2="'+(y+h)+'"'+st+rot+'/>';
+  if(p==="rightArrow"){
+    const bx=y+h*0.28, by=y+h*0.72, tip=x+w, nk=x+w*0.62;
+    return '<polygon points="'+A(x,bx)+","+A(nk,bx)+","+A(nk,y)+","+A(tip,y+h/2)+","+A(nk,y+h)+","+A(nk,by)+","+A(x,by)+'"'+f+st+rot+'/>';
+  }
+  return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'"'+f+st+rot+'/>';
+}
 function renderSlideSVG(shapes,ctx,bg){
   const W=ctx.wpt,H=ctx.hpt;
   let body='<rect width="'+W+'" height="'+H+'" fill="'+(bg||"#FFFFFF")+'"/>';
+  // guard against decks whose shapes are authored slightly outside the canvas
+  shapes.forEach(sh=>{
+    const g=sh.geom; if(!g) return;
+    if(g.w>W*1.5) g.w=W-g.x;
+    if(g.h>H*1.5) g.h=H-g.y;
+    if(g.x+g.w>W+1 && g.x<W) g.w=Math.max(4,W-g.x);
+    if(g.y+g.h>H+1 && g.y<H) g.h=Math.max(4,H-g.y);
+  });
   shapes.forEach(sh=>{
     const g=sh.geom;
     if(sh.kind==="pic"){
@@ -1425,18 +1545,36 @@ function renderSlideSVG(shapes,ctx,bg){
             '" preserveAspectRatio="xMidYMid meet" href="'+svgEsc(sh.src)+'"/>';
       return;
     }
-    if(sh.fill) body+='<rect x="'+g.x+'" y="'+g.y+'" width="'+g.w+'" height="'+g.h+'" fill="'+sh.fill+'"/>';
+    if(sh.fill||sh.stroke) body+=shapePath(sh,g);
     const padX=7.2, padY=3.6;
     const boxW=Math.max(10,g.w-padX*2);
-    // measure total height first so we can vertically anchor
-    const layout=[];
-    sh.paras.forEach(p=>{
-      const indent=p.lvl*18;
-      const lines=wrapRuns(p.runs,boxW-indent-(p.bullet?12:0));
-      const size=p.runs.length?p.runs[0].size:18;
-      layout.push({p:p,lines:lines,size:size,indent:indent,lh:size*1.22});
-    });
-    let total=0; layout.forEach(L=>{ total+=L.lines.length*L.lh + L.size*0.32; });
+    const boxH=Math.max(10,g.h-padY*2);
+    // PowerPoint shrinks text that overflows its placeholder; do the same so
+    // nothing gets clipped off the edge of the slide.
+    let scale=1, layout=[], total=0;
+    const measure=(sc)=>{
+      const L=[];
+      sh.paras.forEach(p=>{
+        const indent=p.lvl*18*sc;
+        const runs=sc===1?p.runs:p.runs.map(r=>({...r,size:r.size*sc}));
+        const lines=wrapRuns(runs,boxW-indent-(p.bullet?12*sc:0));
+        const size=runs.length?runs[0].size:18*sc;
+        L.push({p:p,lines:lines,size:size,indent:indent,lh:size*1.22});
+      });
+      let t=0; L.forEach(x=>{ t+=x.lines.length*x.lh + x.size*0.32; });
+      return {L:L,t:t};
+    };
+    let m=measure(1); layout=m.L; total=m.t;
+    if(total>boxH && sh.paras.length){
+      let lo=0.35, hi=1;
+      for(let i=0;i<7;i++){
+        const mid=(lo+hi)/2;
+        const r=measure(mid);
+        if(r.t<=boxH){ lo=mid; layout=r.L; total=r.t; } else hi=mid;
+      }
+      scale=lo;
+      if(scale>=0.999){ const r=measure(1); layout=r.L; total=r.t; }
+    }
     let y=g.y+padY;
     if(sh.anchor==="ctr") y=g.y+Math.max(padY,(g.h-total)/2);
     else if(sh.anchor==="b") y=g.y+Math.max(padY,g.h-total-padY);
