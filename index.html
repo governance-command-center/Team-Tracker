@@ -621,6 +621,13 @@ function migrate(){
     if(typeof e.category!=="string") e.category="";
     if(typeof e.remarks!=="string") e.remarks="";
     if(!e.createdBy) e.createdBy=e.by||"";
+    // Backfill the creator id by matching the stored name against the roster,
+    // so ownership survives later renames or re-typed name orders.
+    if(!e.createdById){
+      const who=e.createdBy||e.by||"";
+      const hit=state.members.find(m=>sameName(m.name, who));
+      if(hit) e.createdById=hit.id;
+    }
     if(typeof e.brand!=="string") e.brand="";
     if(typeof e.platform!=="string") e.platform="";
     if(!Array.isArray(e.nudges)) e.nudges=[];
@@ -633,12 +640,29 @@ function canEdit(entry){
   if(me.role==="lead"||me.role==="manager") return entry.team===me.team;
   return isOwner(entry);
 }
+// Names get typed in different orders ("Shao Qi Moon" vs "Moon Shao Qi"), with
+// different casing, or with extra spacing. Normalise to a sorted set of word
+// tokens so any of those spellings match the same person.
+function nameKey(n){
+  return (n||"").toLowerCase()
+    .replace(/[.,]/g," ")
+    .split(/\s+/).filter(Boolean).sort().join(" ");
+}
+function sameName(a,b){
+  const ka=nameKey(a), kb=nameKey(b);
+  return !!ka && ka===kb;
+}
+function nameListHas(list,who){
+  return splitMembers(list).some(n=>sameName(n,who));
+}
 function isOwner(entry){
   if(entry.team && me.team && entry.team!==me.team && me.role!=="admin") return false;
+  // Strongest signal: the id stamped on the entry when it was created.
+  if(entry.createdById && me.id && entry.createdById===me.id) return true;
+  // Otherwise fall back to name matching (order/case insensitive).
   const creator=entry.createdBy||entry.by||"";
-  // legacy rows stored a comma list in createdBy, so compare against every name
-  if(splitMembers(creator).includes(me.name)) return true;
-  return splitMembers(entry.member).includes(me.name);
+  if(nameListHas(creator, me.name)) return true;
+  return nameListHas(entry.member, me.name);
 }
 // Owners edit every field of their own entry. Admin edits everything.
 // Leads may edit their team's entries but NOT the Members field.
@@ -818,7 +842,7 @@ function render(){
   document.getElementById("tablewrap").classList.toggle("hidden", !useTable);
   if(useTable){ renderTable([team],sf,wk,mf,cf,onlyDiscuss); return; }
   const board=document.getElementById("board"); board.innerHTML="";
-  let items=state.entries.filter(e=>e.team===team&&(sf==="all"||e.status===sf)&&(mf==="all"||splitMembers(e.member).includes(mf))&&(wk==="all"||weekKeyFromTs(e.created)===wk)&&(!onlyDiscuss||e.discuss)&&(cf!=="since"||(e.updated||0)>rv));
+  let items=state.entries.filter(e=>e.team===team&&(sf==="all"||e.status===sf)&&(mf==="all"||nameListHas(e.member,mf))&&(wk==="all"||weekKeyFromTs(e.created)===wk)&&(!onlyDiscuss||e.discuss)&&(cf!=="since"||(e.updated||0)>rv));
   // flagged-for-discussion first, then by priority
   items.sort((a,b)=>{ if(!!b.discuss-!!a.discuss) return (!!b.discuss)-(!!a.discuss); const pr={High:0,Medium:1,Low:2}; return (pr[a.prio]==null?1:pr[a.prio])-(pr[b.prio]==null?1:pr[b.prio]); });
   const sec=document.createElement("div"); sec.className="team";
@@ -929,7 +953,7 @@ function commentsHTML(e){
 function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   mf=mf||"all"; cf=cf||"all";
   const rv=state.reviewedAt||0;
-  let items=state.entries.filter(e=>teams.includes(e.team)&&(sf==="all"||e.status===sf)&&(mf==="all"||splitMembers(e.member).includes(mf))&&(wk==="all"||weekKeyFromTs(e.created)===wk)&&(!onlyDiscuss||e.discuss)&&(cf!=="since"||(e.updated||0)>rv));
+  let items=state.entries.filter(e=>teams.includes(e.team)&&(sf==="all"||e.status===sf)&&(mf==="all"||nameListHas(e.member,mf))&&(wk==="all"||weekKeyFromTs(e.created)===wk)&&(!onlyDiscuss||e.discuss)&&(cf!=="since"||(e.updated||0)>rv));
   items.sort((a,b)=>{ if(!!b.discuss-!!a.discuss) return (!!b.discuss)-(!!a.discuss); const pr={High:0,Medium:1,Low:2}; return (pr[a.prio]==null?1:pr[a.prio])-(pr[b.prio]==null?1:pr[b.prio]); });
   let h='';
   if(rv) h+='<div class="reviewnote">Highlighted rows changed since last marked reviewed ('+fullTimestamp(rv)+').</div>';
@@ -1175,6 +1199,7 @@ document.getElementById("savebtn").onclick=async()=>{
     updated:Date.now(), by:me.name
   };
   rec.createdBy = existing ? (existing.createdBy || existing.by || me.name) : me.name;
+  rec.createdById = existing ? (existing.createdById || (isOwner(existing) ? me.id : "")) : me.id;
   rec.img = existing ? (existing.img||"") : "";
   rec.created = existing ? (existing.created||Date.now()) : Date.now();
   const newId = editingId || Date.now();
@@ -1909,7 +1934,7 @@ function myHighlights(){
   // Leads/managers see everything for their team; admin sees all; members see only ones they are tagged in.
   if(me.role==="admin") return (state.highlights||[]).slice();
   if(me.role==="lead"||me.role==="manager") return (state.highlights||[]).filter(h=>h.team===me.team);
-  return (state.highlights||[]).filter(h=>h.team===me.team && (h.members||[]).includes(me.name));
+  return (state.highlights||[]).filter(h=>h.team===me.team && (h.members||[]).some(n=>sameName(n,me.name)));
 }
 function unseenHighlights(){
   if(canPostHighlights()) return 0;
@@ -2034,7 +2059,7 @@ function renderHighlights(){
 
   const wk=document.getElementById("hl-week").value||"all";
   const mf=document.getElementById("hl-memberfilter").value||"all";
-  let items=myHighlights().filter(h=>(wk==="all"||h.week===wk)&&(mf==="all"||(h.members||[]).includes(mf)));
+  let items=myHighlights().filter(h=>(wk==="all"||h.week===wk)&&(mf==="all"||(h.members||[]).some(n=>sameName(n,mf))));
   items.sort((a,b)=>(b.week||"").localeCompare(a.week||"")||(b.updated||0)-(a.updated||0));
 
   const wrap=document.getElementById("hl-wrap");
@@ -2051,7 +2076,7 @@ function renderHighlights(){
   byWeek.forEach((rows,k)=>{
     out+='<div class="hlgroup">'+esc(weekKeyLabel(k))+'</div>';
     rows.forEach(h=>{
-      const mine=(h.members||[]).includes(me.name);
+      const mine=(h.members||[]).some(n=>sameName(n,me.name));
       const canEditHl = me.role==="admin" || h.by===me.name;
       out+='<div class="hlcard'+(mine?" tagged":"")+'">'+
         '<div class="hlhead"><div>'+
@@ -2062,7 +2087,7 @@ function renderHighlights(){
         '</div>'+
         (canEditHl?'<div style="white-space:nowrap;"><button class="small" data-hledit="'+h.id+'">Edit</button> <button class="small danger" data-hldel="'+h.id+'">Remove</button></div>':"")+
         '</div>'+
-        '<div class="hltags">'+(h.members||[]).map(n=>'<span class="hltag'+(n===me.name?" you":"")+'">'+esc(n)+(n===me.name?" (you)":"")+'</span>').join("")+'</div>'+
+        '<div class="hltags">'+(h.members||[]).map(n=>'<span class="hltag'+(sameName(n,me.name)?" you":"")+'">'+esc(n)+(sameName(n,me.name)?" (you)":"")+'</span>').join("")+'</div>'+
         '<ol class="hlissues">'+(h.issues||[]).map(i=>'<li>'+esc(i)+'</li>').join("")+'</ol>'+
         (h.remarks?'<div class="hlremarks"><b>Remarks:</b> '+esc(h.remarks)+'</div>':"")+
       '</div>';
