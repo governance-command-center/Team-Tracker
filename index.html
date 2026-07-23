@@ -315,7 +315,7 @@ const firebaseConfig = {
   storageBucket: "team-tracker-623d9.firebasestorage.app", messagingSenderId: "424120834957", appId: "1:424120834957:web:08fdeacdbc405cddf7fbc4"
 };
 const DOC_PATH = "trackers/shared";
-const IMGBB_API_KEY = "PASTE_IMGBB_API_KEY"; // get a free key at https://api.imgbb.com/
+const IMGBB_API_KEY = "c60c5765817167f993ffc23705876492"; // get a free key at https://api.imgbb.com/
 function isoWeek(d){
   const dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
   const day=dt.getUTCDay()||7; dt.setUTCDate(dt.getUTCDate()+4-day);
@@ -756,20 +756,19 @@ document.getElementById("f-file").onchange=e=>{
   }
 };
 async function uploadImage(file, entryId){
+  const withTimeout=(p,ms,label)=>Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error(label+" timed out after "+(ms/1000)+"s")),ms))]);
   if(IMGBB_API_KEY && IMGBB_API_KEY!=="PASTE_IMGBB_API_KEY"){
     const dataUrl = await compressToDataURL(file, 1600, 0.85);
     const base64 = dataUrl.split(",")[1];
     const form = new FormData();
     form.append("image", base64);
-    const res = await fetch("https://api.imgbb.com/1/upload?key="+encodeURIComponent(IMGBB_API_KEY), { method:"POST", body:form });
+    const res = await withTimeout(fetch("https://api.imgbb.com/1/upload?key="+encodeURIComponent(IMGBB_API_KEY), { method:"POST", body:form }), 20000, "imgbb upload");
     const json = await res.json();
     if(!json || !json.success) throw new Error("imgbb upload failed: "+(json && json.error && json.error.message));
     return json.data.url;
   }
-  if(useCloud && storage){
-    const ref=storage.ref().child("evidence/"+entryId+"_"+Date.now()+"_"+file.name.replace(/[^\w.\-]/g,"_"));
-    const snap=await ref.put(file); return await snap.ref.getDownloadURL();
-  }
+  // No imgbb key set yet - store the image locally (compressed) rather than hanging on Firebase Storage,
+  // which requires the paid Blaze plan and isn't set up.
   return await compressToDataURL(file, 1000, 0.7);
 }
 function compressToDataURL(file, maxDim, quality){
