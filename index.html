@@ -194,6 +194,16 @@
   table.compiled tr:hover td{background:var(--line-soft);}
   table.compiled tr.cmtrow:hover td, table.compiled tr.cmtrow td{background:var(--paper);}
   table.compiled tr.cmtrow .comments{margin-top:0; border-top:none; padding-top:2px;}
+  /* ---- roster: capped height, sticky header, ~5 rows before scrolling ---- */
+  .rosterhead{display:flex; align-items:center; gap:10px; margin-top:1.25rem;}
+  .rosterhead input{flex:1; max-width:340px;}
+  .rostercount{font-size:12.5px; color:var(--ink-faint); white-space:nowrap;}
+  .rosterscroll{max-height:252px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; margin-top:8px;}
+  .rosterscroll table.roster{margin-top:0;}
+  .rosterscroll thead th{position:sticky; top:0; z-index:2; background:var(--paper); box-shadow:inset 0 -1px 0 var(--line);}
+  .rosterscroll tbody tr:last-child td{border-bottom:none;}
+  .rosterscroll td,.rosterscroll th{padding:8px 10px;}
+  .rosterempty{padding:14px; font-size:13px; color:var(--ink-faint);}
   /* ---- compiled table sizing ---- */
   .tablescroll{width:100%; overflow-x:auto;}
   table.compiled{table-layout:fixed; min-width:1180px;}
@@ -419,7 +429,13 @@
             <div style="display:flex; align-items:flex-end;"><button class="primary" id="m-add">Add member</button></div>
           </div>
         </div>
-        <table class="roster" style="margin-top:1.25rem;"><thead><tr><th>Name</th><th>Team</th><th>Role</th><th>Passcode</th><th></th></tr></thead><tbody id="rosterbody"></tbody></table>
+        <div class="rosterhead">
+          <input id="m-search" placeholder="Search members by name, team, or role" />
+          <span class="rostercount" id="m-count"></span>
+        </div>
+        <div class="rosterscroll">
+          <table class="roster"><thead><tr><th>Name</th><th>Team</th><th>Role</th><th>Passcode</th><th></th></tr></thead><tbody id="rosterbody"></tbody></table>
+        </div>
       </div>
       <div class="datasec">
         <h2 style="font-size:20px; margin:0 0 4px;">Teams</h2>
@@ -633,6 +649,11 @@ function migrate(){
   if(typeof state.reviewedAt!=="number") state.reviewedAt=0;
   if(!Array.isArray(state.decks)) state.decks=[];
   if(!Array.isArray(state.highlights)) state.highlights=[];
+  // Legacy records sometimes stored padded names/passcodes, which broke sign-in.
+  state.members.forEach(m=>{
+    if(typeof m.name==="string") m.name=m.name.replace(/\s+/g," ").trim();
+    if(typeof m.pass==="string") m.pass=m.pass.trim();
+  });
   state.highlights.forEach(hl=>{
     if(!Array.isArray(hl.issues)) hl.issues=[];
     if(!Array.isArray(hl.members)) hl.members=[];
@@ -720,12 +741,21 @@ function finishLogin(m){
 function tryLogin(){
   const err=document.getElementById("gate-err");
   const user=document.getElementById("gate-user").value.trim();
-  const pass=document.getElementById("gate-pass").value;
+  // Trim the passcode too - it is stored trimmed, and phone keyboards love to
+  // append a trailing space, which silently broke otherwise-correct logins.
+  const pass=document.getElementById("gate-pass").value.trim();
   if(!user){ err.textContent="Enter your username."; return; }
-  // match on username (member name), case-insensitive, any role
-  const matches=state.members.filter(x=>x.name.toLowerCase()===user.toLowerCase());
-  const m=matches.find(x=>x.pass===pass);
-  if(m){ finishLogin(m); return; }
+  if(!pass){ err.textContent="Enter your passcode."; return; }
+  // Match the username exactly first, then fall back to the same tolerant
+  // matching used elsewhere (case, spacing, and word order).
+  let matches=state.members.filter(x=>(x.name||"").trim().toLowerCase()===user.toLowerCase());
+  if(!matches.length) matches=state.members.filter(x=>sameName(x.name,user));
+  if(matches.length){
+    const m=matches.find(x=>String(x.pass||"").trim()===pass);
+    if(m){ finishLogin(m); return; }
+    err.textContent="Wrong passcode for "+matches[0].name+".";
+    return;
+  }
   // emergency recovery: if no admin account matches but someone knows the
   // recovery credentials, let them in as a temporary admin to fix the roster.
   if(user.toLowerCase()==="admin" && pass==="admin" && !state.members.some(x=>x.role==="admin" && x.pass==="admin")){
@@ -733,7 +763,7 @@ function tryLogin(){
     if(!a){ a={id:"u1",name:"admin",team:state.teams[0]||"Team",role:"admin",pass:"admin"}; state.members.unshift(a); persist(); }
     finishLogin(a); return;
   }
-  err.textContent="Wrong username or passcode.";
+  err.textContent="No account found for \""+user+"\". Check the spelling with your admin.";
 }
 document.getElementById("gate-btn").onclick=tryLogin;
 document.getElementById("gate-user").addEventListener("keydown",e=>{ if(e.key==="Enter") document.getElementById("gate-pass").focus(); });
@@ -1272,20 +1302,35 @@ document.getElementById("exportbtn").onclick=()=>{
 };
 function renderRoster(){
   document.getElementById("m-team").innerHTML=state.teams.map(t=>'<option>'+esc(t)+'</option>').join("");
-  document.getElementById("rosterbody").innerHTML=state.members.map(m=>
+  const q=(document.getElementById("m-search").value||"").trim().toLowerCase();
+  const all=state.members.slice().sort((a,b)=>
+    (a.team||"").localeCompare(b.team||"")||(a.name||"").localeCompare(b.name||""));
+  const list=q?all.filter(m=>((m.name||"")+" "+(m.team||"")+" "+(m.role||"")).toLowerCase().includes(q)):all;
+  document.getElementById("m-count").textContent =
+    q ? list.length+" of "+all.length+" shown" : all.length+(all.length===1?" member":" members");
+  if(!list.length){
+    document.getElementById("rosterbody").innerHTML='<tr><td colspan="5" class="rosterempty">No members match that search.</td></tr>';
+    return;
+  }
+  document.getElementById("rosterbody").innerHTML=list.map(m=>
     '<tr><td>'+esc(m.name)+'</td><td>'+esc(m.team)+'</td><td>'+esc(m.role)+'</td><td>'+esc(m.pass)+'</td>'+
     '<td style="text-align:right; white-space:nowrap;">'+
       '<button class="small" data-resetpw="'+m.id+'">Reset password</button> '+
-      (m.id==="u1"?'<span style="color:var(--ink-faint); font-size:12px;">you</span>':'<button class="small danger" data-rm="'+m.id+'">Remove</button>')+
+      (m.id===me.id?'<span style="color:var(--ink-faint); font-size:12px;">you</span>':'<button class="small danger" data-rm="'+m.id+'">Remove</button>')+
     '</td></tr>').join("");
 }
+document.getElementById("m-search").addEventListener("input",renderRoster);
 document.getElementById("m-add").onclick=()=>{
-  const name=document.getElementById("m-name").value.trim();
+  const name=document.getElementById("m-name").value.replace(/\s+/g," ").trim();
   const pass=document.getElementById("m-pass").value.trim();
   if(!name||!pass){ alert("Name and passcode required."); return; }
+  // Two people sharing a username makes login ambiguous, so block it up front.
+  const clash=state.members.find(x=>(x.name||"").trim().toLowerCase()===name.toLowerCase());
+  if(clash){ alert("\""+clash.name+"\" already exists. Use a different name so sign-in stays unambiguous."); return; }
   state.members.push({id:"u"+Date.now(),name,team:document.getElementById("m-team").value,role:document.getElementById("m-role").value,pass});
   document.getElementById("m-name").value=""; document.getElementById("m-pass").value="";
   persist(); renderRoster(); buildGate();
+  alert("Added "+name+". They sign in with username \""+name+"\" and the passcode you set.");
 };
 document.addEventListener("click",e=>{
   const rm=e.target.closest("[data-rm]");
