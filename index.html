@@ -56,22 +56,27 @@
   .nudgelist{margin-top:10px;}
   .nudgelist .item{border-bottom:1px solid var(--line-soft); padding:7px 0; font-size:13px;}
   /* presentation deck */
-  .deckgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:14px; margin-top:1rem;}
-  .deckcard{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; display:flex; flex-direction:column;}
-  .deckcard .thumbwrap{height:118px; background:var(--line-soft); display:flex; align-items:center; justify-content:center; overflow:hidden;}
-  .deckcard .thumbwrap img{width:100%; height:100%; object-fit:cover;}
-  .deckcard .thumbwrap .ph{font-size:12px; color:var(--ink-faint);}
-  .deckcard .info{padding:.7rem .8rem; flex:1; display:flex; flex-direction:column; gap:4px;}
-  .deckcard .nm{font-weight:600; font-size:14px; word-break:break-word;}
-  .deckcard .sm{font-size:12px; color:var(--ink-faint);}
-  .deckcard .acts{display:flex; gap:6px; flex-wrap:wrap; padding:0 .8rem .8rem;}
-  .archived .deckcard{opacity:.72;}
+  .decklist{margin-top:1rem; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;}
+  .deckrow{display:flex; align-items:center; gap:14px; padding:10px 14px; border-bottom:1px solid var(--line-soft);}
+  .deckrow:last-child{border-bottom:none;}
+  .deckrow:hover{background:var(--line-soft);}
+  .deckrow .th{width:74px; height:44px; flex-shrink:0; border-radius:5px; border:1px solid var(--line); background:var(--line-soft); object-fit:cover; display:block;}
+  .deckrow .thph{width:74px; height:44px; flex-shrink:0; border-radius:5px; border:1px solid var(--line); background:var(--line-soft); display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--ink-faint);}
+  .deckrow .meta3{flex:1; min-width:0;}
+  .deckrow .nm{font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .deckrow .sm{font-size:12px; color:var(--ink-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .deckrow .acts{display:flex; gap:6px; flex-shrink:0; align-items:center;}
+  .deckrow.arch{opacity:.62;}
+  .decklist .empty{padding:14px;}
+  @media (max-width:640px){ .deckrow{flex-wrap:wrap;} .deckrow .acts{width:100%; justify-content:flex-start;} }
   .stage{position:fixed; inset:0; background:#12161d; z-index:140; display:flex; flex-direction:column;}
   .stage .bar{display:flex; align-items:center; gap:10px; padding:10px 16px; color:#c9d2e0; font-size:13px; border-bottom:1px solid #263041;}
   .stage .bar button{background:#1c232e; border-color:#2f3a4b; color:#c9d2e0;}
   .stage .bar button:hover{background:#26303e;}
   .stage .canvas{flex:1; display:flex; align-items:center; justify-content:center; padding:18px; min-height:0;}
   .stage .canvas img{max-width:100%; max-height:100%; object-fit:contain; border-radius:6px; background:#fff;}
+  .stage .canvas .svgslide{width:100%; height:100%; display:flex; align-items:center; justify-content:center;}
+  .stage .canvas .svgslide svg{max-width:100%; max-height:100%; width:auto; height:auto; border-radius:6px; box-shadow:0 6px 28px rgba(0,0,0,.45);}
   .stage .canvas .noimg{color:#8a93a3; font-size:14px; text-align:center; max-width:520px;}
   .stage .strip{display:flex; gap:8px; overflow-x:auto; padding:10px 16px; border-top:1px solid #263041;}
   .stage .strip img{height:52px; border-radius:4px; border:2px solid transparent; cursor:pointer; background:#fff;}
@@ -360,12 +365,12 @@
           Drop a <b>.pptx</b> file here or
           <input type="file" id="deck-file" accept=".pptx,.pdf,image/*" multiple style="border:none; background:transparent; padding:0;" />
           <div class="uphint" style="margin-top:8px;">
-            Slides are converted to compressed images so the deck stays light. You can also import slide images or a PDF export directly.
+            Slides are rendered as vector graphics with their real layout, fonts, colours, and images — sharp at any projector size, and roughly 2 KB per slide.
           </div>
         </div>
         <div class="uphint hidden" id="deck-progress" style="margin-top:10px;"></div>
       </div>
-      <div class="deckgrid" id="deckgrid"></div>
+      <div class="decklist" id="deckgrid"></div>
       <div class="storagebar" id="deck-bar"><i style="width:0%"></i></div>
     </div>
 
@@ -1123,7 +1128,7 @@ function ensureJSZip(){
 }
 function bytesOfDeck(d){
   let n=0;
-  (d.slides||[]).forEach(s=>{ n+=(s.img?s.img.length:0)+(s.text?s.text.length:0); });
+  (d.slides||[]).forEach(s=>{ n+=(s.img?s.img.length:0)+(s.svg?s.svg.length:0)+(s.text?s.text.length:0); });
   n+=(d.thumb?d.thumb.length:0);
   return n;
 }
@@ -1152,42 +1157,452 @@ function shrinkDataURL(dataUrl, maxDim, quality){
     img.src=dataUrl;
   });
 }
+function decodeXml(s){
+  return (s||"").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"')
+                .replace(/&apos;/g,"'").replace(/&#([0-9]+);/g,(m,d)=>String.fromCharCode(+d))
+                .replace(/&amp;/g,"&");
+}
+const EMU=12700; // EMU per point
+function parseXML(str){ return new DOMParser().parseFromString(str,"application/xml"); }
+function kids(node,tag){ return node?Array.from(node.children).filter(c=>c.localName===tag):[]; }
+function kid(node,tag){ return node?Array.from(node.children).find(c=>c.localName===tag)||null:null; }
+function deep(node,tag){ return node?node.getElementsByTagNameNS("*",tag)[0]||null:null; }
+
+/* ---- theme: color scheme + font scheme ---- */
+const SYSCOLORS={windowText:"#000000",window:"#FFFFFF",captionText:"#000000",
+  highlight:"#3399FF",highlightText:"#FFFFFF",btnFace:"#F0F0F0",btnText:"#000000",
+  grayText:"#808080",infoText:"#000000",infoBk:"#FFFFE1"};
+function sysColor(sys){
+  const last=sys.getAttribute("lastClr");
+  if(last) return "#"+last;
+  return SYSCOLORS[sys.getAttribute("val")]||"#000000";
+}
+function readTheme(doc){
+  const t={colors:{},major:"Calibri",minor:"Calibri"};
+  if(!doc) return t;
+  const scheme=deep(doc,"clrScheme");
+  if(scheme){
+    Array.from(scheme.children).forEach(c=>{
+      const srgb=kid(c,"srgbClr"), sys=kid(c,"sysClr");
+      if(srgb) t.colors[c.localName]="#"+srgb.getAttribute("val");
+      else if(sys) t.colors[c.localName]=sysColor(sys);
+    });
+  }
+  // PowerPoint swaps these two names when mapping to slide content
+  if(t.colors.dk1&&!t.colors.tx1) t.colors.tx1=t.colors.dk1;
+  if(t.colors.lt1&&!t.colors.bg1) t.colors.bg1=t.colors.lt1;
+  if(t.colors.dk2&&!t.colors.tx2) t.colors.tx2=t.colors.dk2;
+  if(t.colors.lt2&&!t.colors.bg2) t.colors.bg2=t.colors.lt2;
+  const fs=deep(doc,"fontScheme");
+  if(fs){
+    const maj=kid(kid(fs,"majorFont"),"latin"), min=kid(kid(fs,"minorFont"),"latin");
+    if(maj&&maj.getAttribute("typeface")) t.major=maj.getAttribute("typeface");
+    if(min&&min.getAttribute("typeface")) t.minor=min.getAttribute("typeface");
+  }
+  return t;
+}
+/* apply lumMod/lumOff/shade/tint the way DrawingML does */
+function applyMods(hex,node){
+  let [r,g,b]=[1,3,5].map(i=>parseInt(hex.substr(i,2),16));
+  const get=n=>{const e=kid(node,n); return e?parseInt(e.getAttribute("val"),10)/100000:null;};
+  const lumMod=get("lumMod"), lumOff=get("lumOff"), shade=get("shade"), tint=get("tint");
+  if(shade!=null){ r*=shade; g*=shade; b*=shade; }
+  if(tint!=null){ r=r*tint+255*(1-tint); g=g*tint+255*(1-tint); b=b*tint+255*(1-tint); }
+  if(lumMod!=null){ r*=lumMod; g*=lumMod; b*=lumMod; }
+  if(lumOff!=null){ r+=255*lumOff; g+=255*lumOff; b+=255*lumOff; }
+  const cl=v=>Math.max(0,Math.min(255,Math.round(v)));
+  return "#"+[cl(r),cl(g),cl(b)].map(v=>v.toString(16).padStart(2,"0")).join("");
+}
+function colorFrom(node,theme){
+  if(!node) return null;
+  const srgb=kid(node,"srgbClr");
+  if(srgb) return applyMods("#"+srgb.getAttribute("val"),srgb);
+  const sch=kid(node,"schemeClr");
+  if(sch){
+    const nm=sch.getAttribute("val");
+    const base=theme.colors[nm]||theme.colors[{tx1:"dk1",bg1:"lt1",tx2:"dk2",bg2:"lt2"}[nm]]||"#000000";
+    return applyMods(base,sch);
+  }
+  const sys=kid(node,"sysClr");
+  if(sys) return applyMods(sysColor(sys),sys);
+  return null;
+}
+function fillOf(spPr,theme){
+  if(!spPr) return null;
+  if(kid(spPr,"noFill")) return null;
+  const solid=kid(spPr,"solidFill");
+  if(solid) return colorFrom(solid,theme);
+  const grad=kid(spPr,"gradFill");
+  if(grad){ const st=deep(grad,"gs"); return st?colorFrom(st,theme):null; }
+  return null;
+}
+function xfrmOf(spPr){
+  const x=kid(spPr,"xfrm"); if(!x) return null;
+  const off=kid(x,"off"), ext=kid(x,"ext");
+  if(!off||!ext) return null;
+  return {
+    x:+off.getAttribute("x")/EMU, y:+off.getAttribute("y")/EMU,
+    w:+ext.getAttribute("cx")/EMU, h:+ext.getAttribute("cy")/EMU,
+    rot:x.getAttribute("rot")?(+x.getAttribute("rot")/60000):0
+  };
+}
+/* ---- placeholder inheritance: slide -> layout -> master ---- */
+function phKey(sp){
+  const ph=deep(kid(kid(sp,"nvSpPr"),"nvPr"),"ph");
+  if(!ph) return null;
+  return {type:ph.getAttribute("type")||"body", idx:ph.getAttribute("idx")||""};
+}
+function findPh(rootDoc,key){
+  if(!rootDoc||!key) return null;
+  const tree=deep(rootDoc,"spTree"); if(!tree) return null;
+  const list=Array.from(tree.getElementsByTagNameNS("*","sp"));
+  // idx match wins, then exact type, then title/ctrTitle equivalence
+  let hit=list.find(sp=>{const k=phKey(sp); return k&&key.idx&&k.idx===key.idx;});
+  if(!hit) hit=list.find(sp=>{const k=phKey(sp); return k&&k.type===key.type;});
+  if(!hit&&/title/i.test(key.type)) hit=list.find(sp=>{const k=phKey(sp); return k&&/title/i.test(k.type);});
+  return hit||null;
+}
+/* body-level defaults from master txStyles (titleStyle/bodyStyle/otherStyle) */
+function masterLvlProps(masterDoc,type,lvl){
+  if(!masterDoc) return null;
+  const tx=deep(masterDoc,"txStyles"); if(!tx) return null;
+  const which=/title/i.test(type)?"titleStyle":(type==="body"?"bodyStyle":"otherStyle");
+  const styleNode=kid(tx,which)||kid(tx,"bodyStyle");
+  if(!styleNode) return null;
+  return kid(styleNode,"lvl"+(Math.min(lvl,8)+1)+"pPr");
+}
+/* ---- build renderable shapes for one slide ---- */
+function collectShapes(doc,theme,ctx,inherited){
+  const tree=deep(doc,"spTree"); if(!tree) return [];
+  const out=[];
+  const walk=(parent)=>{
+    Array.from(parent.children).forEach(node=>{
+      const ln=node.localName;
+      if(ln==="grpSp"){ walk(node); return; }
+      if(ln==="sp"){ out.push(buildTextShape(node,theme,ctx,inherited)); return; }
+      if(ln==="pic"){ out.push(buildPicShape(node,theme,ctx)); return; }
+    });
+  };
+  walk(tree);
+  return out.filter(Boolean);
+}
+function buildPicShape(node,theme,ctx){
+  const spPr=kid(node,"spPr");
+  const g=xfrmOf(spPr);
+  const blip=deep(node,"blip");
+  const rid=blip?(blip.getAttribute("r:embed")||blip.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships","embed")):null;
+  const src=rid?ctx.rels[rid]:null;
+  if(!src||!g) return null;
+  return {kind:"pic",geom:g,src:src};
+}
+function buildTextShape(node,theme,ctx,inherited){
+  const spPr=kid(node,"spPr");
+  const key=phKey(node);
+  let geom=xfrmOf(spPr);
+  let inheritedSp=null;
+  if(key){
+    inheritedSp=findPh(ctx.layoutDoc,key)||findPh(ctx.masterDoc,key);
+    if(!geom&&inheritedSp) geom=xfrmOf(kid(inheritedSp,"spPr"));
+    if(!geom){
+      const m=findPh(ctx.masterDoc,key);
+      if(m) geom=xfrmOf(kid(m,"spPr"));
+    }
+  }
+  if(!geom) geom={x:ctx.wpt*0.08,y:ctx.hpt*0.1,w:ctx.wpt*0.84,h:ctx.hpt*0.8};
+  const fill=fillOf(spPr,theme);
+  const txBody=kid(node,"txBody");
+  const paras=[];
+  if(txBody){
+    kids(txBody,"p").forEach(p=>{
+      const pPr=kid(p,"pPr");
+      const lvl=pPr&&pPr.getAttribute("lvl")?+pPr.getAttribute("lvl"):0;
+      const align=(pPr&&pPr.getAttribute("algn"))||inheritAlign(inheritedSp,ctx,key,lvl);
+      const bulletOff=pPr&&kid(pPr,"buNone");
+      const buChar=pPr&&kid(pPr,"buChar");
+      const runs=[];
+      kids(p,"r").forEach(r=>{
+        const rPr=kid(r,"rPr");
+        const tNode=kid(r,"t");
+        const txt=tNode?decodeXml(tNode.textContent):"";
+        if(!txt) return;
+        runs.push(styleRun(txt,rPr,theme,ctx,key,lvl,inheritedSp));
+      });
+      kids(p,"br").forEach(()=>{});
+      if(!runs.length && kid(p,"fld")){
+        const f=kid(p,"fld"); const tn=kid(f,"t");
+        if(tn) runs.push(styleRun(decodeXml(tn.textContent),kid(f,"rPr"),theme,ctx,key,lvl,inheritedSp));
+      }
+      paras.push({runs:runs,align:align||"l",lvl:lvl,
+                  bullet:bulletFor(key,pPr,bulletOff,buChar,runs,lvl,ctx)});
+    });
+  }
+  if(!paras.length && !fill) return null;
+  const anchor=(deep(txBody,"bodyPr")&&deep(txBody,"bodyPr").getAttribute("anchor"))||
+               (inheritedSp&&deep(kid(inheritedSp,"txBody"),"bodyPr")&&deep(kid(inheritedSp,"txBody"),"bodyPr").getAttribute("anchor"))||"t";
+  return {kind:"text",geom:geom,fill:fill,paras:paras,anchor:anchor};
+}
+function bulletFor(key,pPr,bulletOff,buChar,runs,lvl,ctx){
+  if(!runs.length||bulletOff) return null;
+  const type=key?key.type:"";
+  // titles, subtitles and centred hero text are never bulleted in PowerPoint
+  if(/title|ctrTitle|subTitle/i.test(type)) return null;
+  if(!/body|obj|tbl|dt|ftr|sldNum/i.test(type)&&!key) return null;
+  if(/dt|ftr|sldNum/i.test(type)) return null;
+  if(buChar) return buChar.getAttribute("char")||"\u2022";
+  // honour buNone inherited from the master level properties
+  const lp=masterLvlProps(ctx.masterDoc,type||"body",lvl);
+  if(lp&&kid(lp,"buNone")) return null;
+  return "\u2022";
+}
+function inheritAlign(inheritedSp,ctx,key,lvl){
+  if(inheritedSp){
+    const p=deep(kid(inheritedSp,"txBody"),"pPr");
+    if(p&&p.getAttribute("algn")) return p.getAttribute("algn");
+  }
+  const lp=masterLvlProps(ctx.masterDoc,key?key.type:"body",lvl);
+  if(lp&&lp.getAttribute("algn")) return lp.getAttribute("algn");
+  return null;
+}
+function styleRun(txt,rPr,theme,ctx,key,lvl,inheritedSp){
+  let size=null,color=null,bold=null,italic=null,face=null;
+  if(rPr){
+    if(rPr.getAttribute("sz")) size=+rPr.getAttribute("sz")/100;
+    if(rPr.getAttribute("b")) bold=rPr.getAttribute("b")==="1";
+    if(rPr.getAttribute("i")) italic=rPr.getAttribute("i")==="1";
+    const sf=kid(rPr,"solidFill"); if(sf) color=colorFrom(sf,theme);
+    const latin=kid(rPr,"latin"); if(latin) face=latin.getAttribute("typeface");
+  }
+  // inherit from layout placeholder, then master txStyles
+  if(size==null&&inheritedSp){
+    const ir=deep(kid(inheritedSp,"txBody"),"defRPr");
+    if(ir&&ir.getAttribute("sz")) size=+ir.getAttribute("sz")/100;
+  }
+  const lp=masterLvlProps(ctx.masterDoc,key?key.type:"body",lvl);
+  if(lp){
+    const dr=kid(lp,"defRPr");
+    if(dr){
+      if(size==null&&dr.getAttribute("sz")) size=+dr.getAttribute("sz")/100;
+      if(bold==null&&dr.getAttribute("b")) bold=dr.getAttribute("b")==="1";
+      if(color==null){ const sf=kid(dr,"solidFill"); if(sf) color=colorFrom(sf,theme); }
+      if(!face){ const lt=kid(dr,"latin"); if(lt) face=lt.getAttribute("typeface"); }
+    }
+  }
+  if(size==null) size=/title/i.test(key?key.type:"")?36:18;
+  if(color==null) color=theme.colors.tx1||theme.colors.dk1||"#000000";
+  if(!face||/^\+mj/.test(face)) face=/title/i.test(key?key.type:"")?theme.major:theme.minor;
+  if(/^\+mn/.test(face)) face=theme.minor;
+  return {text:txt,size:size,color:color,bold:!!bold,italic:!!italic,face:face};
+}
+/* ---- lay out + emit SVG ---- */
+function estWidth(run){
+  // rough advance width; good enough for wrapping and centering
+  const f=run.bold?0.56:0.52;
+  return run.text.length*run.size*f;
+}
+function wrapRuns(runs,maxW){
+  const lines=[]; let cur=[]; let curW=0;
+  runs.forEach(run=>{
+    const words=run.text.split(/(\s+)/);
+    words.forEach(w=>{
+      if(!w) return;
+      const piece={...run,text:w};
+      const pw=estWidth(piece);
+      if(curW+pw>maxW && curW>0 && w.trim()){ lines.push(cur); cur=[]; curW=0; }
+      if(!(curW===0&&!w.trim())){ cur.push(piece); curW+=pw; }
+    });
+  });
+  if(cur.length) lines.push(cur);
+  return lines.length?lines:[[]];
+}
+function svgEsc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function renderSlideSVG(shapes,ctx,bg){
+  const W=ctx.wpt,H=ctx.hpt;
+  let body='<rect width="'+W+'" height="'+H+'" fill="'+(bg||"#FFFFFF")+'"/>';
+  shapes.forEach(sh=>{
+    const g=sh.geom;
+    if(sh.kind==="pic"){
+      body+='<image x="'+g.x+'" y="'+g.y+'" width="'+g.w+'" height="'+g.h+
+            '" preserveAspectRatio="xMidYMid meet" href="'+svgEsc(sh.src)+'"/>';
+      return;
+    }
+    if(sh.fill) body+='<rect x="'+g.x+'" y="'+g.y+'" width="'+g.w+'" height="'+g.h+'" fill="'+sh.fill+'"/>';
+    const padX=7.2, padY=3.6;
+    const boxW=Math.max(10,g.w-padX*2);
+    // measure total height first so we can vertically anchor
+    const layout=[];
+    sh.paras.forEach(p=>{
+      const indent=p.lvl*18;
+      const lines=wrapRuns(p.runs,boxW-indent-(p.bullet?12:0));
+      const size=p.runs.length?p.runs[0].size:18;
+      layout.push({p:p,lines:lines,size:size,indent:indent,lh:size*1.22});
+    });
+    let total=0; layout.forEach(L=>{ total+=L.lines.length*L.lh + L.size*0.32; });
+    let y=g.y+padY;
+    if(sh.anchor==="ctr") y=g.y+Math.max(padY,(g.h-total)/2);
+    else if(sh.anchor==="b") y=g.y+Math.max(padY,g.h-total-padY);
+    layout.forEach(L=>{
+      L.lines.forEach((line,li)=>{
+        y+=L.lh;
+        if(!line.length) return;
+        const lineW=line.reduce((s,r)=>s+estWidth(r),0);
+        let x=g.x+padX+L.indent;
+        const al=L.p.align;
+        if(al==="ctr") x=g.x+(g.w-lineW)/2;
+        else if(al==="r") x=g.x+g.w-padX-lineW;
+        if(L.p.bullet&&li===0){
+          const b=line[0];
+          body+='<text x="'+(x-11)+'" y="'+y+'" font-size="'+(b.size*0.9)+'" fill="'+b.color+
+                '" font-family="'+svgEsc(b.face)+'">'+svgEsc(L.p.bullet)+'</text>';
+        }
+        // merge adjacent runs that share styling, then emit one <text> per line
+        const merged=[];
+        line.forEach(r=>{
+          const p=merged[merged.length-1];
+          if(p&&p.size===r.size&&p.color===r.color&&p.bold===r.bold&&p.italic===r.italic&&p.face===r.face) p.text+=r.text;
+          else merged.push({...r});
+        });
+        const head=merged[0];
+        body+='<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" font-size="'+head.size+
+              '" fill="'+head.color+'" font-family="'+svgEsc(head.face)+', Calibri, Arial, sans-serif"'+
+              (head.bold?' font-weight="700"':'')+(head.italic?' font-style="italic"':'')+
+              ' xml:space="preserve">';
+        merged.forEach((r,ri)=>{
+          if(ri===0&&merged.length===1){ body+=svgEsc(r.text); return; }
+          body+='<tspan'+(r.size!==head.size?' font-size="'+r.size+'"':'')+
+                (r.color!==head.color?' fill="'+r.color+'"':'')+
+                (r.bold!==head.bold?' font-weight="'+(r.bold?700:400)+'"':'')+
+                (r.italic!==head.italic?' font-style="'+(r.italic?"italic":"normal")+'"':'')+
+                (r.face!==head.face?' font-family="'+svgEsc(r.face)+', Calibri, Arial, sans-serif"':'')+
+                '>'+svgEsc(r.text)+'</tspan>';
+        });
+        body+='</text>';
+      });
+      y+=L.size*0.32;
+    });
+  });
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'">'+body+'</svg>';
+}
 function slideTextFromXML(xml){
   const out=[]; const re=/<a:t>([\s\S]*?)<\/a:t>/g; let m;
-  while((m=re.exec(xml))){ const t=m[1].replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').trim(); if(t) out.push(t); }
+  while((m=re.exec(xml))){ const t=decodeXml(m[1]).trim(); if(t) out.push(t); }
   return out.join("\n");
 }
-async function parsePptx(file, onProgress){
+/* rasterise the SVG so we store one compact JPEG instead of fonts+markup */
+function svgToJPEG(svg,W,H,scale,quality){
+  return new Promise(res=>{
+    const blobUrl=URL.createObjectURL(new Blob([svg],{type:"image/svg+xml;charset=utf-8"}));
+    const img=new Image();
+    img.onload=()=>{
+      const c=document.createElement("canvas");
+      c.width=Math.round(W*scale); c.height=Math.round(H*scale);
+      const ctx2=c.getContext("2d");
+      ctx2.fillStyle="#fff"; ctx2.fillRect(0,0,c.width,c.height);
+      ctx2.drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(blobUrl);
+      res(c.toDataURL("image/jpeg",quality));
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(blobUrl); res(""); };
+    img.src=blobUrl;
+  });
+}
+async function relsFor(zip,partPath){
+  const dir=partPath.substring(0,partPath.lastIndexOf("/"));
+  const base=partPath.split("/").pop();
+  const relPath=dir+"/_rels/"+base+".rels";
+  const map={};
+  const f=zip.file(relPath);
+  if(!f) return map;
+  const doc=parseXML(await f.async("string"));
+  const rels=Array.from(doc.getElementsByTagNameNS("*","Relationship"));
+  for(const r of rels){
+    const id=r.getAttribute("Id"), tgt=r.getAttribute("Target")||"";
+    if(!/media\//.test(tgt)) continue;
+    let p=tgt.replace(/^\.\.\//,"ppt/").replace(/^\//,"");
+    if(!p.startsWith("ppt/")) p="ppt/"+p.replace(/^ppt\//,"");
+    const mf=zip.file(p)||zip.file(p.replace(/^ppt\//,""));
+    if(mf){
+      const blob=await mf.async("blob");
+      let du=await dataURLFromBlob(blob);
+      if(/\.(png|jpe?g|gif|bmp|webp)$/i.test(p)) du=await shrinkDataURL(du,1100,0.75);
+      map[id]=du;
+    }
+  }
+  return map;
+}
+async function parsePptx(file,onProgress){
   await ensureJSZip();
   const zip=await JSZip.loadAsync(file);
-  // slide XML in order
+  const pres=parseXML(await zip.file("ppt/presentation.xml").async("string"));
+  const sz=deep(pres,"sldSz");
+  const wpt=(sz?+sz.getAttribute("cx"):9144000)/EMU;
+  const hpt=(sz?+sz.getAttribute("cy"):6858000)/EMU;
   const slideNames=Object.keys(zip.files)
     .filter(n=>/^ppt\/slides\/slide\d+\.xml$/.test(n))
     .sort((a,b)=>parseInt(a.match(/(\d+)/)[1],10)-parseInt(b.match(/(\d+)/)[1],10));
+  const layoutCache={},masterCache={},themeCache={};
   const slides=[];
   for(let i=0;i<slideNames.length;i++){
     const name=slideNames[i];
-    onProgress && onProgress("Reading slide "+(i+1)+" of "+slideNames.length+"…");
-    const xml=await zip.file(name).async("string");
-    const text=slideTextFromXML(xml);
-    // find images referenced by this slide via its rels file
-    let img="";
-    const relName="ppt/slides/_rels/"+name.split("/").pop()+".rels";
-    if(zip.file(relName)){
-      const rels=await zip.file(relName).async("string");
-      const targets=[...rels.matchAll(/Target="([^"]*media\/[^"]+)"/g)].map(m=>m[1]);
-      for(const t of targets){
-        const path="ppt/"+t.replace(/^\.\.\//,"");
-        const f=zip.file(path);
-        if(f && /\.(png|jpe?g|gif|bmp|webp)$/i.test(path)){
-          const blob=await f.async("blob");
-          const du=await dataURLFromBlob(blob);
-          img=await shrinkDataURL(du,1280,0.72);
-          break;
+    onProgress&&onProgress("Rendering slide "+(i+1)+" of "+slideNames.length+"…");
+    const doc=parseXML(await zip.file(name).async("string"));
+    // resolve layout -> master -> theme for this slide
+    let layoutPath=null;
+    const srelFile=zip.file("ppt/slides/_rels/"+name.split("/").pop()+".rels");
+    if(srelFile){
+      const rd=parseXML(await srelFile.async("string"));
+      const rel=Array.from(rd.getElementsByTagNameNS("*","Relationship"))
+        .find(r=>/slideLayout/.test(r.getAttribute("Target")||""));
+      if(rel) layoutPath="ppt/"+rel.getAttribute("Target").replace(/^\.\.\//,"");
+    }
+    let layoutDoc=null,masterDoc=null,themeDoc=null,masterPath=null;
+    if(layoutPath&&zip.file(layoutPath)){
+      layoutDoc=layoutCache[layoutPath]||(layoutCache[layoutPath]=parseXML(await zip.file(layoutPath).async("string")));
+      const lrel=zip.file("ppt/slideLayouts/_rels/"+layoutPath.split("/").pop()+".rels");
+      if(lrel){
+        const rd=parseXML(await lrel.async("string"));
+        const rel=Array.from(rd.getElementsByTagNameNS("*","Relationship"))
+          .find(r=>/slideMaster/.test(r.getAttribute("Target")||""));
+        if(rel) masterPath="ppt/"+rel.getAttribute("Target").replace(/^\.\.\//,"");
+      }
+    }
+    if(masterPath&&zip.file(masterPath)){
+      masterDoc=masterCache[masterPath]||(masterCache[masterPath]=parseXML(await zip.file(masterPath).async("string")));
+      const mrel=zip.file("ppt/slideMasters/_rels/"+masterPath.split("/").pop()+".rels");
+      if(mrel){
+        const rd=parseXML(await mrel.async("string"));
+        const rel=Array.from(rd.getElementsByTagNameNS("*","Relationship"))
+          .find(r=>/theme/.test(r.getAttribute("Target")||""));
+        if(rel){
+          const tp="ppt/"+rel.getAttribute("Target").replace(/^\.\.\//,"");
+          if(zip.file(tp)) themeDoc=themeCache[tp]||(themeCache[tp]=parseXML(await zip.file(tp).async("string")));
         }
       }
     }
-    slides.push({img:img, text:text});
+    if(!themeDoc&&zip.file("ppt/theme/theme1.xml")) themeDoc=parseXML(await zip.file("ppt/theme/theme1.xml").async("string"));
+    const theme=readTheme(themeDoc);
+    const ctx={wpt:wpt,hpt:hpt,layoutDoc:layoutDoc,masterDoc:masterDoc,
+               rels:await relsFor(zip,name)};
+    // background: slide -> layout -> master
+    let bg=null;
+    [doc,layoutDoc,masterDoc].forEach(d=>{
+      if(bg||!d) return;
+      const b=deep(d,"bg");
+      if(b){ const sf=deep(b,"solidFill"); if(sf) bg=colorFrom(sf,theme); }
+    });
+    // layout/master furniture that sits behind the slide's own shapes
+    const back=[];
+    if(masterDoc){
+      const mctx={...ctx,rels:masterPath?await relsFor(zip,masterPath):{}};
+      collectShapes(masterDoc,theme,mctx).forEach(s=>{ if(s.kind==="pic") back.push(s); });
+    }
+    if(layoutDoc){
+      const lctx={...ctx,rels:layoutPath?await relsFor(zip,layoutPath):{}};
+      collectShapes(layoutDoc,theme,lctx).forEach(s=>{ if(s.kind==="pic") back.push(s); });
+    }
+    const shapes=back.concat(collectShapes(doc,theme,ctx));
+    const svg=renderSlideSVG(shapes,ctx,bg||theme.colors.lt1||"#FFFFFF");
+    // SVG stays crisp at any projector size and costs a fraction of a JPEG
+    slides.push({svg:svg,img:"",text:slideTextFromXML(await zip.file(name).async("string"))});
   }
   return slides;
 }
@@ -1205,12 +1620,16 @@ async function importDeckFiles(files){
       prog.textContent="Opening "+f.name+"…";
       const slides=await parsePptx(f, msg=>prog.textContent=msg);
       if(!slides.length){ alert("No slides found in "+f.name+"."); continue; }
+      let thumb="";
+      const first=slides.find(s=>s.svg||s.img);
+      if(first&&first.svg) thumb=await svgToJPEG(first.svg,320,180,1,0.7);
+      else if(first) thumb=first.img;
       state.decks.push({
         id:"d"+Date.now()+Math.floor(Math.random()*999),
         name:f.name.replace(/\.pptx$/i,""),
         by:me.name, team:me.role==="admin"?(activeTab||me.team):me.team,
         created:Date.now(), archived:false,
-        thumb:(slides.find(s=>s.img)||{}).img||"",
+        thumb:thumb,
         slides:slides
       });
     }
@@ -1249,12 +1668,11 @@ function renderDecks(){
   } else {
     grid.innerHTML=decks.map(d=>{
       const own = d.by===me.name || me.role==="admin" || me.role==="lead" || me.role==="manager";
-      return '<div class="deckcard'+(d.archived?" archived":"")+'">'+
-        '<div class="thumbwrap">'+(d.thumb?'<img src="'+esc(d.thumb)+'" alt="">':'<span class="ph">No preview</span>')+'</div>'+
-        '<div class="info">'+
+      return '<div class="deckrow'+(d.archived?" arch":"")+'">'+
+        (d.thumb?'<img class="th" src="'+esc(d.thumb)+'" alt="">':'<div class="thph">No preview</div>')+
+        '<div class="meta3">'+
           '<div class="nm">'+esc(d.name)+(d.archived?' <span class="cat">Archived</span>':"")+'</div>'+
-          '<div class="sm">'+d.slides.length+' slides &middot; '+fmtSize(bytesOfDeck(d))+'</div>'+
-          '<div class="sm">'+esc(d.by)+' &middot; '+new Date(d.created).toLocaleDateString()+'</div>'+
+          '<div class="sm">'+d.slides.length+' slides &middot; '+fmtSize(bytesOfDeck(d))+' &middot; '+esc(d.by)+' &middot; '+new Date(d.created).toLocaleDateString()+'</div>'+
         '</div>'+
         '<div class="acts">'+
           '<button class="primary small" data-present="'+d.id+'">Present</button>'+
@@ -1282,7 +1700,10 @@ document.addEventListener("click",e=>{
   const pr=e.target.closest("[data-present]"), ar=e.target.closest("[data-archive]");
   const dd=e.target.closest("[data-ddel]"), dr=e.target.closest("[data-drename]");
   if(pr){ const d=state.decks.find(x=>x.id===pr.dataset.present); if(d) presentDeck(d); }
-  if(ar){ const d=state.decks.find(x=>x.id===ar.dataset.archive); if(!d) return; d.archived=!d.archived; persist(); renderDecks(); buildSidebar(); }
+  if(ar){
+    const d=state.decks.find(x=>x.id===ar.dataset.archive); if(!d) return;
+    d.archived=!d.archived; persist(); renderDecks(); buildSidebar();
+  }
   if(dr){
     const d=state.decks.find(x=>x.id===dr.dataset.drename); if(!d) return;
     const nw=prompt("Rename deck:", d.name); if(nw===null) return;
@@ -1309,9 +1730,12 @@ function presentDeck(d){
   document.getElementById("st-next").onclick=()=>stageGo(stageIdx+1);
   document.getElementById("st-close").onclick=closeStage;
   document.getElementById("st-full").onclick=()=>{ if(!document.fullscreenElement) stageEl.requestFullscreen&&stageEl.requestFullscreen(); else document.exitFullscreen(); };
-  document.getElementById("st-strip").innerHTML=d.slides.map((s,i)=>
-    s.img?'<img src="'+esc(s.img)+'" data-si="'+i+'" alt="">'
-        :'<img src="data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="90" height="52"><rect width="90" height="52" fill="#eef1f7"/><text x="45" y="30" font-size="11" text-anchor="middle" fill="#8a93a3">'+(i+1)+'</text></svg>')+'" data-si="'+i+'" alt="">').join("");
+  document.getElementById("st-strip").innerHTML=d.slides.map((s,i)=>{
+    const src = s.svg ? "data:image/svg+xml;utf8,"+encodeURIComponent(s.svg)
+              : s.img ? s.img
+              : "data:image/svg+xml;utf8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="90" height="52"><rect width="90" height="52" fill="#eef1f7"/><text x="45" y="30" font-size="11" text-anchor="middle" fill="#8a93a3">'+(i+1)+'</text></svg>');
+    return '<img src="'+esc(src)+'" data-si="'+i+'" alt="">';
+  }).join("");
   document.getElementById("st-strip").addEventListener("click",ev=>{
     const t=ev.target.closest("[data-si]"); if(t) stageGo(+t.dataset.si);
   });
@@ -1323,8 +1747,9 @@ function stageGo(i){
   stageIdx=Math.max(0,Math.min(stageDeck.slides.length-1,i));
   const s=stageDeck.slides[stageIdx];
   document.getElementById("st-canvas").innerHTML =
-    s.img ? '<img src="'+esc(s.img)+'" alt="slide '+(stageIdx+1)+'">'
-          : '<div class="noimg"><b>Slide '+(stageIdx+1)+'</b><br><br>'+esc(s.text||"(no visual content extracted)").replace(/\n/g,"<br>")+'</div>';
+    s.svg ? '<div class="svgslide">'+s.svg+'</div>'
+    : s.img ? '<img src="'+esc(s.img)+'" alt="slide '+(stageIdx+1)+'">'
+    : '<div class="noimg"><b>Slide '+(stageIdx+1)+'</b><br><br>'+esc(s.text||"(no visual content extracted)").replace(/\n/g,"<br>")+'</div>';
   document.getElementById("st-count").textContent=(stageIdx+1)+" / "+stageDeck.slides.length;
   document.querySelectorAll("#st-strip img").forEach((im,ix)=>im.classList.toggle("on",ix===stageIdx));
   const on=document.querySelector("#st-strip img.on"); if(on) on.scrollIntoView({block:"nearest",inline:"center"});
