@@ -194,6 +194,8 @@
   table.compiled tr:hover td{background:var(--line-soft);}
   table.compiled tr.cmtrow:hover td, table.compiled tr.cmtrow td{background:var(--paper);}
   table.compiled tr.cmtrow .comments{margin-top:0; border-top:none; padding-top:2px;}
+  .readonlynote{margin:10px 0 0; padding:9px 12px; border:1px solid var(--line); border-left:3px solid var(--ink-faint);
+    border-radius:8px; background:var(--line-soft); font-size:12.5px; color:var(--ink-soft);}
   /* ---- roster: capped height, sticky header, ~5 rows before scrolling ---- */
   .rosterhead{display:flex; align-items:center; gap:10px; margin-top:1.25rem;}
   .rosterhead input{flex:1; max-width:340px;}
@@ -337,6 +339,7 @@
         <button class="small" id="exportbtn">Export CSV</button>
         <button class="primary small" id="addbtn">+ Add entry</button>
       </div>
+      <div id="readonlynote" class="readonlynote hidden"></div>
       <div class="panel hidden" id="form">
         <div class="guide">
           <button class="guidetoggle" id="guidetoggle" type="button">
@@ -681,11 +684,21 @@ function migrate(){
     if(!Array.isArray(e.nudges)) e.nudges=[];
   });
 }
+// Read-only on other teams: no commenting, editing, or nudging there.
 function canComment(entry){ return me.role==="admin" ? true : entry.team===me.team; }
-function visibleTeams(){ return me.role==="admin" ? state.teams : [me.team]; }
+// Everyone can browse every team (read-only for teams that aren't theirs) so
+// issues raised elsewhere are visible. Own team is listed first.
+function visibleTeams(){
+  if(me.role==="admin") return state.teams;
+  const rest=state.teams.filter(t=>t!==me.team);
+  return state.teams.includes(me.team) ? [me.team].concat(rest) : state.teams.slice();
+}
+function isOwnTeam(team){ return me.role==="admin" || team===me.team; }
 function canEdit(entry){
   if(me.role==="admin") return true;
-  if(me.role==="lead"||me.role==="manager") return entry.team===me.team;
+  // Other teams are strictly read-only, whatever your role or ownership.
+  if(entry.team!==me.team) return false;
+  if(me.role==="lead"||me.role==="manager") return true;
   return isOwner(entry);
 }
 // Names get typed in different orders ("Shao Qi Moon" vs "Moon Shao Qi"), with
@@ -719,7 +732,10 @@ function canEditMembers(entry){
   if(isOwner(entry)) return true;
   return false;
 }
-function canNudge(){ return me.role==="admin"||me.role==="lead"||me.role==="manager"; }
+function canNudge(entry){
+  if(!(me.role==="admin"||me.role==="lead"||me.role==="manager")) return false;
+  return !entry || isOwnTeam(entry.team);
+}
 function isCompiler(){ return me.role==="admin" || me.role==="lead"; }
 function allWeekKeys(){
   const set=new Set(state.entries.map(e=>weekKeyFromTs(e.created)));
@@ -842,7 +858,11 @@ function refreshViews(){
 function mountApp(){
   document.getElementById("week").innerHTML=weekLabel();
   const vt=visibleTeams();
-  if(me.role!=="admin"){ if(activeView!=="deck"&&activeView!=="highlights") activeView="board"; activeTab=me.team; }
+  if(me.role!=="admin"){
+    if(activeView!=="deck"&&activeView!=="highlights") activeView="board";
+    // Only default to their own team - don't yank them back when browsing others.
+    if(!activeTab||!state.teams.includes(activeTab)) activeTab=me.team;
+  }
   else if(!activeTab){ activeTab=vt[0]; }
   document.getElementById("m-team").innerHTML=state.teams.map(t=>'<option>'+esc(t)+'</option>').join("");
   // week dropdowns
@@ -886,7 +906,18 @@ function populateMemberFilter(team){
 }
 function render(){
   document.getElementById("week").innerHTML=weekLabel();
-  const team = me.role==="admin" ? activeTab : me.team;
+  // Everyone can browse any team now, so honour the selected tab for all roles.
+  const team = (activeTab && state.teams.includes(activeTab)) ? activeTab : me.team;
+  const readOnly = !isOwnTeam(team);
+  // Write controls only make sense on your own team.
+  document.getElementById("addbtn").classList.toggle("hidden", readOnly);
+  document.getElementById("reviewbtn").classList.toggle("hidden", readOnly);
+  const ro=document.getElementById("readonlynote");
+  if(ro){
+    ro.classList.toggle("hidden", !readOnly);
+    if(readOnly) ro.textContent="Viewing "+team+" — read-only. You can browse their entries but only "+me.team+" members can edit or comment here.";
+  }
+  if(readOnly) document.getElementById("form").classList.add("hidden");
   populateMemberFilter(team);
   const sf=document.getElementById("statusfilter").value||"all";
   const mf=document.getElementById("memberfilter").value||"all";
@@ -929,7 +960,7 @@ function render(){
         '<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag to discuss")+'</button>'+
         '<button class="small" data-edit="'+e.id+'">Edit</button>':"")+
         '<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button>'+
-        (canNudge()?'<button class="small" data-nudge="'+e.id+'">Nudge</button>':"")+
+        (canNudge(e)?'<button class="small" data-nudge="'+e.id+'">Nudge</button>':"")+
         (editable?'<button class="small danger" data-del="'+e.id+'">Remove</button>':"")+
       '</div>'+
       nudgeHTML(e)+
@@ -1058,7 +1089,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
       '<td><span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span></td>'+
       '<td>'+(e.discuss?'<span class="flag">Discuss</span>':"")+(openNudges(e).length?' <span class="nudged">Nudged</span>':"")+((!e.discuss&&!openNudges(e).length)?"-":"")+'</td>'+
       '<td style="color:var(--ink-faint); font-size:12px;">'+fullTimestamp(e.updated)+(e.by?'<br>'+esc(e.by):"")+'</td>'+
-      '<td><div class="rowacts">'+(editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button><button class="small" data-edit="'+e.id+'">Edit</button>':"")+(canNudge()?'<button class="small" data-nudge="'+e.id+'">Nudge</button>':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button></div></td>'+
+      '<td><div class="rowacts">'+(editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button><button class="small" data-edit="'+e.id+'">Edit</button>':"")+(canNudge(e)?'<button class="small" data-nudge="'+e.id+'">Nudge</button>':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button></div></td>'+
     '</tr>';
     const nh=nudgeHTML(e);
     if(nh){ h+='<tr class="cmtrow"><td colspan="13">'+nh+'</td></tr>'; }
@@ -1160,7 +1191,11 @@ function openForm(entry){
   document.getElementById("form").classList.remove("hidden");
   document.getElementById("form").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
-document.getElementById("addbtn").onclick=()=>openForm(null);
+document.getElementById("addbtn").onclick=()=>{
+  const team=(activeTab&&state.teams.includes(activeTab))?activeTab:me.team;
+  if(!isOwnTeam(team)){ alert("You're viewing "+team+" in read-only mode. Switch to "+me.team+" to add an entry."); return; }
+  openForm(null);
+};
 // Field guide: open by default the first few times, then remember the choice.
 function guideKey(){ return "ttGuide_"+(me?me.id:"anon"); }
 function setGuide(open){
@@ -1277,6 +1312,7 @@ document.getElementById("savebtn").onclick=async()=>{
     catch(err){ console.error(err); alert("Image upload failed - saving entry without it."); }
     finally{ btn.disabled=false; saving.classList.add("hidden"); }
   }
+  if(existing && !canEdit(existing)){ alert("You don't have permission to edit this entry."); return; }
   if(editingId){ Object.assign(existing, rec); }
   else { rec.id=newId; rec.comments=[]; state.entries.push(rec); }
   pendingFile=null;
@@ -2042,7 +2078,10 @@ function teamRoster(team){
   state.entries.filter(e=>e.team===team).forEach(e=>splitMembers(e.member).forEach(n=>names.add(n)));
   return Array.from(names).sort((a,b)=>a.localeCompare(b));
 }
-function hlTargetTeam(){ return me.role==="admin" ? (activeTab||state.teams[0]) : me.team; }
+function hlTargetTeam(){
+  if(me.role!=="admin") return me.team;
+  return (activeTab && state.teams.includes(activeTab)) ? activeTab : (state.teams[0]||"");
+}
 
 let hlEditingId=null;
 function hlIssueRow(val){
