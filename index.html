@@ -54,6 +54,7 @@
   /* layout */
   .shell{display:flex; min-height:100vh;}
   .sidebar{width:230px; flex-shrink:0; background:var(--sidebar); border-right:1px solid var(--line); padding:1.25rem 0.85rem; display:flex; flex-direction:column; gap:2px;}
+  .sidebar-foot{margin-top:auto; padding-top:12px; border-top:1px solid var(--line);}
   .brand{padding:0 0.6rem 1rem;}
   .brand .t{font-family:var(--serif); font-weight:600; font-size:18px;}
   .navlabel{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); font-weight:600; padding:14px 0.7rem 6px;}
@@ -182,10 +183,7 @@
         <div class="week" id="week"></div>
       </div>
       <div class="whoami">
-        <div><span class="nm" id="me-name"></span><span class="pill" id="me-role"></span></div>
-        <div id="me-team" style="margin-top:2px;"></div>
-        <div class="sync local" id="sync" style="margin-top:6px;"><span class="d"></span><span id="synctext">Local mode</span></div>
-        <button class="ghost small" id="logout" style="margin-top:6px;">Sign out</button>
+        <div class="sync local" id="sync"><span class="d"></span><span id="synctext">Local mode</span></div>
       </div>
     </div>
 
@@ -223,6 +221,7 @@
       <div class="panel hidden" id="form">
         <div class="grid g3">
           <div><label class="fl">Team</label><select id="f-team"></select></div>
+          <div><label class="fl">Region</label><input id="f-region" placeholder="e.g. NA, EU, APAC" /></div>
           <div><label class="fl">Member(s)</label><input id="f-member" placeholder="e.g. Ana, Ben" /></div>
           <div><label class="fl">Status</label><select id="f-status"><option>Active</option><option>In progress</option><option>Done</option></select></div>
         </div>
@@ -456,7 +455,7 @@ function tryLogin(){
 document.getElementById("gate-btn").onclick=tryLogin;
 document.getElementById("gate-user").addEventListener("keydown",e=>{ if(e.key==="Enter") document.getElementById("gate-pass").focus(); });
 document.getElementById("gate-pass").addEventListener("keydown",e=>{ if(e.key==="Enter") tryLogin(); });
-document.getElementById("logout").onclick=()=>{ sessionStorage.removeItem("ttMe"); location.reload(); };
+document.addEventListener("click",e=>{ if(e.target.closest("#logout")){ sessionStorage.removeItem("ttMe"); location.reload(); } });
 
 function buildSidebar(){
   const sb=document.getElementById("sidebar"); sb.innerHTML="";
@@ -482,6 +481,13 @@ function buildSidebar(){
     const lbl2=document.createElement("div"); lbl2.className="navlabel"; lbl2.textContent="Manage"; sb.appendChild(lbl2);
     mkItem("Data", NICO.data, activeView==="data", ()=>{ activeView="data"; refreshViews(); });
   }
+  const foot=document.createElement("div"); foot.className="sidebar-foot";
+  foot.innerHTML='<div class="whoami" style="text-align:left;">'+
+    '<div><span class="nm" id="me-name">'+esc(me.name)+'</span> <span class="pill '+me.role+'" id="me-role">'+esc(me.role)+'</span></div>'+
+    '<div id="me-team" style="margin-top:2px;">'+(me.role==="admin"?"All teams":esc(me.team))+'</div>'+
+    '</div>'+
+    '<button class="ghost small" id="logout" style="margin-top:8px; width:100%;">Sign out</button>';
+  sb.appendChild(foot);
 }
 function refreshViews(){
   document.getElementById("view-dashboard").classList.toggle("hidden", activeView!=="dashboard");
@@ -495,9 +501,6 @@ function refreshViews(){
   if(activeView==="data"){ renderRoster(); renderTeams(); }
 }
 function mountApp(){
-  document.getElementById("me-name").textContent=me.name;
-  const rp=document.getElementById("me-role"); rp.textContent=me.role; rp.className="pill "+me.role;
-  document.getElementById("me-team").textContent = me.role==="admin" ? "All teams" : me.team;
   document.getElementById("week").innerHTML=weekLabel();
   const vt=visibleTeams();
   if(me.role!=="admin"){ activeView="board"; activeTab=me.team; }
@@ -631,8 +634,8 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   let h='';
   if(rv) h+='<div class="reviewnote">Highlighted rows changed since last marked reviewed ('+fullTimestamp(rv)+').</div>';
   h+='<table class="compiled"><thead><tr>'+
-    '<th>Week</th><th>Members</th><th>Category</th><th>Focus Area</th><th>Details</th><th>Blockers</th><th>Attachment</th><th>Status</th><th>Discuss</th><th>Timestamp</th><th></th></tr></thead><tbody>';
-  if(!items.length) h+='<tr><td colspan="11" style="color:var(--ink-faint);">No entries match.</td></tr>';
+    '<th>Week</th><th>Members</th><th>Region</th><th>Category</th><th>Focus Area</th><th>Details</th><th>Blockers</th><th>Attachment</th><th>Status</th><th>Discuss</th><th>Timestamp</th><th></th></tr></thead><tbody>';
+  if(!items.length) h+='<tr><td colspan="12" style="color:var(--ink-faint);">No entries match.</td></tr>';
   items.forEach(e=>{
     const editable=canEdit(e);
     const isChanged=rv && (e.updated||0)>rv;
@@ -643,6 +646,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
     h+='<tr class="'+(isChanged?"changed":"")+'">'+
       '<td><span class="wk">Wk '+wknum+'</span>'+(isNew?'<span class="newtag">new</span>':(isChanged?'<span class="newtag">upd</span>':""))+'</td>'+
       '<td>'+(esc(e.member)||"-")+'</td>'+
+      '<td>'+(esc(e.region)||"-")+'</td>'+
       '<td>'+(e.category?'<span class="cat">'+esc(e.category)+'</span>'+(e.category==="Others"&&e.remarks?'<br><span style="font-size:12px; color:var(--ink-faint);">'+esc(e.remarks)+'</span>':""):"-")+'</td>'+
       '<td style="font-weight:600;">'+esc(e.focus)+(e.prio?' <span class="prio '+PCLASS[e.prio]+'">'+e.prio+'</span>':"")+'</td>'+
       '<td>'+(esc(e.update)||"-")+'</td>'+
@@ -653,7 +657,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
       '<td style="color:var(--ink-faint); white-space:nowrap;">'+fullTimestamp(e.updated)+(e.by?'<br>'+esc(e.by):"")+'</td>'+
       '<td style="white-space:nowrap;">'+(editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button> <button class="small" data-edit="'+e.id+'">Edit</button> ':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button></td>'+
     '</tr>';
-    if(threadOpen){ h+='<tr class="cmtrow"><td colspan="11">'+commentsHTML(e)+'</td></tr>'; }
+    if(threadOpen){ h+='<tr class="cmtrow"><td colspan="12">'+commentsHTML(e)+'</td></tr>'; }
   });
   h+='</tbody></table>';
   document.getElementById("tablewrap").innerHTML=h;
@@ -715,6 +719,7 @@ function openForm(entry){
   editingId=entry?entry.id:null; pendingFile=null;
   const teamDefault = entry?entry.team : (me.role==="admin" ? activeTab : me.team);
   document.getElementById("f-team").value=teamDefault;
+  document.getElementById("f-region").value=entry?(entry.region||""):"";
   document.getElementById("f-member").value=entry?entry.member:me.name;
   document.getElementById("f-status").value=entry?entry.status:"Active";
   document.getElementById("f-prio").value=entry?entry.prio:"Medium";
@@ -786,10 +791,13 @@ function compressToDataURL(file, maxDim, quality){
 }
 document.getElementById("savebtn").onclick=async()=>{
   const focus=document.getElementById("f-focus").value.trim();
-  if(!focus){ document.getElementById("f-focus").focus(); return; }
+  const focusField=document.getElementById("f-focus");
+  if(!focus){ focusField.focus(); focusField.style.borderColor="var(--red)"; alert("\"Focus this week\" is required - please fill it in before saving."); return; }
+  focusField.style.borderColor="";
   const btn=document.getElementById("savebtn"); const saving=document.getElementById("saving");
   const rec={
     team:document.getElementById("f-team").value,
+    region:document.getElementById("f-region").value.trim(),
     member:document.getElementById("f-member").value.trim()||me.name,
     status:document.getElementById("f-status").value,
     prio:document.getElementById("f-prio").value,
@@ -825,11 +833,11 @@ document.getElementById("savebtn").onclick=async()=>{
 };
 document.getElementById("exportbtn").onclick=()=>{
   const vt=visibleTeams();
-  const rows=[["Week","Team","Members","Category","Remarks","Focus Area","Status","Priority","Blockers","Details","Needs discussion","Attachment URL","Comments","Created","Timestamp"]];
+  const rows=[["Week","Team","Region","Members","Category","Remarks","Focus Area","Status","Priority","Blockers","Details","Needs discussion","Attachment URL","Comments","Created","Timestamp"]];
   state.entries.filter(e=>vt.includes(e.team)).forEach(e=>{
     const wknum=parseInt(weekKeyFromTs(e.created).split("-W")[1],10);
     const cmts=(e.comments||[]).map(c=>c.by+": "+c.text).join(" | ");
-    rows.push(["Wk "+wknum,e.team,e.member,e.category||"",e.remarks||"",e.focus,e.status,e.prio||"",e.blockers||"",e.update||"",e.discuss?"Yes":"",e.img||"",cmts,new Date(e.created||Date.now()).toLocaleString(),new Date(e.updated||Date.now()).toLocaleString()]);
+    rows.push(["Wk "+wknum,e.team,e.region||"",e.member,e.category||"",e.remarks||"",e.focus,e.status,e.prio||"",e.blockers||"",e.update||"",e.discuss?"Yes":"",e.img||"",cmts,new Date(e.created||Date.now()).toLocaleString(),new Date(e.updated||Date.now()).toLocaleString()]);
   });
   const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n");
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download="team-tracker.csv"; a.click();
