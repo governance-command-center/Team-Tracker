@@ -620,7 +620,7 @@ function migrate(){
     if(!Array.isArray(e.comments)) e.comments=[];
     if(typeof e.category!=="string") e.category="";
     if(typeof e.remarks!=="string") e.remarks="";
-    if(!e.createdBy) e.createdBy=e.by||e.member||"";
+    if(!e.createdBy) e.createdBy=e.by||"";
     if(typeof e.brand!=="string") e.brand="";
     if(typeof e.platform!=="string") e.platform="";
     if(!Array.isArray(e.nudges)) e.nudges=[];
@@ -631,9 +631,15 @@ function visibleTeams(){ return me.role==="admin" ? state.teams : [me.team]; }
 function canEdit(entry){
   if(me.role==="admin") return true;
   if(me.role==="lead"||me.role==="manager") return entry.team===me.team;
-  return (entry.createdBy||entry.by)===me.name;
+  return isOwner(entry);
 }
-function isOwner(entry){ return (entry.createdBy||entry.by)===me.name; }
+function isOwner(entry){
+  if(entry.team && me.team && entry.team!==me.team && me.role!=="admin") return false;
+  const creator=entry.createdBy||entry.by||"";
+  // legacy rows stored a comma list in createdBy, so compare against every name
+  if(splitMembers(creator).includes(me.name)) return true;
+  return splitMembers(entry.member).includes(me.name);
+}
 // Owners edit every field of their own entry. Admin edits everything.
 // Leads may edit their team's entries but NOT the Members field.
 function canEditMembers(entry){
@@ -928,8 +934,8 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   let h='';
   if(rv) h+='<div class="reviewnote">Highlighted rows changed since last marked reviewed ('+fullTimestamp(rv)+').</div>';
   h+='<table class="compiled"><thead><tr>'+
-    '<th>Week</th><th>Members</th><th>Brand</th><th>Platform</th><th>Region</th><th>Focus Area</th><th>Remarks</th><th>Attachment</th><th>Status</th><th>Discuss</th><th>Timestamp</th><th></th></tr></thead><tbody>';
-  if(!items.length) h+='<tr><td colspan="12" style="color:var(--ink-faint);">No entries match.</td></tr>';
+    '<th>Week</th><th>Members</th><th>Brand</th><th>Platform</th><th>Region</th><th>Category</th><th>Focus Area</th><th>Remarks</th><th>Attachment</th><th>Status</th><th>Discuss</th><th>Timestamp</th><th></th></tr></thead><tbody>';
+  if(!items.length) h+='<tr><td colspan="13" style="color:var(--ink-faint);">No entries match.</td></tr>';
   // Admin / manager / lead see entries grouped by region, regions A-Z
   const groupByRegion = (me.role==="admin"||me.role==="manager"||me.role==="lead");
   let groups;
@@ -945,7 +951,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   }
   groups.forEach(g=>{
   if(g.region!==null){
-    h+='<tr class="regiongroup"><td colspan="12">'+esc(g.region)+' <span class="rgcount">'+g.rows.length+' '+(g.rows.length===1?"entry":"entries")+'</span></td></tr>';
+    h+='<tr class="regiongroup"><td colspan="13">'+esc(g.region)+' <span class="rgcount">'+g.rows.length+' '+(g.rows.length===1?"entry":"entries")+'</span></td></tr>';
   }
   g.rows.forEach(e=>{
     const editable=canEdit(e);
@@ -960,7 +966,8 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
       '<td>'+(esc(e.brand)||"-")+'</td>'+
       '<td>'+(esc(e.platform)||"-")+'</td>'+
       '<td>'+(esc(e.region)||"-")+'</td>'+
-      '<td style="font-weight:600;">'+esc(e.focus)+(e.prio?' <span class="prio '+PCLASS[e.prio]+'">'+e.prio+'</span>':"")+(e.category?'<br><span class="cat">'+esc(e.category==="Others"&&e.remarks?e.remarks:e.category)+'</span>':"")+'</td>'+
+      '<td>'+(e.category?'<span class="cat">'+esc(e.category)+'</span>'+(e.category==="Others"&&e.remarks?'<br><span style="font-size:12px; color:var(--ink-faint);">'+esc(e.remarks)+'</span>':""):"-")+'</td>'+
+      '<td style="font-weight:600;">'+esc(e.focus)+(e.prio?' <span class="prio '+PCLASS[e.prio]+'">'+e.prio+'</span>':"")+'</td>'+
       '<td>'+(esc(e.update)||"-")+(e.blockers?'<br><span style="font-size:12px; color:var(--red);">'+esc(e.blockers)+'</span>':"")+'</td>'+
       '<td>'+(e.img?'<img class="tt" src="'+esc(e.img)+'" data-zoom="'+esc(e.img)+'" alt="attachment" />':"-")+'</td>'+
       '<td><span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span></td>'+
@@ -969,8 +976,8 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
       '<td style="white-space:nowrap;">'+(editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button> <button class="small" data-edit="'+e.id+'">Edit</button> ':"")+(canNudge()?'<button class="small" data-nudge="'+e.id+'">Nudge</button> ':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button></td>'+
     '</tr>';
     const nh=nudgeHTML(e);
-    if(nh){ h+='<tr class="cmtrow"><td colspan="12">'+nh+'</td></tr>'; }
-    if(threadOpen){ h+='<tr class="cmtrow"><td colspan="12">'+commentsHTML(e)+'</td></tr>'; }
+    if(nh){ h+='<tr class="cmtrow"><td colspan="13">'+nh+'</td></tr>'; }
+    if(threadOpen){ h+='<tr class="cmtrow"><td colspan="13">'+commentsHTML(e)+'</td></tr>'; }
   });
   });
   h+='</tbody></table>';
