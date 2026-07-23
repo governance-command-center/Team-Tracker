@@ -194,6 +194,9 @@
   table.compiled tr:hover td{background:var(--line-soft);}
   table.compiled tr.cmtrow:hover td, table.compiled tr.cmtrow td{background:var(--paper);}
   table.compiled tr.cmtrow .comments{margin-top:0; border-top:none; padding-top:2px;}
+  table.compiled tr.regiongroup td{background:var(--line-soft); font-weight:700; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink); border-bottom:1px solid var(--line); padding:7px 8px;}
+  table.compiled tr.regiongroup:hover td{background:var(--line-soft);}
+  table.compiled tr.regiongroup .rgcount{font-weight:500; text-transform:none; letter-spacing:0; color:var(--ink-faint); margin-left:6px;}
   table.compiled img.tt{height:34px; border-radius:5px; border:1px solid var(--line); cursor:zoom-in; display:block;}
   .teamrow{display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line-soft);}
   .teamrow input{flex:1; max-width:280px;}
@@ -289,13 +292,13 @@
               <dt>Brand</dt><dd>The client or store this work is for &mdash; e.g. <i>Acme Co.</i> Leave blank for internal work.</dd>
               <dt>Platform</dt><dd>Where it's happening: Shopee, Lazada, TikTok Shop, Amazon.</dd>
               <dt>Region</dt><dd>Market or territory &mdash; PH, SG, APAC, NA.</dd>
-              <dt>Status</dt><dd><b>Active</b> = ongoing this week. <b>In progress</b> = actively being worked right now. <b>Done</b> = finished, no follow-up needed.</dd>
+              <dt>Stage</dt><dd><b>Active</b> = ongoing this week. <b>In progress</b> = actively being worked right now. <b>Done</b> = finished, no follow-up needed.</dd>
               <dt>Priority</dt><dd><b>High</b> = blocks someone or has a hard deadline. <b>Medium</b> = normal. <b>Low</b> = nice to have.</dd>
               <dt>Category</dt><dd>The bucket of work. Pick <i>Others</i> only if nothing fits, then describe it in Remarks.</dd>
               <dt>Focus this week</dt><dd><b>Required.</b> One short line on what you're actually doing &mdash; "Fix rejected listings for Acme", not "listings".</dd>
               <dt>Members</dt><dd>Who is doing the work. Separate names with commas. Only you (or an admin) can change this after saving.</dd>
-              <dt>Blockers / notes</dt><dd>Anything stopping you, and who you're waiting on. Leave blank if nothing is stuck.</dd>
-              <dt>Update</dt><dd>The latest progress since last week, so leads don't have to ask.</dd>
+              <dt>Supporting Details</dt><dd>Anything stopping you, plus context or who you're waiting on. Leave blank if nothing is stuck.</dd>
+              <dt>Status</dt><dd>The latest progress since last week, so leads don't have to ask.</dd>
               <dt>Attachment</dt><dd>Optional screenshot as evidence &mdash; a ticket, dashboard, or error message.</dd>
               <dt>Flag for discussion</dt><dd>Tick this to surface the entry for the team to talk through in the next sync.</dd>
             </dl>
@@ -305,7 +308,7 @@
           <div><label class="fl">Brand</label><input id="f-brand" placeholder="e.g. Acme Co." /></div>
           <div><label class="fl">Platform</label><input id="f-platform" placeholder="e.g. Shopee, Lazada, Amazon" /></div>
           <div><label class="fl">Region</label><input id="f-region" placeholder="e.g. NA, EU, APAC" /></div>
-          <div><label class="fl">Status</label><select id="f-status"><option>Active</option><option>In progress</option><option>Done</option></select><span class="fh">Done = no follow-up needed</span></div>
+          <div><label class="fl">Stage</label><select id="f-status"><option>Active</option><option>In progress</option><option>Done</option></select><span class="fh">Done = no follow-up needed</span></div>
         </div>
         <div class="grid g3" style="margin-top:12px;">
           <div><label class="fl">Priority</label><select id="f-prio"><option>Low</option><option selected>Medium</option><option>High</option></select><span class="fh">High = blocked or hard deadline</span></div>
@@ -330,8 +333,8 @@
           <div style="grid-column:1 / -1;"><label class="fl">Remarks (for "Others")</label><input id="f-remarks" placeholder="Describe the category" /></div>
         </div>
         <div class="grid g2" style="margin-top:12px;">
-          <div><label class="fl">Blockers / notes (optional)</label><input id="f-blockers" placeholder="e.g. Waiting on infra access" /><span class="fh">What's stopping you, and who you're waiting on</span></div>
-          <div><label class="fl">Update (optional)</label><input id="f-update" placeholder="e.g. Escalated Monday, awaiting reply" /><span class="fh">Progress since last week</span></div>
+          <div><label class="fl">Supporting Details (optional)</label><input id="f-blockers" placeholder="e.g. Waiting on infra access" /><span class="fh">What's stopping you, and who you're waiting on</span></div>
+          <div><label class="fl">Status (optional)</label><input id="f-update" placeholder="e.g. Escalated Monday, awaiting reply" /><span class="fh">Progress since last week</span></div>
         </div>
         <div style="margin-top:12px;">
           <label class="fl">Attachment (optional)</label>
@@ -845,9 +848,26 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   let h='';
   if(rv) h+='<div class="reviewnote">Highlighted rows changed since last marked reviewed ('+fullTimestamp(rv)+').</div>';
   h+='<table class="compiled"><thead><tr>'+
-    '<th>Week</th><th>Members</th><th>Brand</th><th>Platform</th><th>Region</th><th>Category</th><th>Focus Area</th><th>Details</th><th>Blockers</th><th>Attachment</th><th>Status</th><th>Discuss</th><th>Timestamp</th><th></th></tr></thead><tbody>';
+    '<th>Focus Area</th><th>Status</th><th>Supporting Details</th><th>Stage</th><th>Week</th><th>Members</th><th>Brand</th><th>Platform</th><th>Region</th><th>Category</th><th>Attachment</th><th>Discuss</th><th>Timestamp</th><th></th></tr></thead><tbody>';
   if(!items.length) h+='<tr><td colspan="14" style="color:var(--ink-faint);">No entries match.</td></tr>';
-  items.forEach(e=>{
+  // Admin / manager / lead see entries grouped by region, regions A-Z
+  const groupByRegion = (me.role==="admin"||me.role==="manager"||me.role==="lead");
+  let groups;
+  if(groupByRegion){
+    const map=new Map();
+    items.forEach(e=>{ const r=(e.region||"").trim()||"Unassigned"; if(!map.has(r)) map.set(r,[]); map.get(r).push(e); });
+    groups=Array.from(map.keys()).sort((a,b)=>{
+      if(a==="Unassigned") return 1; if(b==="Unassigned") return -1;
+      return a.localeCompare(b,undefined,{sensitivity:"base"});
+    }).map(r=>({region:r,rows:map.get(r)}));
+  } else {
+    groups=[{region:null,rows:items}];
+  }
+  groups.forEach(g=>{
+  if(g.region!==null){
+    h+='<tr class="regiongroup"><td colspan="14">'+esc(g.region)+' <span class="rgcount">'+g.rows.length+' '+(g.rows.length===1?"entry":"entries")+'</span></td></tr>';
+  }
+  g.rows.forEach(e=>{
     const editable=canEdit(e);
     const isChanged=rv && (e.updated||0)>rv;
     const isNew=rv && (e.created||0)>rv;
@@ -855,17 +875,17 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
     const threadOpen=openThreads.has(String(e.id));
     const wknum=parseInt(weekKeyFromTs(e.created).split("-W")[1],10);
     h+='<tr class="'+(isChanged?"changed":"")+'">'+
+      '<td style="font-weight:600;">'+esc(e.focus)+(e.prio?' <span class="prio '+PCLASS[e.prio]+'">'+e.prio+'</span>':"")+'</td>'+
+      '<td>'+(esc(e.update)||"-")+'</td>'+
+      '<td style="color:'+(e.blockers?'var(--red)':'var(--ink-faint)')+';">'+(esc(e.blockers)||"-")+'</td>'+
+      '<td><span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span></td>'+
       '<td><span class="wk">Wk '+wknum+'</span>'+(isNew?'<span class="newtag">new</span>':(isChanged?'<span class="newtag">upd</span>':""))+'</td>'+
       '<td>'+(esc(e.member)||"-")+'</td>'+
       '<td>'+(esc(e.brand)||"-")+'</td>'+
       '<td>'+(esc(e.platform)||"-")+'</td>'+
       '<td>'+(esc(e.region)||"-")+'</td>'+
       '<td>'+(e.category?'<span class="cat">'+esc(e.category)+'</span>'+(e.category==="Others"&&e.remarks?'<br><span style="font-size:12px; color:var(--ink-faint);">'+esc(e.remarks)+'</span>':""):"-")+'</td>'+
-      '<td style="font-weight:600;">'+esc(e.focus)+(e.prio?' <span class="prio '+PCLASS[e.prio]+'">'+e.prio+'</span>':"")+'</td>'+
-      '<td>'+(esc(e.update)||"-")+'</td>'+
-      '<td style="color:'+(e.blockers?'var(--red)':'var(--ink-faint)')+';">'+(esc(e.blockers)||"-")+'</td>'+
       '<td>'+(e.img?'<img class="tt" src="'+esc(e.img)+'" data-zoom="'+esc(e.img)+'" alt="attachment" />':"-")+'</td>'+
-      '<td><span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span></td>'+
       '<td>'+(e.discuss?'<span class="flag">Discuss</span>':"")+(openNudges(e).length?' <span class="nudged">Nudged</span>':"")+((!e.discuss&&!openNudges(e).length)?"-":"")+'</td>'+
       '<td style="color:var(--ink-faint); white-space:nowrap;">'+fullTimestamp(e.updated)+(e.by?'<br>'+esc(e.by):"")+'</td>'+
       '<td style="white-space:nowrap;">'+(editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button> <button class="small" data-edit="'+e.id+'">Edit</button> ':"")+(canNudge()?'<button class="small" data-nudge="'+e.id+'">Nudge</button> ':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button></td>'+
@@ -873,6 +893,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
     const nh=nudgeHTML(e);
     if(nh){ h+='<tr class="cmtrow"><td colspan="14">'+nh+'</td></tr>'; }
     if(threadOpen){ h+='<tr class="cmtrow"><td colspan="14">'+commentsHTML(e)+'</td></tr>'; }
+  });
   });
   h+='</tbody></table>';
   document.getElementById("tablewrap").innerHTML=h;
@@ -1091,7 +1112,7 @@ document.getElementById("savebtn").onclick=async()=>{
 };
 document.getElementById("exportbtn").onclick=()=>{
   const vt=visibleTeams();
-  const rows=[["Week","Team","Brand","Platform","Region","Members","Category","Remarks","Focus Area","Status","Priority","Blockers","Details","Needs discussion","Open nudges","Attachment URL","Comments","Created","Timestamp"]];
+  const rows=[["Week","Team","Brand","Platform","Region","Members","Category","Remarks","Focus Area","Stage","Priority","Supporting Details","Status","Needs discussion","Open nudges","Attachment URL","Comments","Created","Timestamp"]];
   state.entries.filter(e=>vt.includes(e.team)).forEach(e=>{
     const wknum=parseInt(weekKeyFromTs(e.created).split("-W")[1],10);
     const cmts=(e.comments||[]).map(c=>c.by+": "+c.text).join(" | ");
