@@ -194,6 +194,28 @@
   table.compiled tr:hover td{background:var(--line-soft);}
   table.compiled tr.cmtrow:hover td, table.compiled tr.cmtrow td{background:var(--paper);}
   table.compiled tr.cmtrow .comments{margin-top:0; border-top:none; padding-top:2px;}
+  /* ---- compiled table sizing ---- */
+  .tablescroll{width:100%; overflow-x:auto;}
+  table.compiled{table-layout:fixed; min-width:1180px;}
+  table.compiled th,table.compiled td{overflow-wrap:anywhere; word-break:normal;}
+  table.compiled col.c-week{width:62px;}
+  table.compiled col.c-members{width:120px;}
+  table.compiled col.c-brand{width:120px;}
+  table.compiled col.c-platform{width:92px;}
+  table.compiled col.c-region{width:70px;}
+  table.compiled col.c-category{width:112px;}
+  table.compiled col.c-focus{width:210px;}
+  table.compiled col.c-remarks{width:290px;}
+  table.compiled col.c-att{width:74px;}
+  table.compiled col.c-status{width:104px;}
+  table.compiled col.c-discuss{width:84px;}
+  table.compiled col.c-time{width:132px;}
+  table.compiled col.c-act{width:150px;}
+  table.compiled td.attcell{text-align:center;}
+  table.compiled img.tt.broken{width:34px; background:var(--line-soft); border-style:dashed; object-fit:contain;}
+  table.compiled .wk{white-space:nowrap;}
+  table.compiled .rowacts{display:flex; flex-wrap:wrap; gap:4px;}
+  table.compiled .rowacts button{white-space:nowrap;}
   .tagbox{display:flex; flex-wrap:wrap; gap:6px; padding:8px; border:1px solid var(--line); border-radius:8px; background:var(--paper); min-height:40px;}
   .tagbox label{display:inline-flex; align-items:center; gap:5px; font-size:12.5px; padding:4px 9px; border:1px solid var(--line); border-radius:999px; cursor:pointer; background:#fff; user-select:none;}
   .tagbox label.on{border-color:var(--ink); background:var(--line-soft); font-weight:600;}
@@ -213,6 +235,10 @@
   .hlcard ol.hlissues{margin:10px 0 0; padding-left:20px; font-size:13.5px;}
   .hlcard ol.hlissues li{margin-bottom:4px;}
   .hlcard .hlremarks{margin-top:10px; font-size:13px; color:var(--ink-soft); border-top:1px solid var(--line-soft); padding-top:8px;}
+  .hlcard.newtag-hl{border-left:3px solid var(--red); background:#fff8f7;}
+  .hlcard .foryou{display:inline-block; margin-top:6px; font-size:11.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; padding:2px 8px; border-radius:999px; background:var(--line-soft); color:var(--ink-soft);}
+  .hlcard .foryou.unread{background:var(--red); color:#fff;}
+  .navunread{background:var(--red); color:#fff; border-radius:999px; padding:1px 6px; font-size:11px; font-weight:700; margin-left:4px;}
   .hlgroup{font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft); margin-top:22px;}
   table.compiled tr.regiongroup td{background:var(--line-soft); font-weight:700; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink); border-bottom:1px solid var(--line); padding:7px 8px;}
   table.compiled tr.regiongroup:hover td{background:var(--line-soft);}
@@ -415,6 +441,7 @@
         <label style="font-size:13px; color:var(--ink-soft);">Week</label>
         <select id="hl-week" style="width:auto;"></select>
         <select id="hl-memberfilter" style="width:auto;"><option value="all">All members</option></select>
+        <label class="chk pillchk"><input type="checkbox" id="hl-minefilter" /> <span>Tagged to me</span></label>
         <span class="spacer"></span>
         <span class="uphint" id="hl-scope"></span>
         <button class="primary small hidden" id="hl-addbtn">+ Add highlight</button>
@@ -957,7 +984,11 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   items.sort((a,b)=>{ if(!!b.discuss-!!a.discuss) return (!!b.discuss)-(!!a.discuss); const pr={High:0,Medium:1,Low:2}; return (pr[a.prio]==null?1:pr[a.prio])-(pr[b.prio]==null?1:pr[b.prio]); });
   let h='';
   if(rv) h+='<div class="reviewnote">Highlighted rows changed since last marked reviewed ('+fullTimestamp(rv)+').</div>';
-  h+='<table class="compiled"><thead><tr>'+
+  h+='<div class="tablescroll"><table class="compiled">'+
+    '<colgroup><col class="c-week"/><col class="c-members"/><col class="c-brand"/><col class="c-platform"/>'+
+    '<col class="c-region"/><col class="c-category"/><col class="c-focus"/><col class="c-remarks"/>'+
+    '<col class="c-att"/><col class="c-status"/><col class="c-discuss"/><col class="c-time"/><col class="c-act"/></colgroup>'+
+    '<thead><tr>'+
     '<th>Week</th><th>Members</th><th>Brand</th><th>Platform</th><th>Region</th><th>Category</th><th>Focus Area</th><th>Remarks</th><th>Attachment</th><th>Status</th><th>Discuss</th><th>Timestamp</th><th></th></tr></thead><tbody>';
   if(!items.length) h+='<tr><td colspan="13" style="color:var(--ink-faint);">No entries match.</td></tr>';
   // Admin / manager / lead see entries grouped by region, regions A-Z
@@ -993,18 +1024,18 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
       '<td>'+(e.category?'<span class="cat">'+esc(e.category)+'</span>'+(e.category==="Others"&&e.remarks?'<br><span style="font-size:12px; color:var(--ink-faint);">'+esc(e.remarks)+'</span>':""):"-")+'</td>'+
       '<td style="font-weight:600;">'+esc(e.focus)+(e.prio?' <span class="prio '+PCLASS[e.prio]+'">'+e.prio+'</span>':"")+'</td>'+
       '<td>'+(esc(e.update)||"-")+(e.blockers?'<br><span style="font-size:12px; color:var(--red);">'+esc(e.blockers)+'</span>':"")+'</td>'+
-      '<td>'+(e.img?'<img class="tt" src="'+esc(e.img)+'" data-zoom="'+esc(e.img)+'" alt="attachment" />':"-")+'</td>'+
+      '<td class="attcell">'+(e.img?'<img class="tt" src="'+esc(e.img)+'" data-zoom="'+esc(e.img)+'" alt="attachment" loading="lazy" onerror="this.classList.add(\'broken\');this.removeAttribute(\'data-zoom\');this.alt=\'image unavailable\';" />':"-")+'</td>'+
       '<td><span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span></td>'+
       '<td>'+(e.discuss?'<span class="flag">Discuss</span>':"")+(openNudges(e).length?' <span class="nudged">Nudged</span>':"")+((!e.discuss&&!openNudges(e).length)?"-":"")+'</td>'+
-      '<td style="color:var(--ink-faint); white-space:nowrap;">'+fullTimestamp(e.updated)+(e.by?'<br>'+esc(e.by):"")+'</td>'+
-      '<td style="white-space:nowrap;">'+(editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button> <button class="small" data-edit="'+e.id+'">Edit</button> ':"")+(canNudge()?'<button class="small" data-nudge="'+e.id+'">Nudge</button> ':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button></td>'+
+      '<td style="color:var(--ink-faint); font-size:12px;">'+fullTimestamp(e.updated)+(e.by?'<br>'+esc(e.by):"")+'</td>'+
+      '<td><div class="rowacts">'+(editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button><button class="small" data-edit="'+e.id+'">Edit</button>':"")+(canNudge()?'<button class="small" data-nudge="'+e.id+'">Nudge</button>':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button></div></td>'+
     '</tr>';
     const nh=nudgeHTML(e);
     if(nh){ h+='<tr class="cmtrow"><td colspan="13">'+nh+'</td></tr>'; }
     if(threadOpen){ h+='<tr class="cmtrow"><td colspan="13">'+commentsHTML(e)+'</td></tr>'; }
   });
   });
-  h+='</tbody></table>';
+  h+='</tbody></table></div>';
   document.getElementById("tablewrap").innerHTML=h;
 }
 document.getElementById("board-week").onchange=render;
@@ -1138,14 +1169,22 @@ document.getElementById("f-file").onchange=e=>{
 async function uploadImage(file, entryId){
   const withTimeout=(p,ms,label)=>Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error(label+" timed out after "+(ms/1000)+"s")),ms))]);
   if(IMGBB_API_KEY && IMGBB_API_KEY!=="PASTE_IMGBB_API_KEY"){
-    const dataUrl = await compressToDataURL(file, 1600, 0.85);
-    const base64 = dataUrl.split(",")[1];
-    const form = new FormData();
-    form.append("image", base64);
-    const res = await withTimeout(fetch("https://api.imgbb.com/1/upload?key="+encodeURIComponent(IMGBB_API_KEY), { method:"POST", body:form }), 20000, "imgbb upload");
-    const json = await res.json();
-    if(!json || !json.success) throw new Error("imgbb upload failed: "+(json && json.error && json.error.message));
-    return json.data.url;
+    try{
+      const dataUrl = await compressToDataURL(file, 1600, 0.85);
+      const base64 = dataUrl.split(",")[1];
+      const form = new FormData();
+      form.append("image", base64);
+      const res = await withTimeout(fetch("https://api.imgbb.com/1/upload?key="+encodeURIComponent(IMGBB_API_KEY), { method:"POST", body:form }), 20000, "imgbb upload");
+      const json = await res.json();
+      if(!json || !json.success) throw new Error((json && json.error && json.error.message) || "imgbb rejected the upload");
+      // imgbb sometimes returns a viewer page rather than the raw file; prefer the direct image URL.
+      return (json.data.display_url || json.data.image && json.data.image.url || json.data.url);
+    }catch(err){
+      // Never lose the attachment because the host is down, out of quota, or the
+      // key expired - keep a compressed local copy instead.
+      console.warn("imgbb upload failed, storing image locally instead:", err);
+      return await compressToDataURL(file, 1000, 0.7);
+    }
   }
   // No imgbb key set yet - store the image locally (compressed) rather than hanging on Firebase Storage,
   // which requires the paid Blaze plan and isn't set up.
@@ -1931,18 +1970,25 @@ async function importDeckFiles(files){
 function canPostHighlights(){ return me.role==="admin"||me.role==="lead"||me.role==="manager"; }
 function highlightScopeTeams(){ return me.role==="admin" ? state.teams.slice() : [me.team]; }
 function myHighlights(){
-  // Leads/managers see everything for their team; admin sees all; members see only ones they are tagged in.
+  // Everyone on a team sees all of that team's highlights; admin sees all teams.
+  // Being tagged doesn't gate visibility - it only drives the red notification.
   if(me.role==="admin") return (state.highlights||[]).slice();
-  if(me.role==="lead"||me.role==="manager") return (state.highlights||[]).filter(h=>h.team===me.team);
-  return (state.highlights||[]).filter(h=>h.team===me.team && (h.members||[]).some(n=>sameName(n,me.name)));
+  return (state.highlights||[]).filter(h=>h.team===me.team);
 }
+function isTaggedIn(h){ return (h.members||[]).some(n=>sameName(n,me.name)); }
+function taggedHighlights(){ return myHighlights().filter(isTaggedIn); }
+// The red badge counts only highlights this person is TAGGED in and hasn't read.
 function unseenHighlights(){
-  if(canPostHighlights()) return 0;
-  return myHighlights().filter(h=>(h.updated||0) > (loadSeen()["hl:"+h.id]||0)).length;
+  const seen=loadSeen();
+  return taggedHighlights().filter(h=>(h.updated||0) > (seen["hl:"+h.id]||0)).length;
+}
+function isUnseenTag(h){
+  if(!isTaggedIn(h)) return false;
+  return (h.updated||0) > (loadSeen()["hl:"+h.id]||0);
 }
 function markHighlightsSeen(){
   const o=loadSeen();
-  myHighlights().forEach(h=>{ o["hl:"+h.id]=Date.now(); });
+  taggedHighlights().forEach(h=>{ o["hl:"+h.id]=Date.now(); });
   saveSeen(o);
 }
 function teamRoster(team){
@@ -2048,25 +2094,29 @@ function populateHighlightFilters(){
   const sorted=Array.from(names).sort((a,b)=>a.localeCompare(b));
   msel.innerHTML='<option value="all">All members</option>'+sorted.map(n=>'<option value="'+esc(n)+'"'+(n===prevM?" selected":"")+'>'+esc(n)+'</option>').join("");
   if(prevM!=="all" && !sorted.includes(prevM)) msel.value="all";
-  msel.classList.toggle("hidden", !canPostHighlights());
+  msel.classList.remove("hidden");
 }
 function renderHighlights(){
   document.getElementById("hl-addbtn").classList.toggle("hidden", !canPostHighlights());
+  const tagCount=unseenHighlights();
   document.getElementById("hl-scope").textContent = canPostHighlights()
-    ? "Posting to "+hlTargetTeam()+" — tagged members see these in their own Highlights tab."
-    : "Weekly observations your lead has tagged you in.";
+    ? "Posting to "+hlTargetTeam()+" — the whole team can read these; tagged members get a notification."
+    : (tagCount ? tagCount+" new highlight"+(tagCount===1?"":"s")+" tagged to you."
+                : "Weekly observations for your team.");
   populateHighlightFilters();
 
   const wk=document.getElementById("hl-week").value||"all";
   const mf=document.getElementById("hl-memberfilter").value||"all";
-  let items=myHighlights().filter(h=>(wk==="all"||h.week===wk)&&(mf==="all"||(h.members||[]).some(n=>sameName(n,mf))));
+  const onlyMine=document.getElementById("hl-minefilter").checked;
+  let items=myHighlights().filter(h=>(wk==="all"||h.week===wk)&&(mf==="all"||(h.members||[]).some(n=>sameName(n,mf)))&&(!onlyMine||isTaggedIn(h)));
   items.sort((a,b)=>(b.week||"").localeCompare(a.week||"")||(b.updated||0)-(a.updated||0));
 
+  const unseenSet=new Set(items.filter(isUnseenTag).map(h=>h.id));
   const wrap=document.getElementById("hl-wrap");
   if(!items.length){
     wrap.innerHTML='<div class="empty">'+(canPostHighlights()
       ? "No highlights yet. Use <b>+ Add highlight</b> to flag observations for the week."
-      : "Nothing highlighted for you yet.")+'</div>';
+      : "No highlights posted for your team yet.")+'</div>';
     return;
   }
   // group by week, newest first
@@ -2076,14 +2126,16 @@ function renderHighlights(){
   byWeek.forEach((rows,k)=>{
     out+='<div class="hlgroup">'+esc(weekKeyLabel(k))+'</div>';
     rows.forEach(h=>{
-      const mine=(h.members||[]).some(n=>sameName(n,me.name));
+      const mine=isTaggedIn(h);
+      const isNewForMe=unseenSet.has(h.id);
       const canEditHl = me.role==="admin" || h.by===me.name;
-      out+='<div class="hlcard'+(mine?" tagged":"")+'">'+
+      out+='<div class="hlcard'+(mine?" tagged":"")+(isNewForMe?" newtag-hl":"")+'">'+
         '<div class="hlhead"><div>'+
           '<div style="font-weight:600; font-size:14px;">'+
             ([h.brand,h.platform,h.region].filter(Boolean).map(esc).join(' &middot; ') || 'General note')+
           '</div>'+
           '<div class="hlmeta">by '+esc(h.by||"?")+' &middot; '+fullTimestamp(h.updated)+'</div>'+
+          (mine?'<div class="foryou'+(isNewForMe?" unread":"")+'">'+(isNewForMe?"New — you were tagged":"You were tagged")+'</div>':"")+
         '</div>'+
         (canEditHl?'<div style="white-space:nowrap;"><button class="small" data-hledit="'+h.id+'">Edit</button> <button class="small danger" data-hldel="'+h.id+'">Remove</button></div>':"")+
         '</div>'+
@@ -2101,6 +2153,7 @@ document.getElementById("hl-cancel").onclick=closeHighlightForm;
 document.getElementById("hl-save").onclick=saveHighlight;
 document.getElementById("hl-week").onchange=renderHighlights;
 document.getElementById("hl-memberfilter").onchange=renderHighlights;
+document.getElementById("hl-minefilter").onchange=renderHighlights;
 document.getElementById("hl-addissue").onclick=()=>{
   document.getElementById("hl-f-issues").appendChild(hlIssueRow(""));
   hlRenumber();
