@@ -194,6 +194,26 @@
   table.compiled tr:hover td{background:var(--line-soft);}
   table.compiled tr.cmtrow:hover td, table.compiled tr.cmtrow td{background:var(--paper);}
   table.compiled tr.cmtrow .comments{margin-top:0; border-top:none; padding-top:2px;}
+  .tagbox{display:flex; flex-wrap:wrap; gap:6px; padding:8px; border:1px solid var(--line); border-radius:8px; background:var(--paper); min-height:40px;}
+  .tagbox label{display:inline-flex; align-items:center; gap:5px; font-size:12.5px; padding:4px 9px; border:1px solid var(--line); border-radius:999px; cursor:pointer; background:#fff; user-select:none;}
+  .tagbox label.on{border-color:var(--ink); background:var(--line-soft); font-weight:600;}
+  .tagbox input{margin:0; width:auto;}
+  .tagbox .none{font-size:12.5px; color:var(--ink-faint);}
+  .issuerow{display:flex; gap:8px; align-items:center; margin-bottom:8px;}
+  .issuerow .inum{font-size:12px; color:var(--ink-faint); width:18px; flex:none; text-align:right;}
+  .issuerow input{flex:1;}
+  .issuerow button{flex:none;}
+  .hlcard{border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-top:12px; background:#fff;}
+  .hlcard.tagged{border-left:3px solid var(--ink);}
+  .hlcard .hlhead{display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap;}
+  .hlcard .hlmeta{font-size:12.5px; color:var(--ink-faint); margin-top:2px;}
+  .hlcard .hltags{display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;}
+  .hlcard .hltag{font-size:11.5px; padding:2px 8px; border-radius:999px; background:var(--line-soft); color:var(--ink-soft);}
+  .hlcard .hltag.you{background:var(--ink); color:#fff; font-weight:600;}
+  .hlcard ol.hlissues{margin:10px 0 0; padding-left:20px; font-size:13.5px;}
+  .hlcard ol.hlissues li{margin-bottom:4px;}
+  .hlcard .hlremarks{margin-top:10px; font-size:13px; color:var(--ink-soft); border-top:1px solid var(--line-soft); padding-top:8px;}
+  .hlgroup{font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft); margin-top:22px;}
   table.compiled tr.regiongroup td{background:var(--line-soft); font-weight:700; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink); border-bottom:1px solid var(--line); padding:7px 8px;}
   table.compiled tr.regiongroup:hover td{background:var(--line-soft);}
   table.compiled tr.regiongroup .rgcount{font-weight:500; text-transform:none; letter-spacing:0; color:var(--ink-faint); margin-left:6px;}
@@ -292,13 +312,13 @@
               <dt>Brand</dt><dd>The client or store this work is for &mdash; e.g. <i>Acme Co.</i> Leave blank for internal work.</dd>
               <dt>Platform</dt><dd>Where it's happening: Shopee, Lazada, TikTok Shop, Amazon.</dd>
               <dt>Region</dt><dd>Market or territory &mdash; PH, SG, APAC, NA.</dd>
-              <dt>Stage</dt><dd><b>Active</b> = ongoing this week. <b>In progress</b> = actively being worked right now. <b>Done</b> = finished, no follow-up needed.</dd>
+              <dt>Status</dt><dd><b>Active</b> = ongoing this week. <b>In progress</b> = actively being worked right now. <b>Done</b> = finished, no follow-up needed.</dd>
               <dt>Priority</dt><dd><b>High</b> = blocks someone or has a hard deadline. <b>Medium</b> = normal. <b>Low</b> = nice to have.</dd>
-              <dt>Category</dt><dd>The bucket of work. Pick <i>Others</i> only if nothing fits, then describe it in Remarks.</dd>
+              <dt>Category</dt><dd>The bucket of work. Pick <i>Others</i> only if nothing fits, then describe it in the box that appears.</dd>
               <dt>Focus this week</dt><dd><b>Required.</b> One short line on what you're actually doing &mdash; "Fix rejected listings for Acme", not "listings".</dd>
               <dt>Members</dt><dd>Who is doing the work. Separate names with commas. Only you (or an admin) can change this after saving.</dd>
               <dt>Supporting Details</dt><dd>Anything stopping you, plus context or who you're waiting on. Leave blank if nothing is stuck.</dd>
-              <dt>Status</dt><dd>The latest progress since last week, so leads don't have to ask.</dd>
+              <dt>Remarks</dt><dd>The latest progress since last week, so leads don't have to ask.</dd>
               <dt>Attachment</dt><dd>Optional screenshot as evidence &mdash; a ticket, dashboard, or error message.</dd>
               <dt>Flag for discussion</dt><dd>Tick this to surface the entry for the team to talk through in the next sync.</dd>
             </dl>
@@ -308,7 +328,7 @@
           <div><label class="fl">Brand</label><input id="f-brand" placeholder="e.g. Acme Co." /></div>
           <div><label class="fl">Platform</label><input id="f-platform" placeholder="e.g. Shopee, Lazada, Amazon" /></div>
           <div><label class="fl">Region</label><input id="f-region" placeholder="e.g. NA, EU, APAC" /></div>
-          <div><label class="fl">Stage</label><select id="f-status"><option>Active</option><option>In progress</option><option>Done</option></select><span class="fh">Done = no follow-up needed</span></div>
+          <div><label class="fl">Status</label><select id="f-status"><option>Active</option><option>In progress</option><option>Done</option></select><span class="fh">Done = no follow-up needed</span></div>
         </div>
         <div class="grid g3" style="margin-top:12px;">
           <div><label class="fl">Priority</label><select id="f-prio"><option>Low</option><option selected>Medium</option><option>High</option></select><span class="fh">High = blocked or hard deadline</span></div>
@@ -330,11 +350,11 @@
           <div id="f-member-wrap"><label class="fl">Members</label><input id="f-member" placeholder="e.g. Ana, Ben" /><span class="fh">Separate names with commas</span><span class="uphint" id="f-member-lock"></span></div>
         </div>
         <div class="grid g2 hidden" id="f-remarks-row" style="margin-top:12px;">
-          <div style="grid-column:1 / -1;"><label class="fl">Remarks (for "Others")</label><input id="f-remarks" placeholder="Describe the category" /></div>
+          <div style="grid-column:1 / -1;"><label class="fl">Category description (for "Others")</label><input id="f-remarks" placeholder="Describe the category" /></div>
         </div>
         <div class="grid g2" style="margin-top:12px;">
           <div><label class="fl">Supporting Details (optional)</label><input id="f-blockers" placeholder="e.g. Waiting on infra access" /><span class="fh">What's stopping you, and who you're waiting on</span></div>
-          <div><label class="fl">Status (optional)</label><input id="f-update" placeholder="e.g. Escalated Monday, awaiting reply" /><span class="fh">Progress since last week</span></div>
+          <div><label class="fl">Remarks (optional)</label><input id="f-update" placeholder="e.g. Escalated Monday, awaiting reply" /><span class="fh">Progress since last week</span></div>
         </div>
         <div style="margin-top:12px;">
           <label class="fl">Attachment (optional)</label>
@@ -387,6 +407,50 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- LEAD HIGHLIGHTS -->
+    <div id="view-highlights" class="hidden">
+      <div class="controls">
+        <label style="font-size:13px; color:var(--ink-soft);">Week</label>
+        <select id="hl-week" style="width:auto;"></select>
+        <select id="hl-memberfilter" style="width:auto;"><option value="all">All members</option></select>
+        <span class="spacer"></span>
+        <span class="uphint" id="hl-scope"></span>
+        <button class="primary small hidden" id="hl-addbtn">+ Add highlight</button>
+      </div>
+
+      <div class="panel hidden" id="hl-form">
+        <div class="grid g3">
+          <div><label class="fl">Week</label><select id="hl-f-week"></select></div>
+          <div><label class="fl">Brand</label><input id="hl-f-brand" placeholder="e.g. Acme Co." /></div>
+          <div><label class="fl">Platform</label><input id="hl-f-platform" placeholder="e.g. Shopee, Lazada" /></div>
+        </div>
+        <div class="grid g2" style="margin-top:12px;">
+          <div><label class="fl">Region</label><input id="hl-f-region" placeholder="e.g. NA, EU, APAC" /></div>
+          <div>
+            <label class="fl">Tag members <span class="req">required</span></label>
+            <div class="tagbox" id="hl-f-members"></div>
+            <span class="fh">Tick everyone this highlight is for. They will see it in their own Highlights tab.</span>
+          </div>
+        </div>
+        <div style="margin-top:14px;">
+          <label class="fl">Issues / observations <span class="req">required</span></label>
+          <div id="hl-f-issues"></div>
+          <button class="small" type="button" id="hl-addissue" style="margin-top:8px;">+ Add another issue</button>
+        </div>
+        <div style="margin-top:12px;">
+          <label class="fl">Remarks (optional)</label>
+          <textarea id="hl-f-remarks" rows="2" placeholder="Overall note, coaching point, or next step for the team"></textarea>
+        </div>
+        <div class="panelbtns">
+          <button class="primary" id="hl-save">Save highlight</button>
+          <button class="ghost" id="hl-cancel">Cancel</button>
+          <span class="uphint" id="hl-err" style="color:var(--red);"></span>
+        </div>
+      </div>
+
+      <div id="hl-wrap"></div>
     </div>
 
     <!-- PRESENTATION DECKS -->
@@ -466,7 +530,8 @@ function defaultState(){
       {id:1,team:"Team Fritz",member:"Ana, Ben",focus:"Onboarding flow redesign",category:"Product listings",remarks:"",status:"In progress",prio:"High",blockers:"",update:"Wireframes approved",img:"",discuss:false,created:now,updated:now,by:"Ana"},
       {id:2,team:"Team Marlon",member:"Cara",focus:"API rate-limit fix",category:"Account health",remarks:"",status:"Active",prio:"High",blockers:"Waiting on infra access",update:"Escalated Monday",img:"",discuss:true,comments:[{by:"admin",text:"Who owns the infra ticket? Let's unblock this before Friday.",ts:now}],created:now,updated:now,by:"Cara"},
       {id:3,team:"TOD",member:"Diego, Elle",focus:"Q3 reporting dashboard",category:"Order monitoring",remarks:"",status:"Active",prio:"Medium",blockers:"",update:"Kicks off Thursday",img:"",discuss:false,created:now,updated:now,by:"Diego"}
-    ]
+    ],
+    highlights: []
   };
 }
 const ORDER=["Active","In progress","Done"];
@@ -482,7 +547,8 @@ const NICO={
   dash:'<svg class="nico" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>',
   team:'<svg class="nico" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M2 21v-1a6 6 0 0 1 12 0v1M16 3.5a3 3 0 0 1 0 7"/></svg>',
   data:'<svg class="nico" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>',
-  deck:'<svg class="nico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8.5 20h7"/></svg>'
+  deck:'<svg class="nico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8.5 20h7"/></svg>',
+  hi:'<svg class="nico" viewBox="0 0 24 24"><path d="M12 2.6l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.1l6.1-.9z"/></svg>'
 };
 let state=null, me=null, activeView="dashboard", activeTab=null;
 let dashWeek="all", boardWeek="all";
@@ -539,6 +605,14 @@ const NUDGE_TEMPLATES=[
 function migrate(){
   if(typeof state.reviewedAt!=="number") state.reviewedAt=0;
   if(!Array.isArray(state.decks)) state.decks=[];
+  if(!Array.isArray(state.highlights)) state.highlights=[];
+  state.highlights.forEach(hl=>{
+    if(!Array.isArray(hl.issues)) hl.issues=[];
+    if(!Array.isArray(hl.members)) hl.members=[];
+    if(typeof hl.remarks!=="string") hl.remarks="";
+    if(!hl.created) hl.created=hl.updated||Date.now();
+    if(!hl.week) hl.week=weekKeyFromTs(hl.created);
+  });
   state.decks.forEach(d=>{ if(typeof d.archived!=="boolean") d.archived=false; if(!Array.isArray(d.slides)) d.slides=[]; });
   state.entries.forEach(e=>{
     if(!e.created) e.created=e.updated||Date.now();
@@ -644,6 +718,10 @@ function buildSidebar(){
     const label=t+(teamUnread?' <span class="navunread">'+teamUnread+'</span>':"");
     mkItem(label, NICO.team, activeView==="board"&&activeTab===t, ()=>{ activeView="board"; activeTab=t; refreshViews(); }, teamEntries.length);
   });
+  const lblH=document.createElement("div"); lblH.className="navlabel"; lblH.textContent="Weekly"; sb.appendChild(lblH);
+  const hlUnseen=unseenHighlights();
+  mkItem("Highlights"+(hlUnseen?' <span class="navunread">'+hlUnseen+'</span>':""), NICO.hi, activeView==="highlights",
+    ()=>{ activeView="highlights"; refreshViews(); }, myHighlights().length);
   const lbl3=document.createElement("div"); lbl3.className="navlabel"; lbl3.textContent="Present"; sb.appendChild(lbl3);
   mkItem("Presentations", NICO.deck, activeView==="deck", ()=>{ activeView="deck"; refreshViews(); },
     (state.decks||[]).filter(d=>!d.archived).length);
@@ -664,18 +742,20 @@ function refreshViews(){
   document.getElementById("view-board").classList.toggle("hidden", activeView!=="board");
   document.getElementById("view-data").classList.toggle("hidden", activeView!=="data");
   document.getElementById("view-deck").classList.toggle("hidden", activeView!=="deck");
-  const title={dashboard:"Dashboard", board:activeTab, data:"Data", deck:"Presentations"}[activeView]||"Dashboard";
+  document.getElementById("view-highlights").classList.toggle("hidden", activeView!=="highlights");
+  const title={dashboard:"Dashboard", board:activeTab, data:"Data", deck:"Presentations", highlights:"Weekly highlights"}[activeView]||"Dashboard";
   document.getElementById("page-title").textContent=title;
   buildSidebar();
   if(activeView==="dashboard") renderDashboard();
   if(activeView==="board") render();
   if(activeView==="data"){ renderRoster(); renderTeams(); }
   if(activeView==="deck") renderDecks();
+  if(activeView==="highlights"){ closeHighlightForm(); renderHighlights(); }
 }
 function mountApp(){
   document.getElementById("week").innerHTML=weekLabel();
   const vt=visibleTeams();
-  if(me.role!=="admin"){ if(activeView!=="deck") activeView="board"; activeTab=me.team; }
+  if(me.role!=="admin"){ if(activeView!=="deck"&&activeView!=="highlights") activeView="board"; activeTab=me.team; }
   else if(!activeTab){ activeTab=vt[0]; }
   document.getElementById("m-team").innerHTML=state.teams.map(t=>'<option>'+esc(t)+'</option>').join("");
   // week dropdowns
@@ -848,8 +928,8 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   let h='';
   if(rv) h+='<div class="reviewnote">Highlighted rows changed since last marked reviewed ('+fullTimestamp(rv)+').</div>';
   h+='<table class="compiled"><thead><tr>'+
-    '<th>Focus Area</th><th>Status</th><th>Supporting Details</th><th>Stage</th><th>Week</th><th>Members</th><th>Brand</th><th>Platform</th><th>Region</th><th>Category</th><th>Attachment</th><th>Discuss</th><th>Timestamp</th><th></th></tr></thead><tbody>';
-  if(!items.length) h+='<tr><td colspan="14" style="color:var(--ink-faint);">No entries match.</td></tr>';
+    '<th>Week</th><th>Members</th><th>Brand</th><th>Platform</th><th>Region</th><th>Focus Area</th><th>Remarks</th><th>Attachment</th><th>Status</th><th>Discuss</th><th>Timestamp</th><th></th></tr></thead><tbody>';
+  if(!items.length) h+='<tr><td colspan="12" style="color:var(--ink-faint);">No entries match.</td></tr>';
   // Admin / manager / lead see entries grouped by region, regions A-Z
   const groupByRegion = (me.role==="admin"||me.role==="manager"||me.role==="lead");
   let groups;
@@ -865,7 +945,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   }
   groups.forEach(g=>{
   if(g.region!==null){
-    h+='<tr class="regiongroup"><td colspan="14">'+esc(g.region)+' <span class="rgcount">'+g.rows.length+' '+(g.rows.length===1?"entry":"entries")+'</span></td></tr>';
+    h+='<tr class="regiongroup"><td colspan="12">'+esc(g.region)+' <span class="rgcount">'+g.rows.length+' '+(g.rows.length===1?"entry":"entries")+'</span></td></tr>';
   }
   g.rows.forEach(e=>{
     const editable=canEdit(e);
@@ -875,24 +955,22 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
     const threadOpen=openThreads.has(String(e.id));
     const wknum=parseInt(weekKeyFromTs(e.created).split("-W")[1],10);
     h+='<tr class="'+(isChanged?"changed":"")+'">'+
-      '<td style="font-weight:600;">'+esc(e.focus)+(e.prio?' <span class="prio '+PCLASS[e.prio]+'">'+e.prio+'</span>':"")+'</td>'+
-      '<td>'+(esc(e.update)||"-")+'</td>'+
-      '<td style="color:'+(e.blockers?'var(--red)':'var(--ink-faint)')+';">'+(esc(e.blockers)||"-")+'</td>'+
-      '<td><span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span></td>'+
       '<td><span class="wk">Wk '+wknum+'</span>'+(isNew?'<span class="newtag">new</span>':(isChanged?'<span class="newtag">upd</span>':""))+'</td>'+
       '<td>'+(esc(e.member)||"-")+'</td>'+
       '<td>'+(esc(e.brand)||"-")+'</td>'+
       '<td>'+(esc(e.platform)||"-")+'</td>'+
       '<td>'+(esc(e.region)||"-")+'</td>'+
-      '<td>'+(e.category?'<span class="cat">'+esc(e.category)+'</span>'+(e.category==="Others"&&e.remarks?'<br><span style="font-size:12px; color:var(--ink-faint);">'+esc(e.remarks)+'</span>':""):"-")+'</td>'+
+      '<td style="font-weight:600;">'+esc(e.focus)+(e.prio?' <span class="prio '+PCLASS[e.prio]+'">'+e.prio+'</span>':"")+(e.category?'<br><span class="cat">'+esc(e.category==="Others"&&e.remarks?e.remarks:e.category)+'</span>':"")+'</td>'+
+      '<td>'+(esc(e.update)||"-")+(e.blockers?'<br><span style="font-size:12px; color:var(--red);">'+esc(e.blockers)+'</span>':"")+'</td>'+
       '<td>'+(e.img?'<img class="tt" src="'+esc(e.img)+'" data-zoom="'+esc(e.img)+'" alt="attachment" />':"-")+'</td>'+
+      '<td><span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span></td>'+
       '<td>'+(e.discuss?'<span class="flag">Discuss</span>':"")+(openNudges(e).length?' <span class="nudged">Nudged</span>':"")+((!e.discuss&&!openNudges(e).length)?"-":"")+'</td>'+
       '<td style="color:var(--ink-faint); white-space:nowrap;">'+fullTimestamp(e.updated)+(e.by?'<br>'+esc(e.by):"")+'</td>'+
       '<td style="white-space:nowrap;">'+(editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button> <button class="small" data-edit="'+e.id+'">Edit</button> ':"")+(canNudge()?'<button class="small" data-nudge="'+e.id+'">Nudge</button> ':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button></td>'+
     '</tr>';
     const nh=nudgeHTML(e);
-    if(nh){ h+='<tr class="cmtrow"><td colspan="14">'+nh+'</td></tr>'; }
-    if(threadOpen){ h+='<tr class="cmtrow"><td colspan="14">'+commentsHTML(e)+'</td></tr>'; }
+    if(nh){ h+='<tr class="cmtrow"><td colspan="12">'+nh+'</td></tr>'; }
+    if(threadOpen){ h+='<tr class="cmtrow"><td colspan="12">'+commentsHTML(e)+'</td></tr>'; }
   });
   });
   h+='</tbody></table>';
@@ -1112,7 +1190,7 @@ document.getElementById("savebtn").onclick=async()=>{
 };
 document.getElementById("exportbtn").onclick=()=>{
   const vt=visibleTeams();
-  const rows=[["Week","Team","Brand","Platform","Region","Members","Category","Remarks","Focus Area","Stage","Priority","Supporting Details","Status","Needs discussion","Open nudges","Attachment URL","Comments","Created","Timestamp"]];
+  const rows=[["Week","Team","Brand","Platform","Region","Members","Category","Remarks","Focus Area","Status","Priority","Supporting Details","Remarks","Needs discussion","Open nudges","Attachment URL","Comments","Created","Timestamp"]];
   state.entries.filter(e=>vt.includes(e.team)).forEach(e=>{
     const wknum=parseInt(weekKeyFromTs(e.created).split("-W")[1],10);
     const cmts=(e.comments||[]).map(c=>c.by+": "+c.text).join(" | ");
@@ -1817,6 +1895,208 @@ async function importDeckFiles(files){
     renderDecks(); buildSidebar();
   }
 }
+/* ================= LEAD HIGHLIGHTS ================= */
+function canPostHighlights(){ return me.role==="admin"||me.role==="lead"||me.role==="manager"; }
+function highlightScopeTeams(){ return me.role==="admin" ? state.teams.slice() : [me.team]; }
+function myHighlights(){
+  // Leads/managers see everything for their team; admin sees all; members see only ones they are tagged in.
+  if(me.role==="admin") return (state.highlights||[]).slice();
+  if(me.role==="lead"||me.role==="manager") return (state.highlights||[]).filter(h=>h.team===me.team);
+  return (state.highlights||[]).filter(h=>h.team===me.team && (h.members||[]).includes(me.name));
+}
+function unseenHighlights(){
+  if(canPostHighlights()) return 0;
+  return myHighlights().filter(h=>(h.updated||0) > (loadSeen()["hl:"+h.id]||0)).length;
+}
+function markHighlightsSeen(){
+  const o=loadSeen();
+  myHighlights().forEach(h=>{ o["hl:"+h.id]=Date.now(); });
+  saveSeen(o);
+}
+function teamRoster(team){
+  const names=new Set();
+  state.members.forEach(m=>{ if(m.team===team) names.add(m.name); });
+  state.entries.filter(e=>e.team===team).forEach(e=>splitMembers(e.member).forEach(n=>names.add(n)));
+  return Array.from(names).sort((a,b)=>a.localeCompare(b));
+}
+function hlTargetTeam(){ return me.role==="admin" ? (activeTab||state.teams[0]) : me.team; }
+
+let hlEditingId=null;
+function hlIssueRow(val){
+  const d=document.createElement("div");
+  d.className="issuerow";
+  d.innerHTML='<span class="inum"></span><input class="hl-issue" placeholder="Describe the issue or observation" />'+
+              '<button class="small danger hl-rmissue" type="button" title="Remove">&times;</button>';
+  d.querySelector("input").value=val||"";
+  return d;
+}
+function hlRenumber(){
+  document.querySelectorAll("#hl-f-issues .issuerow").forEach((r,i)=>{
+    r.querySelector(".inum").textContent=(i+1)+".";
+  });
+  const rows=document.querySelectorAll("#hl-f-issues .issuerow");
+  rows.forEach(r=>{ r.querySelector(".hl-rmissue").style.visibility = rows.length>1 ? "visible" : "hidden"; });
+}
+function openHighlightForm(hl){
+  if(!canPostHighlights()) return;
+  hlEditingId = hl ? hl.id : null;
+  const team=hl ? hl.team : hlTargetTeam();
+  const keys=allWeekKeys();
+  const wsel=document.getElementById("hl-f-week");
+  const curWk = hl ? hl.week : weekKeyNow();
+  const allKeys = keys.includes(curWk) ? keys : [curWk].concat(keys);
+  wsel.innerHTML=allKeys.map(k=>'<option value="'+k+'"'+(k===curWk?" selected":"")+'>'+weekKeyLabel(k)+'</option>').join("");
+
+  document.getElementById("hl-f-brand").value = hl ? (hl.brand||"") : "";
+  document.getElementById("hl-f-platform").value = hl ? (hl.platform||"") : "";
+  document.getElementById("hl-f-region").value = hl ? (hl.region||"") : "";
+  document.getElementById("hl-f-remarks").value = hl ? (hl.remarks||"") : "";
+  document.getElementById("hl-err").textContent="";
+
+  const roster=teamRoster(team);
+  const chosen=new Set(hl?(hl.members||[]):[]);
+  const tb=document.getElementById("hl-f-members");
+  if(!roster.length){
+    tb.innerHTML='<span class="none">No members on '+esc(team)+' yet. Add them under Data.</span>';
+  } else {
+    tb.innerHTML=roster.map(n=>'<label class="'+(chosen.has(n)?"on":"")+'"><input type="checkbox" value="'+esc(n)+'"'+(chosen.has(n)?" checked":"")+' /> '+esc(n)+'</label>').join("");
+  }
+
+  const iw=document.getElementById("hl-f-issues");
+  iw.innerHTML="";
+  const issues = hl && hl.issues && hl.issues.length ? hl.issues : [""];
+  issues.forEach(v=>iw.appendChild(hlIssueRow(v)));
+  hlRenumber();
+
+  document.getElementById("hl-form").classList.remove("hidden");
+  document.getElementById("hl-f-brand").focus();
+}
+function closeHighlightForm(){
+  hlEditingId=null;
+  document.getElementById("hl-form").classList.add("hidden");
+}
+function saveHighlight(){
+  const team=hlEditingId ? (state.highlights.find(h=>h.id==hlEditingId)||{}).team || hlTargetTeam() : hlTargetTeam();
+  const members=Array.from(document.querySelectorAll("#hl-f-members input:checked")).map(i=>i.value);
+  const issues=Array.from(document.querySelectorAll("#hl-f-issues .hl-issue")).map(i=>i.value.trim()).filter(Boolean);
+  const err=document.getElementById("hl-err");
+  if(!members.length){ err.textContent="Tag at least one member."; return; }
+  if(!issues.length){ err.textContent="Write at least one issue or observation."; return; }
+  const now=Date.now();
+  const payload={
+    week: document.getElementById("hl-f-week").value,
+    members: members,
+    brand: document.getElementById("hl-f-brand").value.trim(),
+    platform: document.getElementById("hl-f-platform").value.trim(),
+    region: document.getElementById("hl-f-region").value.trim(),
+    issues: issues,
+    remarks: document.getElementById("hl-f-remarks").value.trim(),
+    team: team,
+    updated: now
+  };
+  if(hlEditingId){
+    const ex=state.highlights.find(h=>h.id==hlEditingId);
+    if(ex) Object.assign(ex, payload);
+  } else {
+    state.highlights.push(Object.assign({id:"hl"+now+Math.random().toString(36).slice(2,6), created:now, by:me.name}, payload));
+  }
+  closeHighlightForm(); persist(); renderHighlights(); buildSidebar();
+}
+function populateHighlightFilters(){
+  const keys=allWeekKeys();
+  const wsel=document.getElementById("hl-week");
+  const prevW=wsel.value;
+  wsel.innerHTML='<option value="all">All weeks</option>'+keys.map(k=>'<option value="'+k+'"'+(k===prevW?" selected":"")+'>'+weekKeyLabel(k)+'</option>').join("");
+  if(prevW && (prevW==="all"||keys.includes(prevW))) wsel.value=prevW;
+
+  const msel=document.getElementById("hl-memberfilter");
+  const prevM=msel.value;
+  const names=new Set();
+  myHighlights().forEach(h=>(h.members||[]).forEach(n=>names.add(n)));
+  const sorted=Array.from(names).sort((a,b)=>a.localeCompare(b));
+  msel.innerHTML='<option value="all">All members</option>'+sorted.map(n=>'<option value="'+esc(n)+'"'+(n===prevM?" selected":"")+'>'+esc(n)+'</option>').join("");
+  if(prevM!=="all" && !sorted.includes(prevM)) msel.value="all";
+  msel.classList.toggle("hidden", !canPostHighlights());
+}
+function renderHighlights(){
+  document.getElementById("hl-addbtn").classList.toggle("hidden", !canPostHighlights());
+  document.getElementById("hl-scope").textContent = canPostHighlights()
+    ? "Posting to "+hlTargetTeam()+" — tagged members see these in their own Highlights tab."
+    : "Weekly observations your lead has tagged you in.";
+  populateHighlightFilters();
+
+  const wk=document.getElementById("hl-week").value||"all";
+  const mf=document.getElementById("hl-memberfilter").value||"all";
+  let items=myHighlights().filter(h=>(wk==="all"||h.week===wk)&&(mf==="all"||(h.members||[]).includes(mf)));
+  items.sort((a,b)=>(b.week||"").localeCompare(a.week||"")||(b.updated||0)-(a.updated||0));
+
+  const wrap=document.getElementById("hl-wrap");
+  if(!items.length){
+    wrap.innerHTML='<div class="empty">'+(canPostHighlights()
+      ? "No highlights yet. Use <b>+ Add highlight</b> to flag observations for the week."
+      : "Nothing highlighted for you yet.")+'</div>';
+    return;
+  }
+  // group by week, newest first
+  const byWeek=new Map();
+  items.forEach(h=>{ const k=h.week||"—"; if(!byWeek.has(k)) byWeek.set(k,[]); byWeek.get(k).push(h); });
+  let out="";
+  byWeek.forEach((rows,k)=>{
+    out+='<div class="hlgroup">'+esc(weekKeyLabel(k))+'</div>';
+    rows.forEach(h=>{
+      const mine=(h.members||[]).includes(me.name);
+      const canEditHl = me.role==="admin" || h.by===me.name;
+      out+='<div class="hlcard'+(mine?" tagged":"")+'">'+
+        '<div class="hlhead"><div>'+
+          '<div style="font-weight:600; font-size:14px;">'+
+            ([h.brand,h.platform,h.region].filter(Boolean).map(esc).join(' &middot; ') || 'General note')+
+          '</div>'+
+          '<div class="hlmeta">by '+esc(h.by||"?")+' &middot; '+fullTimestamp(h.updated)+'</div>'+
+        '</div>'+
+        (canEditHl?'<div style="white-space:nowrap;"><button class="small" data-hledit="'+h.id+'">Edit</button> <button class="small danger" data-hldel="'+h.id+'">Remove</button></div>':"")+
+        '</div>'+
+        '<div class="hltags">'+(h.members||[]).map(n=>'<span class="hltag'+(n===me.name?" you":"")+'">'+esc(n)+(n===me.name?" (you)":"")+'</span>').join("")+'</div>'+
+        '<ol class="hlissues">'+(h.issues||[]).map(i=>'<li>'+esc(i)+'</li>').join("")+'</ol>'+
+        (h.remarks?'<div class="hlremarks"><b>Remarks:</b> '+esc(h.remarks)+'</div>':"")+
+      '</div>';
+    });
+  });
+  wrap.innerHTML=out;
+  markHighlightsSeen();
+}
+document.getElementById("hl-addbtn").onclick=()=>openHighlightForm(null);
+document.getElementById("hl-cancel").onclick=closeHighlightForm;
+document.getElementById("hl-save").onclick=saveHighlight;
+document.getElementById("hl-week").onchange=renderHighlights;
+document.getElementById("hl-memberfilter").onchange=renderHighlights;
+document.getElementById("hl-addissue").onclick=()=>{
+  document.getElementById("hl-f-issues").appendChild(hlIssueRow(""));
+  hlRenumber();
+  const rows=document.querySelectorAll("#hl-f-issues .hl-issue");
+  rows[rows.length-1].focus();
+};
+document.getElementById("hl-f-issues").addEventListener("click",e=>{
+  const b=e.target.closest(".hl-rmissue");
+  if(!b) return;
+  if(document.querySelectorAll("#hl-f-issues .issuerow").length<=1) return;
+  b.closest(".issuerow").remove();
+  hlRenumber();
+});
+document.getElementById("hl-f-members").addEventListener("change",e=>{
+  const l=e.target.closest("label");
+  if(l) l.classList.toggle("on", e.target.checked);
+});
+document.getElementById("hl-wrap").addEventListener("click",e=>{
+  const ed=e.target.closest("[data-hledit]");
+  if(ed){ const h=state.highlights.find(x=>x.id===ed.dataset.hledit); if(h) openHighlightForm(h); return; }
+  const dl=e.target.closest("[data-hldel]");
+  if(dl){
+    if(!confirm("Remove this highlight? The tagged members will no longer see it.")) return;
+    state.highlights=state.highlights.filter(x=>x.id!==dl.dataset.hldel);
+    persist(); renderHighlights(); buildSidebar();
+  }
+});
+
 function renderDecks(){
   const filter=document.getElementById("deck-filter").value;
   const decks=(state.decks||[]).filter(d=>filter==="all"?true:filter==="archived"?d.archived:!d.archived)
