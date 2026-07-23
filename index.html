@@ -220,14 +220,15 @@
       </div>
       <div class="panel hidden" id="form">
         <div class="grid g3">
-          <div><label class="fl">Team</label><select id="f-team"></select></div>
+          <div><label class="fl">Brand</label><input id="f-brand" placeholder="e.g. Acme Co." /></div>
+          <div><label class="fl">Platform</label><input id="f-platform" placeholder="e.g. Shopee, Lazada, Amazon" /></div>
           <div><label class="fl">Region</label><input id="f-region" placeholder="e.g. NA, EU, APAC" /></div>
-          <div><label class="fl">Member(s)</label><input id="f-member" placeholder="e.g. Ana, Ben" /></div>
           <div><label class="fl">Status</label><select id="f-status"><option>Active</option><option>In progress</option><option>Done</option></select></div>
         </div>
         <div class="grid g3" style="margin-top:12px;">
           <div><label class="fl">Priority</label><select id="f-prio"><option>Low</option><option selected>Medium</option><option>High</option></select></div>
           <div><label class="fl">Category</label><select id="f-category">
+            <option value="" disabled selected>Choose in the dropdown</option>
             <option>Account health</option>
             <option>Appeals</option>
             <option>Product listings</option>
@@ -411,11 +412,18 @@ function migrate(){
     if(!Array.isArray(e.comments)) e.comments=[];
     if(typeof e.category!=="string") e.category="";
     if(typeof e.remarks!=="string") e.remarks="";
+    if(!e.createdBy) e.createdBy=e.by||e.member||"";
+    if(typeof e.brand!=="string") e.brand="";
+    if(typeof e.platform!=="string") e.platform="";
   });
 }
 function canComment(entry){ return me.role==="admin" ? true : entry.team===me.team; }
 function visibleTeams(){ return me.role==="admin" ? state.teams : [me.team]; }
-function canEdit(entry){ return me.role==="admin" ? true : entry.team===me.team; }
+function canEdit(entry){
+  if(me.role==="admin") return true;
+  if(me.role==="lead") return entry.team===me.team;
+  return (entry.createdBy||entry.by)===me.name;
+}
 function isCompiler(){ return me.role==="admin" || me.role==="lead"; }
 function allWeekKeys(){
   const set=new Set(state.entries.map(e=>weekKeyFromTs(e.created)));
@@ -456,6 +464,21 @@ document.getElementById("gate-btn").onclick=tryLogin;
 document.getElementById("gate-user").addEventListener("keydown",e=>{ if(e.key==="Enter") document.getElementById("gate-pass").focus(); });
 document.getElementById("gate-pass").addEventListener("keydown",e=>{ if(e.key==="Enter") tryLogin(); });
 document.addEventListener("click",e=>{ if(e.target.closest("#logout")){ sessionStorage.removeItem("ttMe"); location.reload(); } });
+document.addEventListener("click",e=>{
+  if(!e.target.closest("#changepw")) return;
+  const cur=prompt("Enter your CURRENT passcode:");
+  if(cur===null) return;
+  if(cur!==me.pass){ alert("Incorrect current passcode."); return; }
+  const nw=prompt("Enter your NEW passcode:");
+  if(nw===null) return;
+  const nwTrim=nw.trim();
+  if(!nwTrim){ alert("Passcode can't be empty."); return; }
+  me.pass=nwTrim;
+  const rec=state.members.find(x=>x.id===me.id);
+  if(rec) rec.pass=nwTrim;
+  persist();
+  alert("Password updated.");
+});
 
 function buildSidebar(){
   const sb=document.getElementById("sidebar"); sb.innerHTML="";
@@ -486,7 +509,8 @@ function buildSidebar(){
     '<div><span class="nm" id="me-name">'+esc(me.name)+'</span> <span class="pill '+me.role+'" id="me-role">'+esc(me.role)+'</span></div>'+
     '<div id="me-team" style="margin-top:2px;">'+(me.role==="admin"?"All teams":esc(me.team))+'</div>'+
     '</div>'+
-    '<button class="ghost small" id="logout" style="margin-top:8px; width:100%;">Sign out</button>';
+    '<button class="ghost small" id="changepw" style="margin-top:8px; width:100%;">Change password</button>'+
+    '<button class="ghost small" id="logout" style="margin-top:6px; width:100%;">Sign out</button>';
   sb.appendChild(foot);
 }
 function refreshViews(){
@@ -505,7 +529,6 @@ function mountApp(){
   const vt=visibleTeams();
   if(me.role!=="admin"){ activeView="board"; activeTab=me.team; }
   else if(!activeTab){ activeTab=vt[0]; }
-  document.getElementById("f-team").innerHTML=vt.map(t=>'<option>'+esc(t)+'</option>').join("");
   document.getElementById("m-team").innerHTML=state.teams.map(t=>'<option>'+esc(t)+'</option>').join("");
   // week dropdowns
   const keys=allWeekKeys();
@@ -634,8 +657,8 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   let h='';
   if(rv) h+='<div class="reviewnote">Highlighted rows changed since last marked reviewed ('+fullTimestamp(rv)+').</div>';
   h+='<table class="compiled"><thead><tr>'+
-    '<th>Week</th><th>Members</th><th>Region</th><th>Category</th><th>Focus Area</th><th>Details</th><th>Blockers</th><th>Attachment</th><th>Status</th><th>Discuss</th><th>Timestamp</th><th></th></tr></thead><tbody>';
-  if(!items.length) h+='<tr><td colspan="12" style="color:var(--ink-faint);">No entries match.</td></tr>';
+    '<th>Week</th><th>Members</th><th>Brand</th><th>Platform</th><th>Region</th><th>Category</th><th>Focus Area</th><th>Details</th><th>Blockers</th><th>Attachment</th><th>Status</th><th>Discuss</th><th>Timestamp</th><th></th></tr></thead><tbody>';
+  if(!items.length) h+='<tr><td colspan="14" style="color:var(--ink-faint);">No entries match.</td></tr>';
   items.forEach(e=>{
     const editable=canEdit(e);
     const isChanged=rv && (e.updated||0)>rv;
@@ -646,6 +669,8 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
     h+='<tr class="'+(isChanged?"changed":"")+'">'+
       '<td><span class="wk">Wk '+wknum+'</span>'+(isNew?'<span class="newtag">new</span>':(isChanged?'<span class="newtag">upd</span>':""))+'</td>'+
       '<td>'+(esc(e.member)||"-")+'</td>'+
+      '<td>'+(esc(e.brand)||"-")+'</td>'+
+      '<td>'+(esc(e.platform)||"-")+'</td>'+
       '<td>'+(esc(e.region)||"-")+'</td>'+
       '<td>'+(e.category?'<span class="cat">'+esc(e.category)+'</span>'+(e.category==="Others"&&e.remarks?'<br><span style="font-size:12px; color:var(--ink-faint);">'+esc(e.remarks)+'</span>':""):"-")+'</td>'+
       '<td style="font-weight:600;">'+esc(e.focus)+(e.prio?' <span class="prio '+PCLASS[e.prio]+'">'+e.prio+'</span>':"")+'</td>'+
@@ -657,7 +682,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
       '<td style="color:var(--ink-faint); white-space:nowrap;">'+fullTimestamp(e.updated)+(e.by?'<br>'+esc(e.by):"")+'</td>'+
       '<td style="white-space:nowrap;">'+(editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button> <button class="small" data-edit="'+e.id+'">Edit</button> ':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button></td>'+
     '</tr>';
-    if(threadOpen){ h+='<tr class="cmtrow"><td colspan="12">'+commentsHTML(e)+'</td></tr>'; }
+    if(threadOpen){ h+='<tr class="cmtrow"><td colspan="14">'+commentsHTML(e)+'</td></tr>'; }
   });
   h+='</tbody></table>';
   document.getElementById("tablewrap").innerHTML=h;
@@ -717,13 +742,12 @@ document.addEventListener("click",e=>{
 });
 function openForm(entry){
   editingId=entry?entry.id:null; pendingFile=null;
-  const teamDefault = entry?entry.team : (me.role==="admin" ? activeTab : me.team);
-  document.getElementById("f-team").value=teamDefault;
+  document.getElementById("f-brand").value=entry?(entry.brand||""):"";
+  document.getElementById("f-platform").value=entry?(entry.platform||""):"";
   document.getElementById("f-region").value=entry?(entry.region||""):"";
-  document.getElementById("f-member").value=entry?entry.member:me.name;
   document.getElementById("f-status").value=entry?entry.status:"Active";
   document.getElementById("f-prio").value=entry?entry.prio:"Medium";
-  document.getElementById("f-category").value=(entry&&entry.category)?entry.category:"Account health";
+  document.getElementById("f-category").value=(entry&&entry.category)?entry.category:"";
   document.getElementById("f-remarks").value=entry?(entry.remarks||""):"";
   syncRemarksRow();
   document.getElementById("f-focus").value=entry?entry.focus:"";
@@ -793,23 +817,28 @@ document.getElementById("savebtn").onclick=async()=>{
   const focusField=document.getElementById("f-focus");
   if(!focus){ focusField.focus(); focusField.style.borderColor="var(--red)"; alert("\"Focus this week\" is required - please fill it in before saving."); return; }
   focusField.style.borderColor="";
+  const categoryField=document.getElementById("f-category");
+  if(!categoryField.value){ categoryField.focus(); categoryField.style.borderColor="var(--red)"; alert("Please choose a category before saving."); return; }
+  categoryField.style.borderColor="";
   const btn=document.getElementById("savebtn"); const saving=document.getElementById("saving");
+  const existing = editingId ? state.entries.find(x=>x.id==editingId) : null;
   const rec={
-    team:document.getElementById("f-team").value,
+    team: existing ? existing.team : (me.role==="admin" ? activeTab : me.team),
+    member: existing ? existing.member : me.name,
+    brand:document.getElementById("f-brand").value.trim(),
+    platform:document.getElementById("f-platform").value.trim(),
     region:document.getElementById("f-region").value.trim(),
-    member:document.getElementById("f-member").value.trim()||me.name,
     status:document.getElementById("f-status").value,
     prio:document.getElementById("f-prio").value,
-    category:document.getElementById("f-category").value,
-    remarks:document.getElementById("f-category").value==="Others"?document.getElementById("f-remarks").value.trim():"",
+    category:categoryField.value,
+    remarks:categoryField.value==="Others"?document.getElementById("f-remarks").value.trim():"",
     focus:focus,
     blockers:document.getElementById("f-blockers").value.trim(),
     update:document.getElementById("f-update").value.trim(),
     discuss:document.getElementById("f-discuss").checked,
     updated:Date.now(), by:me.name
   };
-  if(me.role!=="admin") rec.team=me.team;
-  const existing = editingId ? state.entries.find(x=>x.id==editingId) : null;
+  rec.createdBy = existing ? (existing.createdBy || existing.by || me.name) : me.name;
   rec.img = existing ? (existing.img||"") : "";
   rec.created = existing ? (existing.created||Date.now()) : Date.now();
   const newId = editingId || Date.now();
@@ -832,11 +861,11 @@ document.getElementById("savebtn").onclick=async()=>{
 };
 document.getElementById("exportbtn").onclick=()=>{
   const vt=visibleTeams();
-  const rows=[["Week","Team","Region","Members","Category","Remarks","Focus Area","Status","Priority","Blockers","Details","Needs discussion","Attachment URL","Comments","Created","Timestamp"]];
+  const rows=[["Week","Team","Brand","Platform","Region","Members","Category","Remarks","Focus Area","Status","Priority","Blockers","Details","Needs discussion","Attachment URL","Comments","Created","Timestamp"]];
   state.entries.filter(e=>vt.includes(e.team)).forEach(e=>{
     const wknum=parseInt(weekKeyFromTs(e.created).split("-W")[1],10);
     const cmts=(e.comments||[]).map(c=>c.by+": "+c.text).join(" | ");
-    rows.push(["Wk "+wknum,e.team,e.region||"",e.member,e.category||"",e.remarks||"",e.focus,e.status,e.prio||"",e.blockers||"",e.update||"",e.discuss?"Yes":"",e.img||"",cmts,new Date(e.created||Date.now()).toLocaleString(),new Date(e.updated||Date.now()).toLocaleString()]);
+    rows.push(["Wk "+wknum,e.team,e.brand||"",e.platform||"",e.region||"",e.member,e.category||"",e.remarks||"",e.focus,e.status,e.prio||"",e.blockers||"",e.update||"",e.discuss?"Yes":"",e.img||"",cmts,new Date(e.created||Date.now()).toLocaleString(),new Date(e.updated||Date.now()).toLocaleString()]);
   });
   const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n");
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download="team-tracker.csv"; a.click();
@@ -845,7 +874,10 @@ function renderRoster(){
   document.getElementById("m-team").innerHTML=state.teams.map(t=>'<option>'+esc(t)+'</option>').join("");
   document.getElementById("rosterbody").innerHTML=state.members.map(m=>
     '<tr><td>'+esc(m.name)+'</td><td>'+esc(m.team)+'</td><td>'+esc(m.role)+'</td><td>'+esc(m.pass)+'</td>'+
-    '<td style="text-align:right;">'+(m.id==="u1"?'<span style="color:var(--ink-faint); font-size:12px;">you</span>':'<button class="small danger" data-rm="'+m.id+'">Remove</button>')+'</td></tr>').join("");
+    '<td style="text-align:right; white-space:nowrap;">'+
+      '<button class="small" data-resetpw="'+m.id+'">Reset password</button> '+
+      (m.id==="u1"?'<span style="color:var(--ink-faint); font-size:12px;">you</span>':'<button class="small danger" data-rm="'+m.id+'">Remove</button>')+
+    '</td></tr>').join("");
 }
 document.getElementById("m-add").onclick=()=>{
   const name=document.getElementById("m-name").value.trim();
@@ -858,6 +890,18 @@ document.getElementById("m-add").onclick=()=>{
 document.addEventListener("click",e=>{
   const rm=e.target.closest("[data-rm]");
   if(rm){ state.members=state.members.filter(x=>x.id!=rm.dataset.rm); persist(); renderRoster(); buildGate(); }
+  const rp=e.target.closest("[data-resetpw]");
+  if(rp){
+    const mem=state.members.find(x=>x.id===rp.dataset.resetpw);
+    if(!mem) return;
+    const nw=prompt("Set a new passcode for "+mem.name+":");
+    if(nw===null) return;
+    const nwTrim=nw.trim();
+    if(!nwTrim){ alert("Passcode can't be empty."); return; }
+    mem.pass=nwTrim;
+    persist(); renderRoster(); buildGate();
+    alert("Passcode for "+mem.name+" has been reset.");
+  }
 });
 function renderTeams(){
   const list=document.getElementById("teamlist"); list.innerHTML="";
