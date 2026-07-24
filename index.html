@@ -194,6 +194,46 @@
   table.compiled tr:hover td{background:var(--line-soft);}
   table.compiled tr.cmtrow:hover td, table.compiled tr.cmtrow td{background:var(--paper);}
   table.compiled tr.cmtrow .comments{margin-top:0; border-top:none; padding-top:2px;}
+  /* ---- lead dashboard ---- */
+  .dashgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px; margin-top:16px;}
+  .dashcard{border:1px solid var(--line); border-radius:10px; padding:14px 16px; background:#fff;}
+  .dashcard .dh{font-size:13.5px; font-weight:700;}
+  .dashcard .dhsub{font-size:12px; color:var(--ink-faint); margin:2px 0 10px;}
+  .dempty{font-size:12.5px; color:var(--ink-faint); padding:6px 0;}
+  .dmore{font-size:12px; color:var(--ink-faint); margin-top:6px;}
+  ul.dlist{list-style:none; margin:0; padding:0; max-height:260px; overflow-y:auto;}
+  ul.dlist li{padding:7px 0; border-bottom:1px solid var(--line-soft);}
+  ul.dlist li:last-child{border-bottom:none;}
+  ul.dlist .df{font-size:13px; font-weight:600;}
+  ul.dlist .dm{font-size:12px; color:var(--ink-faint); margin-top:2px;}
+  ul.dlist .dblock{color:var(--red);}
+  table.dtable{width:100%; border-collapse:collapse; font-size:12.5px;}
+  table.dtable td{padding:4px 0; vertical-align:middle;}
+  table.dtable td.k{width:34%; color:var(--ink-soft); overflow-wrap:anywhere; padding-right:8px;}
+  table.dtable td.v{width:34px; text-align:right; font-weight:700;}
+  .mbar{display:block; height:7px; background:var(--line-soft); border-radius:999px; overflow:hidden;}
+  .mbar>span{display:block; height:100%; background:var(--ink); border-radius:999px;}
+  .trend{display:flex; align-items:flex-end; gap:10px; height:104px; padding-top:6px;}
+  .tcol{flex:1; display:flex; flex-direction:column; align-items:center; gap:5px;}
+  .tstack{display:flex; flex-direction:column-reverse; justify-content:flex-start; height:76px; width:100%; max-width:34px;}
+  .tb{width:100%; border-radius:3px 3px 0 0;}
+  .tb.open{background:#c9d4e4;}
+  .tb.done{background:var(--ink); border-radius:0 0 3px 3px;}
+  .tlab{font-size:11px; color:var(--ink-faint);}
+  .tlegend{font-size:11.5px; color:var(--ink-faint); margin-top:8px; display:flex; align-items:center; gap:5px;}
+  .tlegend .sw{width:9px; height:9px; border-radius:2px; display:inline-block;}
+  .tlegend .sw.open{background:#c9d4e4;} .tlegend .sw.done{background:var(--ink); margin-left:8px;}
+  .covteam{margin-bottom:12px;}
+  .covteam:last-child{margin-bottom:0;}
+  .covt{font-size:12.5px; font-weight:600;}
+  .covn{font-weight:500; color:var(--ink-faint);}
+  .covmiss{display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;}
+  .covchip{font-size:11.5px; padding:2px 8px; border-radius:999px; background:#fdf0e3; color:#9a5b12; border:1px solid #f0d5b4;}
+  .agetag{display:inline-block; margin-left:4px; font-size:10.5px; font-weight:700; padding:1px 6px; border-radius:999px;
+    background:#fdf0e3; color:#9a5b12; border:1px solid #f0d5b4; white-space:nowrap;}
+  .agetag.bad{background:#fdeceb; color:#a32b22; border-color:#f2c9c5;}
+  .carrytag{display:inline-block; margin-left:4px; font-size:10.5px; font-weight:600; padding:1px 6px; border-radius:999px;
+    background:var(--line-soft); color:var(--ink-faint); border:1px solid var(--line); white-space:nowrap;}
   .readonlynote{margin:10px 0 0; padding:9px 12px; border:1px solid var(--line); border-left:3px solid var(--ink-faint);
     border-radius:8px; background:var(--line-soft); font-size:12.5px; color:var(--ink-soft);}
   /* ---- roster: capped height, sticky header, ~5 rows before scrolling ---- */
@@ -315,6 +355,34 @@
         <select id="dash-week" style="width:auto;"></select>
       </div>
       <div class="overview"><div class="ovgrid" id="ovgrid"></div></div>
+
+      <div class="dashgrid">
+        <div class="dashcard">
+          <div class="dh">Needs attention</div>
+          <div class="dhsub">Aging, stale, blocked, or flagged work</div>
+          <div id="d-attention"></div>
+        </div>
+        <div class="dashcard">
+          <div class="dh">Trend</div>
+          <div class="dhsub">Open vs done over recent weeks</div>
+          <div id="d-trend"></div>
+        </div>
+        <div class="dashcard">
+          <div class="dh">Blockers by region</div>
+          <div class="dhsub">Where work is getting stuck</div>
+          <div id="d-region"></div>
+        </div>
+        <div class="dashcard">
+          <div class="dh">Blockers by brand</div>
+          <div class="dhsub">Which accounts are causing friction</div>
+          <div id="d-brand"></div>
+        </div>
+        <div class="dashcard">
+          <div class="dh">Coverage</div>
+          <div class="dhsub">Who has nothing logged this week</div>
+          <div id="d-coverage"></div>
+        </div>
+      </div>
     </div>
 
     <!-- BOARD -->
@@ -337,6 +405,7 @@
         <span class="spacer"></span>
         <button class="small" id="reviewbtn" title="Sets the 'since' point so you can see what changes before the next meeting">Mark reviewed</button>
         <button class="small" id="exportbtn">Export CSV</button>
+        <button class="small" id="carrybtn" title="Copy unfinished entries from the last week that had them into this week">Carry forward</button>
         <button class="primary small" id="addbtn">+ Add entry</button>
       </div>
       <div id="readonlynote" class="readonlynote hidden"></div>
@@ -561,6 +630,26 @@ function isoWeek(d){
 }
 function weekKeyFromTs(ts){ const w=isoWeek(new Date(ts)); return w.year+"-W"+String(w.week).padStart(2,"0"); }
 function weekKeyNow(){ return weekKeyFromTs(Date.now()); }
+// An entry's week is explicit once carried forward; older rows fall back to
+// the week they were created in.
+function entryWeek(e){ return e.week || weekKeyFromTs(e.created); }
+function weekKeyToDate(k){
+  // Monday of the given ISO week.
+  const y=parseInt(k.split("-W")[0],10), w=parseInt(k.split("-W")[1],10);
+  const jan4=new Date(y,0,4);
+  const day=(jan4.getDay()+6)%7;             // Mon=0
+  const week1Mon=new Date(jan4); week1Mon.setDate(jan4.getDate()-day);
+  const d=new Date(week1Mon); d.setDate(week1Mon.getDate()+(w-1)*7);
+  return d;
+}
+// How many whole weeks separate two week keys (b - a).
+function weeksBetween(a,b){
+  if(!a||!b) return 0;
+  return Math.round((weekKeyToDate(b)-weekKeyToDate(a))/(7*24*3600*1000));
+}
+function weekAgeOf(e){ return weeksBetween(entryWeek(e), weekKeyNow()); }
+// Weeks since anyone touched the entry.
+function daysSinceUpdate(e){ return Math.floor((Date.now()-(e.updated||e.created||Date.now()))/86400000); }
 function defaultState(){
   const now=Date.now();
   return {
@@ -682,6 +771,10 @@ function migrate(){
     if(typeof e.brand!=="string") e.brand="";
     if(typeof e.platform!=="string") e.platform="";
     if(!Array.isArray(e.nudges)) e.nudges=[];
+    if(!e.week) e.week=weekKeyFromTs(e.created);
+    if(typeof e.carriedFrom!=="string") e.carriedFrom="";
+    if(typeof e.rootId==="undefined") e.rootId=e.id;
+    if(typeof e.firstWeek!=="string") e.firstWeek=e.week;
   });
 }
 // Read-only on other teams: no commenting, editing, or nudging there.
@@ -738,7 +831,7 @@ function canNudge(entry){
 }
 function isCompiler(){ return me.role==="admin" || me.role==="lead"; }
 function allWeekKeys(){
-  const set=new Set(state.entries.map(e=>weekKeyFromTs(e.created)));
+  const set=new Set(state.entries.map(e=>entryWeek(e)));
   set.add(weekKeyNow());
   return Array.from(set).sort().reverse();
 }
@@ -811,7 +904,8 @@ function buildSidebar(){
     b.innerHTML=(icon?icon:"")+"<span>"+label+"</span>"+(count!=null?'<span class="n">'+count+'</span>':"");
     b.onclick=onclick; sb.appendChild(b);
   };
-  if(me.role==="admin"){
+  // Leads and managers get the dashboard too - it's built for their weekly review.
+  if(me.role==="admin"||me.role==="lead"||me.role==="manager"){
     mkItem("Dashboard", NICO.dash, activeView==="dashboard", ()=>{ activeView="dashboard"; refreshViews(); });
   }
   const lbl=document.createElement("div"); lbl.className="navlabel"; lbl.textContent="Teams"; sb.appendChild(lbl);
@@ -858,8 +952,9 @@ function refreshViews(){
 function mountApp(){
   document.getElementById("week").innerHTML=weekLabel();
   const vt=visibleTeams();
+  const canDash = me.role==="admin"||me.role==="lead"||me.role==="manager";
   if(me.role!=="admin"){
-    if(activeView!=="deck"&&activeView!=="highlights") activeView="board";
+    if(activeView!=="deck"&&activeView!=="highlights"&&!(activeView==="dashboard"&&canDash)) activeView="board";
     // Only default to their own team - don't yank them back when browsing others.
     if(!activeTab||!state.teams.includes(activeTab)) activeTab=me.team;
   }
@@ -877,8 +972,9 @@ function mountApp(){
 function renderDashboard(){
   const wk=document.getElementById("dash-week").value;
   const og=document.getElementById("ovgrid"); og.innerHTML="";
-  state.teams.forEach(team=>{
-    const it=state.entries.filter(e=>e.team===team && (wk==="all"||weekKeyFromTs(e.created)===wk));
+  const dashTeams = me.role==="admin" ? state.teams : [me.team];
+  dashTeams.forEach(team=>{
+    const it=state.entries.filter(e=>e.team===team && (wk==="all"||entryWeek(e)===wk));
     const ac=it.filter(e=>e.status==="Active").length;
     const ip=it.filter(e=>e.status==="In progress").length;
     const dn=it.filter(e=>e.status==="Done").length;
@@ -888,7 +984,87 @@ function renderDashboard(){
       '<span class="n-green"><b>'+dn+'</b>done</span><span class="n-gray"><b>'+it.length+'</b>total</span>'+
       (fl?'<span class="n-red"><b>'+fl+'</b>to discuss</span>':"")+'</div></div>';
   });
-  if(!state.teams.length) og.innerHTML='<div class="empty">No teams yet. Add one under Data.</div>';
+  if(!dashTeams.length) og.innerHTML='<div class="empty">No teams yet. Add one under Data.</div>';
+  renderDashPanels(wk);
+}
+/* ============ LEAD DASHBOARD PANELS ============ */
+function dashScopeEntries(){
+  // Admin sees everything; leads/managers see their own team.
+  const teams = me.role==="admin" ? state.teams : [me.team];
+  return state.entries.filter(e=>teams.includes(e.team));
+}
+function bar(pct){ return '<span class="mbar"><span style="width:'+Math.max(2,Math.round(pct))+'%"></span></span>'; }
+function dashList(rows, emptyMsg){
+  if(!rows.length) return '<div class="dempty">'+emptyMsg+'</div>';
+  const max=Math.max.apply(null, rows.map(r=>r.n));
+  return '<table class="dtable">'+rows.map(r=>
+    '<tr><td class="k">'+esc(r.k)+'</td><td class="b">'+bar(r.n/max*100)+'</td><td class="v">'+r.n+'</td></tr>'
+  ).join("")+'</table>';
+}
+function renderDashPanels(wk){
+  const scope=dashScopeEntries();
+  const inWeek=e=>(wk==="all"||entryWeek(e)===wk);
+  const cur=scope.filter(inWeek);
+
+  // --- Needs attention ---
+  const flagged=cur.filter(e=>e.status!=="Done" && (ageInfo(e)||e.blockers||e.discuss));
+  flagged.sort((a,b)=>{
+    const rank=x=>(ageInfo(x)&&ageInfo(x).some(t=>t.kind==="bad")?0:1);
+    return rank(a)-rank(b) || (b.blockers?1:0)-(a.blockers?1:0);
+  });
+  document.getElementById("d-attention").innerHTML = flagged.length
+    ? '<ul class="dlist">'+flagged.slice(0,12).map(e=>
+        '<li><div class="df">'+esc(e.focus)+ageBadges(e)+(e.discuss?'<span class="agetag">discuss</span>':"")+'</div>'+
+        '<div class="dm">'+esc(e.member||"-")+(e.region?' &middot; '+esc(e.region):"")+
+        (e.blockers?' &middot; <span class="dblock">'+esc(e.blockers)+'</span>':"")+'</div></li>').join("")+
+        '</ul>'+(flagged.length>12?'<div class="dmore">+'+(flagged.length-12)+' more</div>':"")
+    : '<div class="dempty">Nothing aging or blocked. Good week.</div>';
+
+  // --- Trend: last 6 weeks ---
+  const weeks=Array.from(new Set(scope.map(entryWeek))).sort().slice(-6);
+  if(weeks.length){
+    const maxN=Math.max.apply(null, weeks.map(k=>scope.filter(e=>entryWeek(e)===k).length))||1;
+    document.getElementById("d-trend").innerHTML='<div class="trend">'+weeks.map(k=>{
+      const it=scope.filter(e=>entryWeek(e)===k);
+      const done=it.filter(e=>e.status==="Done").length;
+      const open=it.length-done;
+      const h=n=>Math.round(n/maxN*72);
+      return '<div class="tcol" title="'+esc(weekKeyLabel(k))+': '+open+' open, '+done+' done">'+
+        '<div class="tstack">'+
+          '<div class="tb open" style="height:'+h(open)+'px"></div>'+
+          '<div class="tb done" style="height:'+h(done)+'px"></div>'+
+        '</div><div class="tlab">W'+parseInt(k.split("-W")[1],10)+'</div></div>';
+    }).join("")+'</div><div class="tlegend"><span class="sw open"></span>open <span class="sw done"></span>done</div>';
+  } else {
+    document.getElementById("d-trend").innerHTML='<div class="dempty">Not enough history yet.</div>';
+  }
+
+  // --- Blockers by region / brand ---
+  const blocked=cur.filter(e=>e.status!=="Done" && e.blockers);
+  const tally=(arr,key)=>{
+    const m=new Map();
+    arr.forEach(e=>{ const k=(e[key]||"").trim()||"Unspecified"; m.set(k,(m.get(k)||0)+1); });
+    return Array.from(m, ([k,n])=>({k,n})).sort((a,b)=>b.n-a.n).slice(0,8);
+  };
+  document.getElementById("d-region").innerHTML=dashList(tally(blocked,"region"),"No blockers logged.");
+  document.getElementById("d-brand").innerHTML=dashList(tally(blocked,"brand"),"No blockers logged.");
+
+  // --- Coverage: who logged nothing this week ---
+  const teams = me.role==="admin" ? state.teams : [me.team];
+  let cov="";
+  teams.forEach(t=>{
+    const roster=teamRoster(t);
+    if(!roster.length) return;
+    const logged=new Set();
+    cur.filter(e=>e.team===t).forEach(e=>splitMembers(e.member).forEach(n=>{
+      const hit=roster.find(r=>sameName(r,n)); if(hit) logged.add(hit);
+    }));
+    const missing=roster.filter(r=>!logged.has(r));
+    cov+='<div class="covteam"><div class="covt">'+esc(t)+' <span class="covn">'+logged.size+'/'+roster.length+' logged</span></div>'+
+      (missing.length?'<div class="covmiss">'+missing.map(n=>'<span class="covchip">'+esc(n)+'</span>').join("")+'</div>'
+                     :'<div class="dempty">Everyone has logged something.</div>')+'</div>';
+  });
+  document.getElementById("d-coverage").innerHTML=cov||'<div class="dempty">No roster yet. Add members under Data.</div>';
 }
 document.getElementById("dash-week").onchange=renderDashboard;
 function splitMembers(str){ return (str||"").split(",").map(s=>s.trim()).filter(Boolean); }
@@ -912,6 +1088,8 @@ function render(){
   // Write controls only make sense on your own team.
   document.getElementById("addbtn").classList.toggle("hidden", readOnly);
   document.getElementById("reviewbtn").classList.toggle("hidden", readOnly);
+  document.getElementById("exportbtn").classList.toggle("hidden", readOnly);
+  document.getElementById("carrybtn").classList.toggle("hidden", readOnly);
   const ro=document.getElementById("readonlynote");
   if(ro){
     ro.classList.toggle("hidden", !readOnly);
@@ -930,7 +1108,7 @@ function render(){
   document.getElementById("tablewrap").classList.toggle("hidden", !useTable);
   if(useTable){ renderTable([team],sf,wk,mf,cf,onlyDiscuss); return; }
   const board=document.getElementById("board"); board.innerHTML="";
-  let items=state.entries.filter(e=>e.team===team&&(sf==="all"||e.status===sf)&&(mf==="all"||nameListHas(e.member,mf))&&(wk==="all"||weekKeyFromTs(e.created)===wk)&&(!onlyDiscuss||e.discuss)&&(cf!=="since"||(e.updated||0)>rv));
+  let items=state.entries.filter(e=>e.team===team&&(sf==="all"||e.status===sf)&&(mf==="all"||nameListHas(e.member,mf))&&(wk==="all"||entryWeek(e)===wk)&&(!onlyDiscuss||e.discuss)&&(cf!=="since"||(e.updated||0)>rv));
   // flagged-for-discussion first, then by priority
   items.sort((a,b)=>{ if(!!b.discuss-!!a.discuss) return (!!b.discuss)-(!!a.discuss); const pr={High:0,Medium:1,Low:2}; return (pr[a.prio]==null?1:pr[a.prio])-(pr[b.prio]==null?1:pr[b.prio]); });
   const sec=document.createElement("div"); sec.className="team";
@@ -939,7 +1117,7 @@ function render(){
   if(!items.length){ const p=document.createElement("div"); p.className="empty"; p.textContent="No entries match."; sec.appendChild(p); }
   items.forEach(e=>{
     const editable=canEdit(e);
-    const wkey=weekKeyFromTs(e.created); const wknum=parseInt(wkey.split("-W")[1],10);
+    const wkey=entryWeek(e); const wknum=parseInt(wkey.split("-W")[1],10);
     const isNew=rv && (e.created||0)>rv;
     const isChanged=rv && (e.updated||0)>rv;
     const card=document.createElement("div"); card.className="card"+(e.discuss?" discuss":"")+(isChanged?" changed":"");
@@ -1041,7 +1219,7 @@ function commentsHTML(e){
 function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   mf=mf||"all"; cf=cf||"all";
   const rv=state.reviewedAt||0;
-  let items=state.entries.filter(e=>teams.includes(e.team)&&(sf==="all"||e.status===sf)&&(mf==="all"||nameListHas(e.member,mf))&&(wk==="all"||weekKeyFromTs(e.created)===wk)&&(!onlyDiscuss||e.discuss)&&(cf!=="since"||(e.updated||0)>rv));
+  let items=state.entries.filter(e=>teams.includes(e.team)&&(sf==="all"||e.status===sf)&&(mf==="all"||nameListHas(e.member,mf))&&(wk==="all"||entryWeek(e)===wk)&&(!onlyDiscuss||e.discuss)&&(cf!=="since"||(e.updated||0)>rv));
   items.sort((a,b)=>{ if(!!b.discuss-!!a.discuss) return (!!b.discuss)-(!!a.discuss); const pr={High:0,Medium:1,Low:2}; return (pr[a.prio]==null?1:pr[a.prio])-(pr[b.prio]==null?1:pr[b.prio]); });
   let h='';
   if(rv) h+='<div class="reviewnote">Highlighted rows changed since last marked reviewed ('+fullTimestamp(rv)+').</div>';
@@ -1075,9 +1253,11 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
     const isNew=rv && (e.created||0)>rv;
     const cn=(e.comments||[]).length; const ur=unreadCount(e);
     const threadOpen=openThreads.has(String(e.id));
-    const wknum=parseInt(weekKeyFromTs(e.created).split("-W")[1],10);
+    const wknum=parseInt(entryWeek(e).split("-W")[1],10);
     h+='<tr class="'+(isChanged?"changed":"")+'">'+
-      '<td><span class="wk">Wk '+wknum+'</span>'+(isNew?'<span class="newtag">new</span>':(isChanged?'<span class="newtag">upd</span>':""))+'</td>'+
+      '<td><span class="wk">Wk '+wknum+'</span>'+(isNew?'<span class="newtag">new</span>':(isChanged?'<span class="newtag">upd</span>':""))+
+        (e.carriedFrom?'<span class="carrytag" title="Carried forward from '+esc(weekKeyLabel(e.carriedFrom))+'">carried</span>':"")+
+        ageBadges(e)+'</td>'+
       '<td>'+(esc(e.member)||"-")+'</td>'+
       '<td>'+(esc(e.brand)||"-")+'</td>'+
       '<td>'+(esc(e.platform)||"-")+'</td>'+
@@ -1089,7 +1269,8 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
       '<td><span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span></td>'+
       '<td>'+(e.discuss?'<span class="flag">Discuss</span>':"")+(openNudges(e).length?' <span class="nudged">Nudged</span>':"")+((!e.discuss&&!openNudges(e).length)?"-":"")+'</td>'+
       '<td style="color:var(--ink-faint); font-size:12px;">'+fullTimestamp(e.updated)+(e.by?'<br>'+esc(e.by):"")+'</td>'+
-      '<td><div class="rowacts">'+(editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button><button class="small" data-edit="'+e.id+'">Edit</button>':"")+(canNudge(e)?'<button class="small" data-nudge="'+e.id+'">Nudge</button>':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button></div></td>'+
+      '<td><div class="rowacts">'+(editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button><button class="small" data-edit="'+e.id+'">Edit</button>'+
+        ((e.status!=="Done"&&entryWeek(e)!==weekKeyNow()&&!alreadyCarried(e))?'<button class="small" data-carry="'+e.id+'" title="Copy into this week">Carry</button>':""):"")+(canNudge(e)?'<button class="small" data-nudge="'+e.id+'">Nudge</button>':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button></div></td>'+
     '</tr>';
     const nh=nudgeHTML(e);
     if(nh){ h+='<tr class="cmtrow"><td colspan="13">'+nh+'</td></tr>'; }
@@ -1127,6 +1308,16 @@ document.addEventListener("click",e=>{
   const cy=e.target.closest("[data-cycle]"), dl=e.target.closest("[data-del]"), ed=e.target.closest("[data-edit]"), ds=e.target.closest("[data-discuss]");
   const th=e.target.closest("[data-thread]"), ca=e.target.closest("[data-cadd]"), cd=e.target.closest("[data-cdel]");
   const nu=e.target.closest("[data-nudge]"), nr=e.target.closest("[data-nresolve]");
+  const cfw=e.target.closest("[data-carry]");
+  if(cfw){
+    const it=state.entries.find(x=>x.id==cfw.dataset.carry);
+    if(!it||!canEdit(it)) return;
+    if(alreadyCarried(it)){ alert("This is already in the current week."); return; }
+    carryEntryForward(it, weekKeyNow());
+    persist();
+    document.getElementById("board-week").value=weekKeyNow(); boardWeek=weekKeyNow();
+    render(); buildSidebar(); return;
+  }
   if(nu){ const it=state.entries.find(x=>x.id==nu.dataset.nudge); if(it) openNudge(it); return; }
   if(nr){
     const [id,idx]=nr.dataset.nresolve.split(":");
@@ -1272,6 +1463,77 @@ function compressToDataURL(file, maxDim, quality){
     reader.onerror=rej; reader.readAsDataURL(file);
   });
 }
+/* ============ AGING ============ */
+// An item is "aging" once its lineage has been open several weeks, or nobody
+// has touched it in a while. Done entries never age.
+const AGE_WEEKS_WARN=3, AGE_WEEKS_BAD=5, STALE_DAYS=14;
+function ageInfo(e){
+  if(e.status==="Done") return null;
+  const wks=weeksBetween(e.firstWeek||entryWeek(e), entryWeek(e))+1;
+  const idle=daysSinceUpdate(e);
+  const out=[];
+  if(wks>=AGE_WEEKS_WARN) out.push({kind:wks>=AGE_WEEKS_BAD?"bad":"warn", label:wks+"w open", title:"Open for "+wks+" weeks (since "+weekKeyLabel(e.firstWeek||entryWeek(e))+")"});
+  if(idle>=STALE_DAYS) out.push({kind:"warn", label:"stale "+idle+"d", title:"No update in "+idle+" days"});
+  return out.length?out:null;
+}
+function ageBadges(e){
+  const a=ageInfo(e); if(!a) return "";
+  return a.map(x=>'<span class="agetag '+x.kind+'" title="'+esc(x.title)+'">'+esc(x.label)+'</span>').join("");
+}
+/* ============ CARRY FORWARD ============ */
+// Copy an unfinished entry into the current week, preserving its history via
+// rootId/firstWeek so "open for N weeks" stays accurate across the chain.
+function carryEntryForward(e, targetWeek){
+  const wk=targetWeek||weekKeyNow();
+  const now=Date.now();
+  const id=now+Math.floor(Math.random()*1000);
+  const copy={
+    id:id,
+    team:e.team, member:e.member, brand:e.brand||"", platform:e.platform||"", region:e.region||"",
+    category:e.category||"", remarks:e.remarks||"", focus:e.focus,
+    status:e.status==="Done"?"Active":e.status,
+    prio:e.prio||"", blockers:e.blockers||"",
+    update:"",                      // last week's progress note starts fresh
+    img:e.img||"", discuss:!!e.discuss,
+    comments:[], nudges:[],
+    createdBy:e.createdBy||e.by||"", createdById:e.createdById||"",
+    by:e.by||"", created:now, updated:now,
+    week:wk,
+    carriedFrom:entryWeek(e),
+    rootId:e.rootId||e.id,
+    firstWeek:e.firstWeek||entryWeek(e)
+  };
+  state.entries.push(copy);
+  return copy;
+}
+function carryableEntries(team, fromWeek){
+  return state.entries.filter(e=>
+    e.team===team && entryWeek(e)===fromWeek && e.status!=="Done" && !alreadyCarried(e)
+  );
+}
+// Has this entry's lineage already got a row in the current week?
+function alreadyCarried(e){
+  const root=e.rootId||e.id;
+  const now=weekKeyNow();
+  return state.entries.some(x=>x!==e && (x.rootId||x.id)===root && entryWeek(x)===now);
+}
+document.getElementById("carrybtn").onclick=()=>{
+  const team=(activeTab&&state.teams.includes(activeTab))?activeTab:me.team;
+  if(!isOwnTeam(team)){ alert("You can only carry forward entries on your own team."); return; }
+  const cur=weekKeyNow();
+  // Pull from the most recent earlier week that still has unfinished work.
+  const earlier=Array.from(new Set(state.entries.filter(e=>e.team===team).map(entryWeek)))
+    .filter(k=>k<cur).sort().reverse();
+  let src=null, list=[];
+  for(const k of earlier){ const c=carryableEntries(team,k); if(c.length){ src=k; list=c; break; } }
+  if(!list.length){ alert("Nothing to carry forward - no unfinished entries from earlier weeks."); return; }
+  const names=list.map(e=>"  \u2022 "+e.focus).join("\n");
+  if(!confirm("Carry "+list.length+" unfinished "+(list.length===1?"entry":"entries")+" from "+weekKeyLabel(src)+" into "+weekKeyLabel(cur)+"?\n\n"+names+"\n\nProgress notes reset so you can write this week's update. The originals stay untouched.")) return;
+  list.forEach(e=>carryEntryForward(e,cur));
+  persist();
+  document.getElementById("board-week").value=cur; boardWeek=cur;
+  render();
+};
 document.getElementById("savebtn").onclick=async()=>{
   const focus=document.getElementById("f-focus").value.trim();
   const focusField=document.getElementById("f-focus");
@@ -1306,6 +1568,10 @@ document.getElementById("savebtn").onclick=async()=>{
   rec.createdById = existing ? (existing.createdById || (isOwner(existing) ? me.id : "")) : me.id;
   rec.img = existing ? (existing.img||"") : "";
   rec.created = existing ? (existing.created||Date.now()) : Date.now();
+  // Keep an entry in its own week when edited; new entries land in the current week.
+  rec.week = existing ? entryWeek(existing) : weekKeyNow();
+  rec.carriedFrom = existing ? (existing.carriedFrom||"") : "";
+  rec.firstWeek = existing ? (existing.firstWeek||entryWeek(existing)) : rec.week;
   const newId = editingId || Date.now();
   if(pendingFile){
     try{ btn.disabled=true; saving.classList.remove("hidden"); rec.img=await uploadImage(pendingFile, newId); }
@@ -1314,7 +1580,7 @@ document.getElementById("savebtn").onclick=async()=>{
   }
   if(existing && !canEdit(existing)){ alert("You don't have permission to edit this entry."); return; }
   if(editingId){ Object.assign(existing, rec); }
-  else { rec.id=newId; rec.comments=[]; state.entries.push(rec); }
+  else { rec.id=newId; rec.comments=[]; rec.rootId=newId; state.entries.push(rec); }
   pendingFile=null;
   document.getElementById("form").classList.add("hidden");
   // ensure the week we just added to is selectable
@@ -1326,10 +1592,12 @@ document.getElementById("savebtn").onclick=async()=>{
   persist(); render(); buildSidebar();
 };
 document.getElementById("exportbtn").onclick=()=>{
+  const _t=(activeTab&&state.teams.includes(activeTab))?activeTab:me.team;
+  if(activeView==="board" && !isOwnTeam(_t)){ alert("Export is only available for your own team."); return; }
   const vt=visibleTeams();
   const rows=[["Week","Team","Brand","Platform","Region","Members","Category","Remarks","Focus Area","Status","Priority","Supporting Details","Remarks","Needs discussion","Open nudges","Attachment URL","Comments","Created","Timestamp"]];
   state.entries.filter(e=>vt.includes(e.team)).forEach(e=>{
-    const wknum=parseInt(weekKeyFromTs(e.created).split("-W")[1],10);
+    const wknum=parseInt(entryWeek(e).split("-W")[1],10);
     const cmts=(e.comments||[]).map(c=>c.by+": "+c.text).join(" | ");
     rows.push(["Wk "+wknum,e.team,e.brand||"",e.platform||"",e.region||"",e.member,e.category||"",e.remarks||"",e.focus,e.status,e.prio||"",e.blockers||"",e.update||"",e.discuss?"Yes":"",openNudges(e).map(n=>n.by+": "+n.text).join(" | "),e.img||"",cmts,new Date(e.created||Date.now()).toLocaleString(),new Date(e.updated||Date.now()).toLocaleString()]);
   });
