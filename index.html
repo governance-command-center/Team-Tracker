@@ -261,22 +261,26 @@
   .rosterempty{padding:14px; font-size:13px; color:var(--ink-faint);}
   /* ---- compiled table sizing ---- */
   .tablescroll{width:100%; overflow-x:auto;}
-  table.compiled{table-layout:fixed; min-width:1180px;}
-  table.compiled th,table.compiled td{overflow-wrap:anywhere; word-break:normal;}
-  table.compiled col.c-week{width:62px;}
-  table.compiled col.c-first{width:118px;}
-  table.compiled col.c-members{width:120px;}
-  table.compiled col.c-brand{width:120px;}
-  table.compiled col.c-platform{width:92px;}
-  table.compiled col.c-region{width:70px;}
-  table.compiled col.c-category{width:112px;}
-  table.compiled col.c-focus{width:210px;}
-  table.compiled col.c-remarks{width:290px;}
-  table.compiled col.c-att{width:74px;}
-  table.compiled col.c-status{width:104px;}
-  table.compiled col.c-discuss{width:84px;}
-  table.compiled col.c-time{width:132px;}
-  table.compiled col.c-act{width:150px;}
+  table.compiled{table-layout:fixed; width:100%; min-width:0; font-size:12.5px;}
+  table.compiled th,table.compiled td{overflow-wrap:anywhere; word-break:normal; padding:8px 7px; vertical-align:top;}
+  table.compiled th{font-size:11.5px; letter-spacing:.02em;}
+  table.compiled col.c-week{width:4.2%;}
+  table.compiled col.c-first{width:8.2%;}
+  table.compiled col.c-members{width:9%;}
+  table.compiled col.c-brand{width:8%;}
+  table.compiled col.c-platform{width:6.2%;}
+  table.compiled col.c-region{width:4.6%;}
+  table.compiled col.c-category{width:8%;}
+  table.compiled col.c-focus{width:15%;}
+  table.compiled col.c-remarks{width:19.6%;}
+  table.compiled col.c-att{width:5.2%;}
+  table.compiled col.c-status{width:7%;}
+  table.compiled col.c-time{width:8.5%;}
+  table.compiled col.c-act{width:9.5%;}
+  table.compiled .rowacts button{font-size:11px; padding:3px 7px;}
+  table.compiled img.tt{max-width:100%; height:auto;}
+  table.compiled .prio,table.compiled .cat,table.compiled .badge,table.compiled .flag,table.compiled .nudged{font-size:11px;}
+  @media (max-width:1150px){ table.compiled{min-width:1060px;} }
   table.compiled td.attcell{text-align:center;}
   table.compiled img.tt.broken{width:34px; background:var(--line-soft); border-style:dashed; object-fit:contain;}
   table.compiled .wk{white-space:nowrap;}
@@ -415,11 +419,9 @@
           <option value="all">Any time</option>
           <option value="since">Changed since…</option>
         </select>
-        <label class="chk pillchk"><input type="checkbox" id="discussfilter" /> <span>Needs discussion</span></label>
         <span class="spacer"></span>
         <button class="small" id="reviewbtn" title="Sets the 'since' point so you can see what changes before the next meeting">Mark reviewed</button>
         <button class="small" id="exportbtn">Export CSV</button>
-        <button class="small" id="carrybtn" title="Copy unfinished entries from the last week that had them into this week">Carry forward</button>
         <button class="primary small" id="addbtn">+ Add entry</button>
       </div>
       <div id="readonlynote" class="readonlynote hidden"></div>
@@ -979,6 +981,7 @@ function mountApp(){
   if(boardWeek==="all") boardWeek=weekKeyNow();
   document.getElementById("dash-week").innerHTML=opts(dashWeek);
   document.getElementById("board-week").innerHTML=opts(boardWeek);
+  runAutoCarry();
   refreshViews();
 }
 function renderDashboard(){
@@ -1101,7 +1104,6 @@ function render(){
   document.getElementById("addbtn").classList.toggle("hidden", readOnly);
   document.getElementById("reviewbtn").classList.toggle("hidden", readOnly);
   document.getElementById("exportbtn").classList.toggle("hidden", readOnly);
-  document.getElementById("carrybtn").classList.toggle("hidden", readOnly);
   const ro=document.getElementById("readonlynote");
   if(ro){
     ro.classList.toggle("hidden", !readOnly);
@@ -1112,7 +1114,7 @@ function render(){
   const sf=document.getElementById("statusfilter").value||"all";
   const mf=document.getElementById("memberfilter").value||"all";
   const cf=document.getElementById("changedfilter").value||"all";
-  const onlyDiscuss=document.getElementById("discussfilter").checked;
+  const onlyDiscuss=false;
   const wk=document.getElementById("board-week").value;
   const rv=state.reviewedAt||0;
   const useTable = true;
@@ -1238,10 +1240,10 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   h+='<div class="tablescroll"><table class="compiled">'+
     '<colgroup><col class="c-week"/><col class="c-first"/><col class="c-members"/><col class="c-brand"/><col class="c-platform"/>'+
     '<col class="c-region"/><col class="c-category"/><col class="c-focus"/><col class="c-remarks"/>'+
-    '<col class="c-att"/><col class="c-status"/><col class="c-discuss"/><col class="c-time"/><col class="c-act"/></colgroup>'+
+    '<col class="c-att"/><col class="c-status"/><col class="c-time"/><col class="c-act"/></colgroup>'+
     '<thead><tr>'+
-    '<th>Week</th><th>First logged</th><th>Members</th><th>Brand</th><th>Platform</th><th>Region</th><th>Category</th><th>Focus Area</th><th>Remarks</th><th>Attachment</th><th>Status</th><th>Discuss</th><th>Last update</th><th></th></tr></thead><tbody>';
-  if(!items.length) h+='<tr><td colspan="14" style="color:var(--ink-faint);">No entries match.</td></tr>';
+    '<th>Week</th><th>First logged</th><th>Members</th><th>Brand</th><th>Platform</th><th>Region</th><th>Category</th><th>Focus Area</th><th>Remarks</th><th>Att.</th><th>Status</th><th>Last update</th><th></th></tr></thead><tbody>';
+  if(!items.length) h+='<tr><td colspan="13" style="color:var(--ink-faint);">No entries match.</td></tr>';
   // Admin / manager / lead see entries grouped by region, regions A-Z
   const groupByRegion = (me.role==="admin"||me.role==="manager"||me.role==="lead");
   let groups;
@@ -1257,7 +1259,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   }
   groups.forEach(g=>{
   if(g.region!==null){
-    h+='<tr class="regiongroup"><td colspan="14">'+esc(g.region)+' <span class="rgcount">'+g.rows.length+' '+(g.rows.length===1?"entry":"entries")+'</span></td></tr>';
+    h+='<tr class="regiongroup"><td colspan="13">'+esc(g.region)+' <span class="rgcount">'+g.rows.length+' '+(g.rows.length===1?"entry":"entries")+'</span></td></tr>';
   }
   g.rows.forEach(e=>{
     const editable=canEdit(e);
@@ -1285,15 +1287,15 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
           (histOpen.has(String(e.id))?"hide":"")+' '+e.history.length+' earlier '+(e.history.length===1?"note":"notes")+'</button>':"")+
         '</td>'+
       '<td class="attcell">'+(e.img?'<img class="tt" src="'+esc(e.img)+'" data-zoom="'+esc(e.img)+'" alt="attachment" loading="lazy" onerror="this.classList.add(\'broken\');this.removeAttribute(\'data-zoom\');this.alt=\'image unavailable\';" />':"-")+'</td>'+
-      '<td><span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span></td>'+
-      '<td>'+(e.discuss?'<span class="flag">Discuss</span>':"")+(openNudges(e).length?' <span class="nudged">Nudged</span>':"")+((!e.discuss&&!openNudges(e).length)?"-":"")+'</td>'+
+      '<td><span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span>'+
+        (e.discuss?'<br><span class="flag">Discuss</span>':"")+(openNudges(e).length?'<br><span class="nudged">Nudged</span>':"")+'</td>'+
       '<td style="color:var(--ink-faint); font-size:12px;">'+fullTimestamp(e.updated)+(e.by?'<br>'+esc(e.by):"")+'</td>'+
-      '<td><div class="rowacts">'+(editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button><button class="small" data-edit="'+e.id+'">Edit</button>'+
-        ((e.status!=="Done"&&entryWeek(e)!==weekKeyNow())?'<button class="small" data-carry="'+e.id+'" title="Move into this week, keeping its history">Carry</button>':""):"")+(canNudge(e)?'<button class="small" data-nudge="'+e.id+'">Nudge</button>':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button></div></td>'+
+      '<td><div class="rowacts">'+(editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button><button class="small" data-edit="'+e.id+'">Edit</button>'
+        :"")+(canNudge(e)?'<button class="small" data-nudge="'+e.id+'">Nudge</button>':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button></div></td>'+
     '</tr>';
     const nh=nudgeHTML(e);
     if(histOpen.has(String(e.id)) && e.history && e.history.length){
-      h+='<tr class="cmtrow"><td colspan="14"><div class="histwrap"><div class="histh">Weekly trail</div>'+
+      h+='<tr class="cmtrow"><td colspan="13"><div class="histwrap"><div class="histh">Weekly trail</div>'+
         e.history.slice().reverse().map(x=>
           '<div class="histrow"><span class="histwk">'+esc(weekKeyLabel(x.week))+'</span>'+
           '<span class="histtxt">'+(esc(x.update)||'<i>no note</i>')+
@@ -1301,8 +1303,8 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
           '<span class="histst">'+esc(x.status||"")+'</span></div>').join("")+
         '</div></td></tr>';
     }
-    if(nh){ h+='<tr class="cmtrow"><td colspan="14">'+nh+'</td></tr>'; }
-    if(threadOpen){ h+='<tr class="cmtrow"><td colspan="14">'+commentsHTML(e)+'</td></tr>'; }
+    if(nh){ h+='<tr class="cmtrow"><td colspan="13">'+nh+'</td></tr>'; }
+    if(threadOpen){ h+='<tr class="cmtrow"><td colspan="13">'+commentsHTML(e)+'</td></tr>'; }
   });
   });
   h+='</tbody></table></div>';
@@ -1312,7 +1314,6 @@ document.getElementById("board-week").onchange=render;
 document.getElementById("statusfilter").onchange=render;
 document.getElementById("memberfilter").onchange=render;
 document.getElementById("changedfilter").onchange=render;
-document.getElementById("discussfilter").onchange=render;
 document.getElementById("reviewbtn").onclick=()=>{
   if(!confirm("Mark everything reviewed as of now? Entries changed after this point will be highlighted until you mark reviewed again.")) return;
   state.reviewedAt=Date.now(); persist(); render();
@@ -1539,23 +1540,41 @@ function carryEntryForward(e, targetWeek){
 function carryableEntries(team, fromWeek){
   return state.entries.filter(e=>e.team===team && entryWeek(e)===fromWeek && e.status!=="Done");
 }
-document.getElementById("carrybtn").onclick=()=>{
-  const team=(activeTab&&state.teams.includes(activeTab))?activeTab:me.team;
-  if(!isOwnTeam(team)){ alert("You can only carry forward entries on your own team."); return; }
+// ---- Automatic carry forward -------------------------------------------
+// Any entry that is not Done and still sits in a week earlier than the current
+// one is pulled into the current week automatically, keeping its full history.
+// Runs on load, on every save, and on a timer so a week rollover is picked up
+// without a refresh.
+let autoCarryBusy=false;
+function autoCarryForward(){
+  if(autoCarryBusy) return false;
   const cur=weekKeyNow();
-  // Pull from the most recent earlier week that still has unfinished work.
-  const earlier=Array.from(new Set(state.entries.filter(e=>e.team===team).map(entryWeek)))
-    .filter(k=>k<cur).sort().reverse();
-  let src=null, list=[];
-  for(const k of earlier){ const c=carryableEntries(team,k); if(c.length){ src=k; list=c; break; } }
-  if(!list.length){ alert("Nothing to carry forward - no unfinished entries from earlier weeks."); return; }
-  const names=list.map(e=>"  \u2022 "+e.focus).join("\n");
-  if(!confirm("Move "+list.length+" unfinished "+(list.length===1?"entry":"entries")+" from "+weekKeyLabel(src)+" into "+weekKeyLabel(cur)+"?\n\n"+names+"\n\nEach keeps its original creation date and its past weekly notes. Progress notes reset so you can write this week's update.")) return;
-  list.forEach(e=>carryEntryForward(e,cur));
-  persist();
-  document.getElementById("board-week").value=cur; boardWeek=cur;
-  render(); buildSidebar();
-};
+  // Only touch teams this user is allowed to write to, so two people viewing
+  // the same board don't both try to move the same rows.
+  const teams=state.teams.filter(t=>isOwnTeam(t));
+  if(!teams.length) return false;
+  const due=state.entries.filter(e=>
+    teams.includes(e.team) &&
+    e.status!=="Done" &&
+    entryWeek(e)<cur
+  );
+  if(!due.length) return false;
+  autoCarryBusy=true;
+  due.forEach(e=>carryEntryForward(e,cur));
+  autoCarryBusy=false;
+  return true;
+}
+function runAutoCarry(){
+  if(!me) return;
+  if(autoCarryForward()){
+    persist();
+    if(typeof buildSidebar==="function") buildSidebar();
+    if(activeView==="board") render();
+    else refreshViews();
+  }
+}
+// Check every 5 minutes so an open tab rolls over into the new week on its own.
+setInterval(runAutoCarry, 5*60*1000);
 document.getElementById("savebtn").onclick=async()=>{
   const focus=document.getElementById("f-focus").value.trim();
   const focusField=document.getElementById("f-focus");
