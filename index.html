@@ -229,6 +229,19 @@
   .covn{font-weight:500; color:var(--ink-faint);}
   .covmiss{display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;}
   .covchip{font-size:11.5px; padding:2px 8px; border-radius:999px; background:#fdf0e3; color:#9a5b12; border:1px solid #f0d5b4;}
+  .histbtn{display:inline-block; margin-top:5px; font-size:11px; padding:1px 7px; border-radius:999px;
+    border:1px solid var(--line); background:var(--paper); color:var(--ink-faint); cursor:pointer;}
+  .histbtn:hover{border-color:var(--ink-faint); color:var(--ink-soft);}
+  .histwrap{padding:2px 0 4px;}
+  .histh{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-faint); margin-bottom:6px;}
+  .histrow{display:flex; gap:10px; align-items:baseline; font-size:12.5px; padding:4px 0; border-bottom:1px solid var(--line-soft);}
+  .histrow:last-child{border-bottom:none;}
+  .histwk{flex:none; width:120px; color:var(--ink-faint); font-size:11.5px;}
+  .histtxt{flex:1;}
+  .histblock{color:var(--red);}
+  .histst{flex:none; font-size:11.5px; color:var(--ink-faint);}
+  table.compiled td.tsfirst{font-size:12px; color:var(--ink-faint);}
+  table.compiled td.tsfirst .tsweek{display:block; font-size:11px; color:var(--ink-faint); opacity:.85;}
   .agetag{display:inline-block; margin-left:4px; font-size:10.5px; font-weight:700; padding:1px 6px; border-radius:999px;
     background:#fdf0e3; color:#9a5b12; border:1px solid #f0d5b4; white-space:nowrap;}
   .agetag.bad{background:#fdeceb; color:#a32b22; border-color:#f2c9c5;}
@@ -251,6 +264,7 @@
   table.compiled{table-layout:fixed; min-width:1180px;}
   table.compiled th,table.compiled td{overflow-wrap:anywhere; word-break:normal;}
   table.compiled col.c-week{width:62px;}
+  table.compiled col.c-first{width:118px;}
   table.compiled col.c-members{width:120px;}
   table.compiled col.c-brand{width:120px;}
   table.compiled col.c-platform{width:92px;}
@@ -773,8 +787,8 @@ function migrate(){
     if(!Array.isArray(e.nudges)) e.nudges=[];
     if(!e.week) e.week=weekKeyFromTs(e.created);
     if(typeof e.carriedFrom!=="string") e.carriedFrom="";
-    if(typeof e.rootId==="undefined") e.rootId=e.id;
     if(typeof e.firstWeek!=="string") e.firstWeek=e.week;
+    if(!Array.isArray(e.history)) e.history=[];
   });
 }
 // Read-only on other teams: no commenting, editing, or nudging there.
@@ -904,10 +918,8 @@ function buildSidebar(){
     b.innerHTML=(icon?icon:"")+"<span>"+label+"</span>"+(count!=null?'<span class="n">'+count+'</span>':"");
     b.onclick=onclick; sb.appendChild(b);
   };
-  // Leads and managers get the dashboard too - it's built for their weekly review.
-  if(me.role==="admin"||me.role==="lead"||me.role==="manager"){
-    mkItem("Dashboard", NICO.dash, activeView==="dashboard", ()=>{ activeView="dashboard"; refreshViews(); });
-  }
+  // Everyone can view the dashboard; scope of the data still depends on role.
+  mkItem("Dashboard", NICO.dash, activeView==="dashboard", ()=>{ activeView="dashboard"; refreshViews(); });
   const lbl=document.createElement("div"); lbl.className="navlabel"; lbl.textContent="Teams"; sb.appendChild(lbl);
   visibleTeams().forEach(t=>{
     const teamEntries=state.entries.filter(e=>e.team===t);
@@ -952,9 +964,8 @@ function refreshViews(){
 function mountApp(){
   document.getElementById("week").innerHTML=weekLabel();
   const vt=visibleTeams();
-  const canDash = me.role==="admin"||me.role==="lead"||me.role==="manager";
   if(me.role!=="admin"){
-    if(activeView!=="deck"&&activeView!=="highlights"&&!(activeView==="dashboard"&&canDash)) activeView="board";
+    if(activeView!=="deck"&&activeView!=="highlights"&&activeView!=="dashboard") activeView="board";
     // Only default to their own team - don't yank them back when browsing others.
     if(!activeTab||!state.teams.includes(activeTab)) activeTab=me.team;
   }
@@ -989,7 +1000,7 @@ function renderDashboard(){
 }
 /* ============ LEAD DASHBOARD PANELS ============ */
 function dashScopeEntries(){
-  // Admin sees everything; leads/managers see their own team.
+  // Admin sees every team; everyone else sees their own team's numbers.
   const teams = me.role==="admin" ? state.teams : [me.team];
   return state.entries.filter(e=>teams.includes(e.team));
 }
@@ -1224,12 +1235,12 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   let h='';
   if(rv) h+='<div class="reviewnote">Highlighted rows changed since last marked reviewed ('+fullTimestamp(rv)+').</div>';
   h+='<div class="tablescroll"><table class="compiled">'+
-    '<colgroup><col class="c-week"/><col class="c-members"/><col class="c-brand"/><col class="c-platform"/>'+
+    '<colgroup><col class="c-week"/><col class="c-first"/><col class="c-members"/><col class="c-brand"/><col class="c-platform"/>'+
     '<col class="c-region"/><col class="c-category"/><col class="c-focus"/><col class="c-remarks"/>'+
     '<col class="c-att"/><col class="c-status"/><col class="c-discuss"/><col class="c-time"/><col class="c-act"/></colgroup>'+
     '<thead><tr>'+
-    '<th>Week</th><th>Members</th><th>Brand</th><th>Platform</th><th>Region</th><th>Category</th><th>Focus Area</th><th>Remarks</th><th>Attachment</th><th>Status</th><th>Discuss</th><th>Timestamp</th><th></th></tr></thead><tbody>';
-  if(!items.length) h+='<tr><td colspan="13" style="color:var(--ink-faint);">No entries match.</td></tr>';
+    '<th>Week</th><th>First logged</th><th>Members</th><th>Brand</th><th>Platform</th><th>Region</th><th>Category</th><th>Focus Area</th><th>Remarks</th><th>Attachment</th><th>Status</th><th>Discuss</th><th>Last update</th><th></th></tr></thead><tbody>';
+  if(!items.length) h+='<tr><td colspan="14" style="color:var(--ink-faint);">No entries match.</td></tr>';
   // Admin / manager / lead see entries grouped by region, regions A-Z
   const groupByRegion = (me.role==="admin"||me.role==="manager"||me.role==="lead");
   let groups;
@@ -1245,7 +1256,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   }
   groups.forEach(g=>{
   if(g.region!==null){
-    h+='<tr class="regiongroup"><td colspan="13">'+esc(g.region)+' <span class="rgcount">'+g.rows.length+' '+(g.rows.length===1?"entry":"entries")+'</span></td></tr>';
+    h+='<tr class="regiongroup"><td colspan="14">'+esc(g.region)+' <span class="rgcount">'+g.rows.length+' '+(g.rows.length===1?"entry":"entries")+'</span></td></tr>';
   }
   g.rows.forEach(e=>{
     const editable=canEdit(e);
@@ -1258,23 +1269,39 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
       '<td><span class="wk">Wk '+wknum+'</span>'+(isNew?'<span class="newtag">new</span>':(isChanged?'<span class="newtag">upd</span>':""))+
         (e.carriedFrom?'<span class="carrytag" title="Carried forward from '+esc(weekKeyLabel(e.carriedFrom))+'">carried</span>':"")+
         ageBadges(e)+'</td>'+
+      '<td class="tsfirst" title="'+esc(fullTimestamp(e.created))+(e.firstWeek?' &middot; first logged in '+esc(weekKeyLabel(e.firstWeek)):"")+'">'+
+        fullTimestamp(e.created)+
+        (e.firstWeek&&e.firstWeek!==entryWeek(e)?'<span class="tsweek">since '+esc(weekKeyLabel(e.firstWeek))+'</span>':"")+
+      '</td>'+
       '<td>'+(esc(e.member)||"-")+'</td>'+
       '<td>'+(esc(e.brand)||"-")+'</td>'+
       '<td>'+(esc(e.platform)||"-")+'</td>'+
       '<td>'+(esc(e.region)||"-")+'</td>'+
       '<td>'+(e.category?'<span class="cat">'+esc(e.category)+'</span>'+(e.category==="Others"&&e.remarks?'<br><span style="font-size:12px; color:var(--ink-faint);">'+esc(e.remarks)+'</span>':""):"-")+'</td>'+
       '<td style="font-weight:600;">'+esc(e.focus)+(e.prio?' <span class="prio '+PCLASS[e.prio]+'">'+e.prio+'</span>':"")+'</td>'+
-      '<td>'+(esc(e.update)||"-")+(e.blockers?'<br><span style="font-size:12px; color:var(--red);">'+esc(e.blockers)+'</span>':"")+'</td>'+
+      '<td>'+(esc(e.update)||"-")+(e.blockers?'<br><span style="font-size:12px; color:var(--red);">'+esc(e.blockers)+'</span>':"")+
+        ((e.history&&e.history.length)?'<button class="histbtn" data-hist="'+e.id+'" title="Show what was reported in earlier weeks">'+
+          (histOpen.has(String(e.id))?"hide":"")+' '+e.history.length+' earlier '+(e.history.length===1?"note":"notes")+'</button>':"")+
+        '</td>'+
       '<td class="attcell">'+(e.img?'<img class="tt" src="'+esc(e.img)+'" data-zoom="'+esc(e.img)+'" alt="attachment" loading="lazy" onerror="this.classList.add(\'broken\');this.removeAttribute(\'data-zoom\');this.alt=\'image unavailable\';" />':"-")+'</td>'+
       '<td><span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span></td>'+
       '<td>'+(e.discuss?'<span class="flag">Discuss</span>':"")+(openNudges(e).length?' <span class="nudged">Nudged</span>':"")+((!e.discuss&&!openNudges(e).length)?"-":"")+'</td>'+
       '<td style="color:var(--ink-faint); font-size:12px;">'+fullTimestamp(e.updated)+(e.by?'<br>'+esc(e.by):"")+'</td>'+
       '<td><div class="rowacts">'+(editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button><button class="small" data-edit="'+e.id+'">Edit</button>'+
-        ((e.status!=="Done"&&entryWeek(e)!==weekKeyNow()&&!alreadyCarried(e))?'<button class="small" data-carry="'+e.id+'" title="Copy into this week">Carry</button>':""):"")+(canNudge(e)?'<button class="small" data-nudge="'+e.id+'">Nudge</button>':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button></div></td>'+
+        ((e.status!=="Done"&&entryWeek(e)!==weekKeyNow())?'<button class="small" data-carry="'+e.id+'" title="Move into this week, keeping its history">Carry</button>':""):"")+(canNudge(e)?'<button class="small" data-nudge="'+e.id+'">Nudge</button>':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button></div></td>'+
     '</tr>';
     const nh=nudgeHTML(e);
-    if(nh){ h+='<tr class="cmtrow"><td colspan="13">'+nh+'</td></tr>'; }
-    if(threadOpen){ h+='<tr class="cmtrow"><td colspan="13">'+commentsHTML(e)+'</td></tr>'; }
+    if(histOpen.has(String(e.id)) && e.history && e.history.length){
+      h+='<tr class="cmtrow"><td colspan="14"><div class="histwrap"><div class="histh">Weekly trail</div>'+
+        e.history.slice().reverse().map(x=>
+          '<div class="histrow"><span class="histwk">'+esc(weekKeyLabel(x.week))+'</span>'+
+          '<span class="histtxt">'+(esc(x.update)||'<i>no note</i>')+
+          (x.blockers?' <span class="histblock">'+esc(x.blockers)+'</span>':"")+'</span>'+
+          '<span class="histst">'+esc(x.status||"")+'</span></div>').join("")+
+        '</div></td></tr>';
+    }
+    if(nh){ h+='<tr class="cmtrow"><td colspan="14">'+nh+'</td></tr>'; }
+    if(threadOpen){ h+='<tr class="cmtrow"><td colspan="14">'+commentsHTML(e)+'</td></tr>'; }
   });
   });
   h+='</tbody></table></div>';
@@ -1308,11 +1335,13 @@ document.addEventListener("click",e=>{
   const cy=e.target.closest("[data-cycle]"), dl=e.target.closest("[data-del]"), ed=e.target.closest("[data-edit]"), ds=e.target.closest("[data-discuss]");
   const th=e.target.closest("[data-thread]"), ca=e.target.closest("[data-cadd]"), cd=e.target.closest("[data-cdel]");
   const nu=e.target.closest("[data-nudge]"), nr=e.target.closest("[data-nresolve]");
+  const hb=e.target.closest("[data-hist]");
+  if(hb){ const id=String(hb.dataset.hist); if(histOpen.has(id)) histOpen.delete(id); else histOpen.add(id); render(); return; }
   const cfw=e.target.closest("[data-carry]");
   if(cfw){
     const it=state.entries.find(x=>x.id==cfw.dataset.carry);
     if(!it||!canEdit(it)) return;
-    if(alreadyCarried(it)){ alert("This is already in the current week."); return; }
+    if(entryWeek(it)===weekKeyNow()){ alert("This is already in the current week."); return; }
     carryEntryForward(it, weekKeyNow());
     persist();
     document.getElementById("board-week").value=weekKeyNow(); boardWeek=weekKeyNow();
@@ -1469,7 +1498,7 @@ function compressToDataURL(file, maxDim, quality){
 const AGE_WEEKS_WARN=3, AGE_WEEKS_BAD=5, STALE_DAYS=14;
 function ageInfo(e){
   if(e.status==="Done") return null;
-  const wks=weeksBetween(e.firstWeek||entryWeek(e), entryWeek(e))+1;
+  const wks=weeksBetween(e.firstWeek||entryWeek(e), weekKeyNow())+1;
   const idle=daysSinceUpdate(e);
   const out=[];
   if(wks>=AGE_WEEKS_WARN) out.push({kind:wks>=AGE_WEEKS_BAD?"bad":"warn", label:wks+"w open", title:"Open for "+wks+" weeks (since "+weekKeyLabel(e.firstWeek||entryWeek(e))+")"});
@@ -1480,42 +1509,34 @@ function ageBadges(e){
   const a=ageInfo(e); if(!a) return "";
   return a.map(x=>'<span class="agetag '+x.kind+'" title="'+esc(x.title)+'">'+esc(x.label)+'</span>').join("");
 }
-/* ============ CARRY FORWARD ============ */
-// Copy an unfinished entry into the current week, preserving its history via
-// rootId/firstWeek so "open for N weeks" stays accurate across the chain.
+/* ============ CARRY FORWARD (move model) ============ */
+// One row per issue. Carrying MOVES the entry into the new week rather than
+// cloning it, so the board stays clean. The original creation date and each
+// week's progress note are preserved on the entry itself.
 function carryEntryForward(e, targetWeek){
   const wk=targetWeek||weekKeyNow();
-  const now=Date.now();
-  const id=now+Math.floor(Math.random()*1000);
-  const copy={
-    id:id,
-    team:e.team, member:e.member, brand:e.brand||"", platform:e.platform||"", region:e.region||"",
-    category:e.category||"", remarks:e.remarks||"", focus:e.focus,
-    status:e.status==="Done"?"Active":e.status,
-    prio:e.prio||"", blockers:e.blockers||"",
-    update:"",                      // last week's progress note starts fresh
-    img:e.img||"", discuss:!!e.discuss,
-    comments:[], nudges:[],
-    createdBy:e.createdBy||e.by||"", createdById:e.createdById||"",
-    by:e.by||"", created:now, updated:now,
-    week:wk,
-    carriedFrom:entryWeek(e),
-    rootId:e.rootId||e.id,
-    firstWeek:e.firstWeek||entryWeek(e)
-  };
-  state.entries.push(copy);
-  return copy;
+  const from=entryWeek(e);
+  if(from===wk) return e;
+  e.history=Array.isArray(e.history)?e.history:[];
+  // Snapshot the week we're leaving so the trail survives.
+  e.history.push({
+    week:from,
+    update:e.update||"",
+    blockers:e.blockers||"",
+    status:e.status,
+    ts:e.updated||e.created||Date.now()
+  });
+  e.firstWeek=e.firstWeek||from;
+  e.carriedFrom=from;
+  e.week=wk;
+  e.update="";                       // fresh progress note for the new week
+  if(e.status==="Done") e.status="Active";
+  e.updated=Date.now();
+  e.carriedBy=me.name;
+  return e;
 }
 function carryableEntries(team, fromWeek){
-  return state.entries.filter(e=>
-    e.team===team && entryWeek(e)===fromWeek && e.status!=="Done" && !alreadyCarried(e)
-  );
-}
-// Has this entry's lineage already got a row in the current week?
-function alreadyCarried(e){
-  const root=e.rootId||e.id;
-  const now=weekKeyNow();
-  return state.entries.some(x=>x!==e && (x.rootId||x.id)===root && entryWeek(x)===now);
+  return state.entries.filter(e=>e.team===team && entryWeek(e)===fromWeek && e.status!=="Done");
 }
 document.getElementById("carrybtn").onclick=()=>{
   const team=(activeTab&&state.teams.includes(activeTab))?activeTab:me.team;
@@ -1528,11 +1549,11 @@ document.getElementById("carrybtn").onclick=()=>{
   for(const k of earlier){ const c=carryableEntries(team,k); if(c.length){ src=k; list=c; break; } }
   if(!list.length){ alert("Nothing to carry forward - no unfinished entries from earlier weeks."); return; }
   const names=list.map(e=>"  \u2022 "+e.focus).join("\n");
-  if(!confirm("Carry "+list.length+" unfinished "+(list.length===1?"entry":"entries")+" from "+weekKeyLabel(src)+" into "+weekKeyLabel(cur)+"?\n\n"+names+"\n\nProgress notes reset so you can write this week's update. The originals stay untouched.")) return;
+  if(!confirm("Move "+list.length+" unfinished "+(list.length===1?"entry":"entries")+" from "+weekKeyLabel(src)+" into "+weekKeyLabel(cur)+"?\n\n"+names+"\n\nEach keeps its original creation date and its past weekly notes. Progress notes reset so you can write this week's update.")) return;
   list.forEach(e=>carryEntryForward(e,cur));
   persist();
   document.getElementById("board-week").value=cur; boardWeek=cur;
-  render();
+  render(); buildSidebar();
 };
 document.getElementById("savebtn").onclick=async()=>{
   const focus=document.getElementById("f-focus").value.trim();
@@ -1580,7 +1601,7 @@ document.getElementById("savebtn").onclick=async()=>{
   }
   if(existing && !canEdit(existing)){ alert("You don't have permission to edit this entry."); return; }
   if(editingId){ Object.assign(existing, rec); }
-  else { rec.id=newId; rec.comments=[]; rec.rootId=newId; state.entries.push(rec); }
+  else { rec.id=newId; rec.comments=[]; state.entries.push(rec); }
   pendingFile=null;
   document.getElementById("form").classList.add("hidden");
   // ensure the week we just added to is selectable
@@ -1595,11 +1616,11 @@ document.getElementById("exportbtn").onclick=()=>{
   const _t=(activeTab&&state.teams.includes(activeTab))?activeTab:me.team;
   if(activeView==="board" && !isOwnTeam(_t)){ alert("Export is only available for your own team."); return; }
   const vt=visibleTeams();
-  const rows=[["Week","Team","Brand","Platform","Region","Members","Category","Remarks","Focus Area","Status","Priority","Supporting Details","Remarks","Needs discussion","Open nudges","Attachment URL","Comments","Created","Timestamp"]];
+  const rows=[["Week","Team","Brand","Platform","Region","Members","Category","Remarks","Focus Area","Status","Priority","Supporting Details","Remarks","Needs discussion","Open nudges","Attachment URL","Comments","First logged","Last update","First week","Weekly trail"]];
   state.entries.filter(e=>vt.includes(e.team)).forEach(e=>{
     const wknum=parseInt(entryWeek(e).split("-W")[1],10);
     const cmts=(e.comments||[]).map(c=>c.by+": "+c.text).join(" | ");
-    rows.push(["Wk "+wknum,e.team,e.brand||"",e.platform||"",e.region||"",e.member,e.category||"",e.remarks||"",e.focus,e.status,e.prio||"",e.blockers||"",e.update||"",e.discuss?"Yes":"",openNudges(e).map(n=>n.by+": "+n.text).join(" | "),e.img||"",cmts,new Date(e.created||Date.now()).toLocaleString(),new Date(e.updated||Date.now()).toLocaleString()]);
+    rows.push(["Wk "+wknum,e.team,e.brand||"",e.platform||"",e.region||"",e.member,e.category||"",e.remarks||"",e.focus,e.status,e.prio||"",e.blockers||"",e.update||"",e.discuss?"Yes":"",openNudges(e).map(n=>n.by+": "+n.text).join(" | "),e.img||"",cmts,new Date(e.created||Date.now()).toLocaleString(),new Date(e.updated||Date.now()).toLocaleString(),weekKeyLabel(e.firstWeek||entryWeek(e)),(e.history||[]).map(x=>weekKeyLabel(x.week)+": "+(x.update||"-")+(x.blockers?" [blocked: "+x.blockers+"]":"")).join(" | ")]);
   });
   const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n");
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download="team-tracker.csv"; a.click();
