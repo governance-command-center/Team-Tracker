@@ -202,13 +202,14 @@
   .dashcard .dh{font-size:13.5px; font-weight:700;}
   .dashcard .dhsub{font-size:12px; color:var(--ink-faint); margin:2px 0 10px;}
   .dempty{font-size:12.5px; color:var(--ink-faint); padding:6px 0;}
+  .dnote{font-size:12.5px; color:var(--ink-soft); line-height:1.45; margin:0 0 10px; padding-bottom:9px; border-bottom:1px solid var(--line);}
+  .dnote b{color:var(--ink);}
   .dmore{font-size:12px; color:var(--ink-faint); margin-top:6px;}
   ul.dlist{list-style:none; margin:0; padding:0; max-height:260px; overflow-y:auto;}
   ul.dlist li{padding:7px 0; border-bottom:1px solid var(--line-soft);}
   ul.dlist li:last-child{border-bottom:none;}
   ul.dlist .df{font-size:13px; font-weight:600;}
   ul.dlist .dm{font-size:12px; color:var(--ink-faint); margin-top:2px;}
-  ul.dlist .dblock{color:var(--red);}
   table.dtable{width:100%; border-collapse:collapse; font-size:12.5px;}
   table.dtable td{padding:4px 0; vertical-align:middle;}
   table.dtable td.k{width:34%; color:var(--ink-soft); overflow-wrap:anywhere; padding-right:8px;}
@@ -388,14 +389,14 @@
           <div id="d-trend"></div>
         </div>
         <div class="dashcard">
-          <div class="dh">Blockers by region</div>
-          <div class="dhsub">Where work is getting stuck</div>
-          <div id="d-region"></div>
+          <div class="dh">Top categories</div>
+          <div class="dhsub">Where the open work is concentrated</div>
+          <div id="d-category"></div>
         </div>
         <div class="dashcard">
-          <div class="dh">Blockers by brand</div>
-          <div class="dhsub">Which accounts are causing friction</div>
-          <div id="d-brand"></div>
+          <div class="dh" id="d-team-h">Active entries by team</div>
+          <div class="dhsub" id="d-team-s">Who is carrying the most open work</div>
+          <div id="d-team"></div>
         </div>
         <div class="dashcard">
           <div class="dh">Coverage</div>
@@ -1065,18 +1066,17 @@ function renderDashPanels(wk){
   const cur=scope.filter(inWeek);
 
   // --- Needs attention ---
-  const flagged=cur.filter(e=>e.status!=="Done" && (ageInfo(e)||e.blockers||e.discuss));
+  const flagged=cur.filter(e=>e.status!=="Done" && (ageInfo(e)||e.discuss));
   flagged.sort((a,b)=>{
     const rank=x=>(ageInfo(x)&&ageInfo(x).some(t=>t.kind==="bad")?0:1);
-    return rank(a)-rank(b) || (b.blockers?1:0)-(a.blockers?1:0);
+    return rank(a)-rank(b) || (b.discuss?1:0)-(a.discuss?1:0);
   });
   document.getElementById("d-attention").innerHTML = flagged.length
     ? '<ul class="dlist">'+flagged.slice(0,12).map(e=>
         '<li><div class="df">'+esc(e.focus)+ageBadges(e)+(e.discuss?'<span class="agetag">discuss</span>':"")+'</div>'+
-        '<div class="dm">'+esc(e.member||"-")+(e.region?' &middot; '+esc(e.region):"")+
-        (e.blockers?' &middot; <span class="dblock">'+esc(e.blockers)+'</span>':"")+'</div></li>').join("")+
+        '<div class="dm">'+esc(e.member||"-")+(e.region?' &middot; '+esc(e.region):"")+'</div></li>').join("")+
         '</ul>'+(flagged.length>12?'<div class="dmore">+'+(flagged.length-12)+' more</div>':"")
-    : '<div class="dempty">Nothing aging or blocked. Good week.</div>';
+    : '<div class="dempty">Nothing aging or flagged. Good week.</div>';
 
   // --- Trend: last 6 weeks ---
   const weeks=Array.from(new Set(scope.map(entryWeek))).sort().slice(-6);
@@ -1097,15 +1097,55 @@ function renderDashPanels(wk){
     document.getElementById("d-trend").innerHTML='<div class="dempty">Not enough history yet.</div>';
   }
 
-  // --- Blockers by region / brand ---
-  const blocked=cur.filter(e=>e.status!=="Done" && e.blockers);
-  const tally=(arr,key)=>{
+  // --- Top categories / active entries by team ---
+  // Both count open (not Done) work in the selected week.
+  const open=cur.filter(e=>e.status!=="Done");
+  const tally=(arr,fn)=>{
     const m=new Map();
-    arr.forEach(e=>{ const k=(key==="brand"&&e.scope==="all")?"All brands":((e[key]||"").trim()||"Unspecified"); m.set(k,(m.get(k)||0)+1); });
-    return Array.from(m, ([k,n])=>({k,n})).sort((a,b)=>b.n-a.n).slice(0,8);
+    arr.forEach(e=>{ const k=fn(e); m.set(k,(m.get(k)||0)+1); });
+    return Array.from(m, ([k,n])=>({k,n})).sort((a,b)=>b.n-a.n||a.k.localeCompare(b.k));
   };
-  document.getElementById("d-region").innerHTML=dashList(tally(blocked,"region"),"No blockers logged.");
-  document.getElementById("d-brand").innerHTML=dashList(tally(blocked,"brand"),"No blockers logged.");
+  const catRows=tally(open, e=>(e.category||"").trim()||"Uncategorised");
+  const catEl=document.getElementById("d-category");
+  if(!catRows.length){
+    catEl.innerHTML='<div class="dempty">No open entries this week.</div>';
+  } else {
+    const top=catRows[0];
+    const share=Math.round(top.n/open.length*100);
+    catEl.innerHTML='<div class="dnote"><b>'+esc(top.k)+'</b> has the most open work &mdash; '+
+      top.n+' of '+open.length+' entries ('+share+'%).</div>'+dashList(catRows.slice(0,8),"");
+  }
+  // Admins compare across teams; everyone else only sees their own, so break
+  // their view down by member instead of showing a single bar.
+  const byTeam = me.role==="admin" && state.teams.length>1;
+  const teamEl=document.getElementById("d-team");
+  document.getElementById("d-team-h").textContent = byTeam ? "Active entries by team" : "Active entries by member";
+  document.getElementById("d-team-s").textContent = byTeam ? "Who is carrying the most open work" : "Who on the team has the most open work";
+  const tallyMembers=arr=>{
+    const m=new Map();
+    arr.forEach(e=>{
+      const names=splitMembers(e.member||"");
+      // An entry shared by two people counts toward each of them.
+      (names.length?names:["Unassigned"]).forEach(n=>{ const k=n.trim()||"Unassigned"; m.set(k,(m.get(k)||0)+1); });
+    });
+    return Array.from(m, ([k,n])=>({k,n})).sort((a,b)=>b.n-a.n||a.k.localeCompare(b.k));
+  };
+  const teamRows=byTeam
+    ? tally(open, e=>(e.team||"").trim()||"Unassigned")
+    : tallyMembers(open);
+  if(!teamRows.length){
+    teamEl.innerHTML='<div class="dempty">No open entries this week.</div>';
+  } else if(teamRows.length===1){
+    teamEl.innerHTML='<div class="dnote"><b>'+esc(teamRows[0].k)+'</b> has '+teamRows[0].n+
+      ' open '+(teamRows[0].n===1?"entry":"entries")+' this week.</div>'+dashList(teamRows,"");
+  } else {
+    const lead=teamRows[0], next=teamRows[1];
+    const gap=lead.n-next.n;
+    teamEl.innerHTML='<div class="dnote"><b>'+esc(lead.k)+'</b> is carrying the most open work &mdash; '+
+      lead.n+' '+(lead.n===1?"entry":"entries")+
+      (gap>0?', '+gap+' more than '+esc(next.k):', tied with '+esc(next.k))+'.</div>'+
+      dashList(teamRows.slice(0,8),"");
+  }
 
   // --- Coverage: who logged nothing this week ---
   const teams = me.role==="admin" ? state.teams : [me.team];
@@ -1167,7 +1207,7 @@ function render(){
   const board=document.getElementById("board"); board.innerHTML="";
   let items=state.entries.filter(e=>e.team===team&&(sf==="all"||e.status===sf)&&(mf==="all"||nameListHas(e.member,mf))&&(wk==="all"||entryWeek(e)===wk)&&(!onlyDiscuss||e.discuss)&&(cf!=="since"||(e.updated||0)>rv));
   // flagged-for-discussion first, then by priority
-  items.sort((a,b)=>{ if(!!b.discuss-!!a.discuss) return (!!b.discuss)-(!!a.discuss); const pr={High:0,Medium:1,Low:2}; return (pr[a.prio]==null?1:pr[a.prio])-(pr[b.prio]==null?1:pr[b.prio]); });
+  items.sort(compareEntries);
   const sec=document.createElement("div"); sec.className="team";
   sec.innerHTML='<h2>'+esc(team)+' <span class="count">'+items.length+' '+(items.length===1?"item":"items")+'</span></h2><div class="rule"></div>';
   if(rv){ const rn=document.createElement("div"); rn.className="reviewnote"; rn.textContent="Highlighted = changed since last marked reviewed ("+fullTimestamp(rv)+")."; sec.appendChild(rn); }
@@ -1272,11 +1312,25 @@ function commentsHTML(e){
   h+='</div>';
   return h;
 }
+/* Flagged first, then priority, then member name A-Z so a region block reads
+   alphabetically without anyone having to touch the member filter. */
+function memberSortKey(e){
+  return (e.member||"").trim().toLowerCase();
+}
+function compareEntries(a,b){
+  if((!!b.discuss)-(!!a.discuss)) return (!!b.discuss)-(!!a.discuss);
+  const pr={High:0,Medium:1,Low:2};
+  const d=(pr[a.prio]==null?1:pr[a.prio])-(pr[b.prio]==null?1:pr[b.prio]);
+  if(d) return d;
+  const ma=memberSortKey(a), mb=memberSortKey(b);
+  if(!ma&&mb) return 1; if(ma&&!mb) return -1;
+  return ma.localeCompare(mb,undefined,{sensitivity:"base"}) || (a.created||0)-(b.created||0);
+}
 function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   mf=mf||"all"; cf=cf||"all";
   const rv=state.reviewedAt||0;
   let items=state.entries.filter(e=>teams.includes(e.team)&&(sf==="all"||e.status===sf)&&(mf==="all"||nameListHas(e.member,mf))&&(wk==="all"||entryWeek(e)===wk)&&(!onlyDiscuss||e.discuss)&&(cf!=="since"||(e.updated||0)>rv));
-  items.sort((a,b)=>{ if(!!b.discuss-!!a.discuss) return (!!b.discuss)-(!!a.discuss); const pr={High:0,Medium:1,Low:2}; return (pr[a.prio]==null?1:pr[a.prio])-(pr[b.prio]==null?1:pr[b.prio]); });
+  items.sort(compareEntries);
   let h='';
   if(rv) h+='<div class="reviewnote">Highlighted rows changed since last marked reviewed ('+fullTimestamp(rv)+').</div>';
   h+='<div class="tablescroll"><table class="compiled">'+
