@@ -435,13 +435,13 @@
           <div class="guidebody hidden" id="guidebody">
             <p class="gintro">Fill these in as if a teammate who wasn't in your meetings has to understand it on Monday morning.</p>
             <dl>
-              <dt>Scope</dt><dd><i>All brands</i> for work covering everything you handle; <i>Brand specific</i> when it targets named brands.</dd>
+              <dt>Scope</dt><dd><i>All brands</i> for work covering everything you handle; <i>Brand specific</i> requires Brand, Platform and Region.</dd>
               <dt>Brand</dt><dd>The client or store this work is for &mdash; e.g. <i>Acme Co.</i> Separate several with commas. Hidden when scope is <i>All brands</i>.</dd>
               <dt>Platform</dt><dd>Where it's happening: Shopee, Lazada, TikTok Shop, Amazon.</dd>
               <dt>Region</dt><dd>Market or territory &mdash; PH, SG, APAC, NA.</dd>
               <dt>Status</dt><dd><b>Active</b> = ongoing this week. <b>In progress</b> = actively being worked right now. <b>Done</b> = finished, no follow-up needed.</dd>
               <dt>Priority</dt><dd><b>High</b> = blocks someone or has a hard deadline. <b>Medium</b> = normal. <b>Low</b> = nice to have.</dd>
-              <dt>Category</dt><dd>The bucket of work. Pick <i>Others</i> only if nothing fits, then describe the work in Remarks.</dd>
+              <dt>Category</dt><dd>Required. The bucket of work. Pick <i>Others</i> only if nothing fits, then describe the work in Remarks. Admins manage this list under Data.</dd>
               <dt>Focus this week</dt><dd><b>Required.</b> One short line on what you're actually doing &mdash; "Fix rejected listings for Acme", not "listings".</dd>
               <dt>Members</dt><dd>Who is doing the work. Separate names with commas. Only you (or an admin) can change this after saving.</dd>
               <dt>Remarks</dt><dd>Progress since last week, supporting details, and anything stopping you or who you're waiting on &mdash; all in one box. Start a line with &quot;-&quot; for a bullet.</dd>
@@ -456,25 +456,14 @@
             <option value="all">All brands</option>
           </select><span class="fh">All brands = applies across everything you handle</span></div>
           <div id="f-brand-wrap"><label class="fl">Brand <span class="req">required</span></label><input id="f-brand" placeholder="e.g. Acme Co." /><span class="fh">Separate multiple brands with commas</span></div>
-          <div><label class="fl">Platform</label><input id="f-platform" placeholder="e.g. Shopee, Lazada, Amazon" /></div>
-          <div><label class="fl">Region</label><input id="f-region" placeholder="e.g. NA, EU, APAC" /></div>
+          <div><label class="fl">Platform <span class="req scopereq">required</span></label><input id="f-platform" placeholder="e.g. Shopee, Lazada, Amazon" /></div>
+          <div><label class="fl">Region <span class="req scopereq">required</span></label><input id="f-region" placeholder="e.g. NA, EU, APAC" /></div>
           <div><label class="fl">Status</label><select id="f-status"><option>Active</option><option>In progress</option><option>Done</option></select><span class="fh">Done = no follow-up needed</span></div>
         </div>
         <div class="grid g3" style="margin-top:12px;">
           <div><label class="fl">Priority</label><select id="f-prio"><option>Low</option><option selected>Medium</option><option>High</option></select><span class="fh">High = blocked or hard deadline</span></div>
-          <div><label class="fl">Category</label><select id="f-category">
+          <div><label class="fl">Category <span class="req">required</span></label><select id="f-category">
             <option value="" disabled selected>Choose in the dropdown</option>
-            <option>Account health</option>
-            <option>Appeals</option>
-            <option>Product listings</option>
-            <option>Fulfillment</option>
-            <option>Order monitoring</option>
-            <option>CES</option>
-            <option>Planned leaves</option>
-            <option>New store onboarding</option>
-            <option>Store offboarding</option>
-            <option>Special launch</option>
-            <option>Others</option>
           </select></div>
           <div><label class="fl">Focus this week <span class="req">required</span></label><input id="f-focus" placeholder="e.g. Fix rejected listings for Acme" /><span class="fh">One specific line, not just a topic</span></div>
           <div id="f-member-wrap"><label class="fl">Members</label><input id="f-member" placeholder="e.g. Ana, Ben" /><span class="fh">Separate names with commas</span><span class="uphint" id="f-member-lock"></span></div>
@@ -536,6 +525,18 @@
           <div style="display:flex; gap:8px;">
             <input id="t-new" placeholder="e.g. Team Nova" style="flex:1;" />
             <button class="primary" id="t-add">Add team</button>
+          </div>
+        </div>
+      </div>
+      <div class="datasec">
+        <h2 style="font-size:20px; margin:0 0 4px;">Categories</h2>
+        <p style="font-size:13px; color:var(--ink-soft); margin:0 0 14px;">These fill the Category dropdown on every entry. Renaming one updates all entries using it. A category still in use can't be deleted.</p>
+        <div id="catlist"></div>
+        <div class="panel">
+          <label class="fl">New category</label>
+          <div style="display:flex; gap:8px;">
+            <input id="c-new" placeholder="e.g. Campaign setup" style="flex:1;" />
+            <button class="primary" id="c-add">Add category</button>
           </div>
         </div>
       </div>
@@ -789,6 +790,16 @@ function migrate(){
   if(typeof state.reviewedAt!=="number") state.reviewedAt=0;
   if(!Array.isArray(state.decks)) state.decks=[];
   if(!Array.isArray(state.highlights)) state.highlights=[];
+  // Categories used to be hardcoded in the markup; move them into state so
+  // admins can edit them. Any category already on an entry is preserved.
+  if(!Array.isArray(state.categories) || !state.categories.length){
+    state.categories=["Account health","Appeals","Product listings","Fulfillment","Order monitoring",
+      "CES","Planned leaves","New store onboarding","Store offboarding","Special launch","Others"];
+  }
+  (state.entries||[]).forEach(e=>{
+    const c=(e.category||"").trim();
+    if(c && !state.categories.includes(c)) state.categories.push(c);
+  });
   // Legacy records sometimes stored padded names/passcodes, which broke sign-in.
   state.members.forEach(m=>{
     if(typeof m.name==="string") m.name=m.name.replace(/\s+/g," ").trim();
@@ -818,8 +829,7 @@ function migrate(){
     }
     if(typeof e.brand!=="string") e.brand="";
     // Older entries predate the scope field: a blank brand meant "everything".
-    if(e.scope!=="all" && e.scope!=="specific") e.scope = e.brand.trim() ? "specific" : "all";
-    if(typeof e.platform!=="string") e.platform="";
+    if(e.scope!=="all" && e.scope!=="specific") e.scope = e.brand.trim() ? "specific" : "all";    if(typeof e.platform!=="string") e.platform="";
     if(!Array.isArray(e.nudges)) e.nudges=[];
     if(!e.week) e.week=weekKeyFromTs(e.created);
     if(typeof e.carriedFrom!=="string") e.carriedFrom="";
@@ -993,7 +1003,7 @@ function refreshViews(){
   buildSidebar();
   if(activeView==="dashboard") renderDashboard();
   if(activeView==="board") render();
-  if(activeView==="data"){ renderRoster(); renderTeams(); }
+  if(activeView==="data"){ renderRoster(); renderTeams(); renderCategories(); }
   if(activeView==="deck") renderDecks();
   if(activeView==="highlights"){ closeHighlightForm(); renderHighlights(); }
 }
@@ -1425,6 +1435,7 @@ function openForm(entry){
   document.getElementById("f-region").value=entry?(entry.region||""):"";
   document.getElementById("f-status").value=entry?entry.status:"Active";
   document.getElementById("f-prio").value=entry?entry.prio:"Medium";
+  fillCategoryOptions(entry?entry.category:"");
   document.getElementById("f-category").value=(entry&&entry.category)?entry.category:"";
 
   document.getElementById("f-focus").value=entry?entry.focus:"";
@@ -1472,6 +1483,8 @@ function initGuide(){
 function syncScopeRow(){
   const all=document.getElementById("f-scope").value==="all";
   document.getElementById("f-brand-wrap").classList.toggle("hidden", all);
+  document.querySelectorAll(".scopereq").forEach(el=>el.classList.toggle("hidden", all));
+  if(all) ["f-brand","f-platform","f-region"].forEach(id=>document.getElementById(id).style.borderColor="");
 }
 document.getElementById("f-scope").onchange=syncScopeRow;
 document.getElementById("cancelbtn").onclick=()=>document.getElementById("form").classList.add("hidden");
@@ -1617,11 +1630,19 @@ document.getElementById("savebtn").onclick=async()=>{
   categoryField.style.borderColor="";
   const scopeVal=document.getElementById("f-scope").value;
   const brandField=document.getElementById("f-brand");
-  if(scopeVal==="specific" && !brandField.value.trim()){
-    brandField.focus(); brandField.style.borderColor="var(--red)";
-    alert("Brand is required for a brand-specific entry. Switch Scope to \"All brands\" if it applies to everything."); return;
+  const platField=document.getElementById("f-platform");
+  const regField=document.getElementById("f-region");
+  [brandField,platField,regField].forEach(f=>f.style.borderColor="");
+  if(scopeVal==="specific"){
+    const missing=[[brandField,"Brand"],[platField,"Platform"],[regField,"Region"]].filter(p=>!p[0].value.trim());
+    if(missing.length){
+      missing.forEach(p=>p[0].style.borderColor="var(--red)");
+      missing[0][0].focus();
+      alert(missing.map(p=>p[1]).join(", ")+" "+(missing.length===1?"is":"are")+
+        " required for a brand-specific entry. Switch Scope to \"All brands\" if this applies to everything.");
+      return;
+    }
   }
-  brandField.style.borderColor="";
   const btn=document.getElementById("savebtn"); const saving=document.getElementById("saving");
   const existing = editingId ? state.entries.find(x=>x.id==editingId) : null;
   const rec={
@@ -1733,6 +1754,59 @@ document.addEventListener("click",e=>{
     alert("Passcode for "+mem.name+" has been reset.");
   }
 });
+function fillCategoryOptions(current){
+  const sel=document.getElementById("f-category");
+  const list=(state.categories||[]).slice();
+  // An entry may hold a category an admin has since removed; keep it selectable
+  // so editing that entry doesn't silently blank the field.
+  const cur=(current||"").trim();
+  if(cur && !list.includes(cur)) list.push(cur);
+  sel.innerHTML='<option value="" disabled selected>Choose in the dropdown</option>'+
+    list.map(c=>'<option>'+esc(c)+'</option>').join("");
+}
+function categoryUseCount(name){
+  return state.entries.filter(e=>(e.category||"")===name).length;
+}
+function renderCategories(){
+  const list=document.getElementById("catlist"); if(!list) return;
+  list.innerHTML="";
+  (state.categories||[]).forEach((c,i)=>{
+    const n=categoryUseCount(c);
+    const row=document.createElement("div"); row.className="teamrow";
+    row.innerHTML='<input value="'+esc(c)+'" data-cidx="'+i+'" />'+
+      '<span class="uphint" style="min-width:70px;">'+n+' '+(n===1?"entry":"entries")+'</span>'+
+      '<button class="small" data-crename="'+i+'">Rename</button>'+
+      '<button class="small danger" data-cdel="'+i+'">Delete</button>';
+    list.appendChild(row);
+  });
+}
+document.addEventListener("click",e=>{
+  const cr=e.target.closest("[data-crename]"), cd=e.target.closest("[data-cdel]");
+  if(cr){
+    const i=+cr.dataset.crename; const inp=document.querySelector('[data-cidx="'+i+'"]');
+    const nw=inp.value.trim(); const old=state.categories[i];
+    if(!nw||nw===old) return;
+    if(state.categories.includes(nw)){ alert("That category already exists."); return; }
+    state.categories[i]=nw;
+    state.entries.forEach(en=>{ if(en.category===old) en.category=nw; });
+    persist(); refreshViews();
+  }
+  if(cd){
+    const i=+cd.dataset.cdel; const c=state.categories[i];
+    const n=categoryUseCount(c);
+    if(n){ alert('"'+c+'" is used by '+n+' entrie(s). Rename it, or change those entries first.'); return; }
+    if(!confirm('Delete the "'+c+'" category?')) return;
+    state.categories.splice(i,1);
+    persist(); renderCategories();
+  }
+});
+document.getElementById("c-add").onclick=()=>{
+  const nw=document.getElementById("c-new").value.trim();
+  if(!nw) return;
+  if((state.categories||[]).includes(nw)){ alert("That category already exists."); return; }
+  state.categories.push(nw); document.getElementById("c-new").value="";
+  persist(); renderCategories();
+};
 function renderTeams(){
   const list=document.getElementById("teamlist"); list.innerHTML="";
   state.teams.forEach((t,i)=>{
