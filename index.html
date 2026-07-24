@@ -704,6 +704,7 @@ let dashWeek="all", boardWeek="all";
 let db=null, docRef=null, storage=null, useCloud=false, suppress=false, mounted=false;
 let pendingFile=null;
 let openThreads=new Set();
+let histOpen=new Set();
 // per-user "last seen comment time" per entry, stored locally so it's personal
 function seenKey(){ return "ttSeen_"+(me?me.id:"anon"); }
 function loadSeen(){ try{ return JSON.parse(localStorage.getItem(seenKey())||"{}"); }catch(e){ return {}; } }
