@@ -438,11 +438,10 @@
               <dt>Region</dt><dd>Market or territory &mdash; PH, SG, APAC, NA.</dd>
               <dt>Status</dt><dd><b>Active</b> = ongoing this week. <b>In progress</b> = actively being worked right now. <b>Done</b> = finished, no follow-up needed.</dd>
               <dt>Priority</dt><dd><b>High</b> = blocks someone or has a hard deadline. <b>Medium</b> = normal. <b>Low</b> = nice to have.</dd>
-              <dt>Category</dt><dd>The bucket of work. Pick <i>Others</i> only if nothing fits, then describe it in the box that appears.</dd>
+              <dt>Category</dt><dd>The bucket of work. Pick <i>Others</i> only if nothing fits, then describe the work in Remarks.</dd>
               <dt>Focus this week</dt><dd><b>Required.</b> One short line on what you're actually doing &mdash; "Fix rejected listings for Acme", not "listings".</dd>
               <dt>Members</dt><dd>Who is doing the work. Separate names with commas. Only you (or an admin) can change this after saving.</dd>
-              <dt>Supporting Details</dt><dd>Anything stopping you, plus context or who you're waiting on. Leave blank if nothing is stuck.</dd>
-              <dt>Remarks</dt><dd>The latest progress since last week, so leads don't have to ask.</dd>
+              <dt>Remarks</dt><dd>Progress since last week, supporting details, and anything stopping you or who you're waiting on — all in one box.</dd>
               <dt>Attachment</dt><dd>Optional screenshot as evidence &mdash; a ticket, dashboard, or error message.</dd>
               <dt>Flag for discussion</dt><dd>Tick this to surface the entry for the team to talk through in the next sync.</dd>
             </dl>
@@ -473,12 +472,8 @@
           <div><label class="fl">Focus this week <span class="req">required</span></label><input id="f-focus" placeholder="e.g. Fix rejected listings for Acme" /><span class="fh">One specific line, not just a topic</span></div>
           <div id="f-member-wrap"><label class="fl">Members</label><input id="f-member" placeholder="e.g. Ana, Ben" /><span class="fh">Separate names with commas</span><span class="uphint" id="f-member-lock"></span></div>
         </div>
-        <div class="grid g2 hidden" id="f-remarks-row" style="margin-top:12px;">
-          <div style="grid-column:1 / -1;"><label class="fl">Category description (for "Others")</label><input id="f-remarks" placeholder="Describe the category" /></div>
-        </div>
         <div class="grid g2" style="margin-top:12px;">
-          <div><label class="fl">Supporting Details (optional)</label><input id="f-blockers" placeholder="e.g. Waiting on infra access" /><span class="fh">What's stopping you, and who you're waiting on</span></div>
-          <div><label class="fl">Remarks (optional)</label><input id="f-update" placeholder="e.g. Escalated Monday, awaiting reply" /><span class="fh">Progress since last week</span></div>
+          <div style="grid-column:1 / -1;"><label class="fl">Remarks (optional)</label><textarea id="f-update" rows="3" placeholder="e.g. Escalated Monday, awaiting reply. Blocked on infra access."></textarea><span class="fh">Progress, supporting details, blockers, and — if the category is Others — what the work actually is</span></div>
         </div>
         <div style="margin-top:12px;">
           <label class="fl">Attachment (optional)</label>
@@ -718,6 +713,11 @@ function unreadCount(e){
 }
 function markThreadSeen(e){ const seen=loadSeen(); seen[e.id]=Math.max(lastCommentTs(e), Date.now()); saveSeen(seen); }
 function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+/* Remarks now hold everything: progress note, supporting details, and the old
+   "Others" category description. Older entries kept these in three fields. */
+function remarksText(e){
+  return [e.update, e.blockers, e.remarks].map(v=>(v||"").trim()).filter(Boolean).join(" \u2014 ");
+}
 function weekLabel(){
   const d=new Date(), day=(d.getDay()+6)%7;
   const mon=new Date(d); mon.setDate(d.getDate()-day);
@@ -1140,11 +1140,10 @@ function render(){
     card.innerHTML=
       '<div class="head"><div>'+
         '<div class="focus">'+esc(e.focus)+(e.discuss?' <span class="flag">Discuss</span>':"")+(isNew?'<span class="newtag">new</span>':(isChanged?'<span class="newtag">updated</span>':""))+'</div>'+
-        '<div class="who">'+ICO.users+' '+(esc(e.member)||"-")+' '+(e.prio?'<span class="prio '+PCLASS[e.prio]+'">'+e.prio+'</span>':"")+(e.category?' <span class="cat">'+esc(e.category==="Others"&&e.remarks?e.remarks:e.category)+'</span>':"")+' <span class="wk">Wk '+wknum+'</span></div>'+
+        '<div class="who">'+ICO.users+' '+(esc(e.member)||"-")+' '+(e.prio?'<span class="prio '+PCLASS[e.prio]+'">'+e.prio+'</span>':"")+(e.category?' <span class="cat">'+esc(e.category)+'</span>':"")+' <span class="wk">Wk '+wknum+'</span></div>'+
       '</div>'+
       '<span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span></div>'+
-      (e.blockers?'<div class="line block">'+ICO.alert+'<span>'+esc(e.blockers)+'</span></div>':"")+
-      (e.update?'<div class="line">'+ICO.note+'<span>'+esc(e.update)+'</span></div>':"")+
+      (remarksText(e)?'<div class="line">'+ICO.note+'<span>'+esc(remarksText(e))+'</span></div>':"")+
       (e.img?'<div class="thumb"><img src="'+esc(e.img)+'" data-zoom="'+esc(e.img)+'" alt="attachment" /></div>':"")+
       '<div class="meta">'+ICO.clock+' updated '+ago(e.updated)+(e.by?' &middot; by '+esc(e.by):"")+'</div>'+
       '<div class="rowbtns">'+
@@ -1280,9 +1279,9 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
       '<td>'+(esc(e.brand)||"-")+'</td>'+
       '<td>'+(esc(e.platform)||"-")+'</td>'+
       '<td>'+(esc(e.region)||"-")+'</td>'+
-      '<td>'+(e.category?'<span class="cat">'+esc(e.category)+'</span>'+(e.category==="Others"&&e.remarks?'<br><span style="font-size:12px; color:var(--ink-faint);">'+esc(e.remarks)+'</span>':""):"-")+'</td>'+
+      '<td>'+(e.category?'<span class="cat">'+esc(e.category)+'</span>':"-")+'</td>'+
       '<td style="font-weight:600;">'+esc(e.focus)+(e.prio?' <span class="prio '+PCLASS[e.prio]+'">'+e.prio+'</span>':"")+'</td>'+
-      '<td>'+(esc(e.update)||"-")+(e.blockers?'<br><span style="font-size:12px; color:var(--red);">'+esc(e.blockers)+'</span>':"")+
+      '<td>'+(esc(remarksText(e))||"-")+
         ((e.history&&e.history.length)?'<button class="histbtn" data-hist="'+e.id+'" title="Show what was reported in earlier weeks">'+
           (histOpen.has(String(e.id))?"hide":"")+' '+e.history.length+' earlier '+(e.history.length===1?"note":"notes")+'</button>':"")+
         '</td>'+
@@ -1392,8 +1391,7 @@ function openForm(entry){
   document.getElementById("f-status").value=entry?entry.status:"Active";
   document.getElementById("f-prio").value=entry?entry.prio:"Medium";
   document.getElementById("f-category").value=(entry&&entry.category)?entry.category:"";
-  document.getElementById("f-remarks").value=entry?(entry.remarks||""):"";
-  syncRemarksRow();
+
   document.getElementById("f-focus").value=entry?entry.focus:"";
   const mi=document.getElementById("f-member"), ml=document.getElementById("f-member-lock");
   mi.value = entry ? (entry.member||"") : me.name;
@@ -1401,8 +1399,7 @@ function openForm(entry){
   mi.disabled = !memOk;
   mi.style.background = memOk ? "" : "var(--line-soft)";
   ml.textContent = memOk ? "" : "Only the person who added this entry (or an admin) can change members.";
-  document.getElementById("f-blockers").value=entry?entry.blockers:"";
-  document.getElementById("f-update").value=entry?entry.update:"";
+  document.getElementById("f-update").value=entry?remarksText(entry):"";
   document.getElementById("f-discuss").checked=entry?!!entry.discuss:false;
   document.getElementById("f-file").value="";
   const pv=document.getElementById("f-preview");
@@ -1437,11 +1434,6 @@ function initGuide(){
     setGuide(mine<3);
   } else setGuide(pref==="1");
 }
-function syncRemarksRow(){
-  const isOther=document.getElementById("f-category").value==="Others";
-  document.getElementById("f-remarks-row").classList.toggle("hidden", !isOther);
-}
-document.getElementById("f-category").onchange=syncRemarksRow;
 document.getElementById("cancelbtn").onclick=()=>document.getElementById("form").classList.add("hidden");
 document.getElementById("f-file").onchange=e=>{
   const file=e.target.files[0]; pendingFile=file||null;
@@ -1523,15 +1515,15 @@ function carryEntryForward(e, targetWeek){
   // Snapshot the week we're leaving so the trail survives.
   e.history.push({
     week:from,
-    update:e.update||"",
-    blockers:e.blockers||"",
+    update:remarksText(e),
+    blockers:"",
     status:e.status,
     ts:e.updated||e.created||Date.now()
   });
   e.firstWeek=e.firstWeek||from;
   e.carriedFrom=from;
   e.week=wk;
-  e.update="";                       // fresh progress note for the new week
+  e.update=""; e.blockers=""; e.remarks="";   // fresh remarks for the new week
   if(e.status==="Done") e.status="Active";
   e.updated=Date.now();
   e.carriedBy=me.name;
@@ -1598,9 +1590,9 @@ document.getElementById("savebtn").onclick=async()=>{
     status:document.getElementById("f-status").value,
     prio:document.getElementById("f-prio").value,
     category:categoryField.value,
-    remarks:categoryField.value==="Others"?document.getElementById("f-remarks").value.trim():"",
+    remarks:"",
     focus:focus,
-    blockers:document.getElementById("f-blockers").value.trim(),
+    blockers:"",
     update:document.getElementById("f-update").value.trim(),
     discuss:document.getElementById("f-discuss").checked,
     updated:Date.now(), by:me.name
@@ -1636,11 +1628,11 @@ document.getElementById("exportbtn").onclick=()=>{
   const _t=(activeTab&&state.teams.includes(activeTab))?activeTab:me.team;
   if(activeView==="board" && !isOwnTeam(_t)){ alert("Export is only available for your own team."); return; }
   const vt=visibleTeams();
-  const rows=[["Week","Team","Brand","Platform","Region","Members","Category","Remarks","Focus Area","Status","Priority","Supporting Details","Remarks","Needs discussion","Open nudges","Attachment URL","Comments","First logged","Last update","First week","Weekly trail"]];
+  const rows=[["Week","Team","Brand","Platform","Region","Members","Category","Focus Area","Status","Priority","Remarks","Needs discussion","Open nudges","Attachment URL","Comments","First logged","Last update","First week","Weekly trail"]];
   state.entries.filter(e=>vt.includes(e.team)).forEach(e=>{
     const wknum=parseInt(entryWeek(e).split("-W")[1],10);
     const cmts=(e.comments||[]).map(c=>c.by+": "+c.text).join(" | ");
-    rows.push(["Wk "+wknum,e.team,e.brand||"",e.platform||"",e.region||"",e.member,e.category||"",e.remarks||"",e.focus,e.status,e.prio||"",e.blockers||"",e.update||"",e.discuss?"Yes":"",openNudges(e).map(n=>n.by+": "+n.text).join(" | "),e.img||"",cmts,new Date(e.created||Date.now()).toLocaleString(),new Date(e.updated||Date.now()).toLocaleString(),weekKeyLabel(e.firstWeek||entryWeek(e)),(e.history||[]).map(x=>weekKeyLabel(x.week)+": "+(x.update||"-")+(x.blockers?" [blocked: "+x.blockers+"]":"")).join(" | ")]);
+    rows.push(["Wk "+wknum,e.team,e.brand||"",e.platform||"",e.region||"",e.member,e.category||"",e.focus,e.status,e.prio||"",remarksText(e),e.discuss?"Yes":"",openNudges(e).map(n=>n.by+": "+n.text).join(" | "),e.img||"",cmts,new Date(e.created||Date.now()).toLocaleString(),new Date(e.updated||Date.now()).toLocaleString(),weekKeyLabel(e.firstWeek||entryWeek(e)),(e.history||[]).map(x=>weekKeyLabel(x.week)+": "+(x.update||"-")+(x.blockers?" [blocked: "+x.blockers+"]":"")).join(" | ")]);
   });
   const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n");
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download="team-tracker.csv"; a.click();
