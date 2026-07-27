@@ -250,6 +250,31 @@
   .agetag.bad{background:#fdeceb; color:#a32b22; border-color:#f2c9c5;}
   .carrytag{display:inline-block; margin-left:4px; font-size:10.5px; font-weight:600; padding:1px 6px; border-radius:999px;
     background:var(--line-soft); color:var(--ink-faint); border:1px solid var(--line); white-space:nowrap;}
+  /* due dates */
+  .duetag{display:inline-block; font-size:10.5px; font-weight:700; padding:1px 6px; border-radius:999px; white-space:nowrap;
+    background:var(--line-soft); color:var(--ink-soft); border:1px solid var(--line);}
+  .duetag.soon{background:#fdf0e3; color:#9a5b12; border-color:#f0d5b4;}
+  .duetag.over{background:#fdeceb; color:#a32b22; border-color:#f2c9c5;}
+  .duedate{font-size:12px; color:var(--ink-soft); white-space:nowrap;}
+  .duedate .duewhen{display:block; font-size:10.5px; margin-top:2px;}
+  /* blocked */
+  .blockedtag{display:inline-block; margin-left:4px; font-size:10.5px; font-weight:700; padding:1px 6px; border-radius:999px;
+    background:#fdeceb; color:#a32b22; border:1px solid #f2c9c5; white-space:nowrap;}
+  .blockbanner{margin:10px 0 0; padding:10px 14px; border:1px solid #f2c9c5; border-left:3px solid var(--red);
+    border-radius:8px; background:var(--red-bg); font-size:13px; color:var(--ink);}
+  .blockbanner b{color:var(--red);}
+  .blockbanner .bwho{color:var(--ink-soft); font-size:12.5px;}
+  /* multi-select status dropdown */
+  .mswrap{position:relative; display:inline-block;}
+  .msbtn{background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 28px 8px 10px; font-size:14px;
+    color:var(--ink); cursor:pointer; position:relative; white-space:nowrap; text-align:left;}
+  .msbtn:after{content:"\25be"; position:absolute; right:10px; top:50%; transform:translateY(-50%); color:var(--ink-faint); font-size:11px;}
+  .msbtn:hover{background:var(--line-soft);}
+  .mspanel{position:absolute; z-index:40; top:calc(100% + 4px); left:0; min-width:170px; background:var(--card);
+    border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 24px rgba(20,18,14,.14); padding:6px;}
+  .mspanel label{display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; font-size:13px; cursor:pointer;}
+  .mspanel label:hover{background:var(--line-soft);}
+  .mspanel input{margin:0;}
   .readonlynote{margin:10px 0 0; padding:9px 12px; border:1px solid var(--line); border-left:3px solid var(--ink-faint);
     border-radius:8px; background:var(--line-soft); font-size:12.5px; color:var(--ink-soft);}
   /* ---- roster: capped height, sticky header, ~5 rows before scrolling ---- */
@@ -275,10 +300,11 @@
   table.compiled col.c-region{width:4.6%;}
   table.compiled col.c-category{width:8%;}
   table.compiled col.c-focus{width:15%;}
-  table.compiled col.c-remarks{width:19.6%;}
-  table.compiled col.c-att{width:5.2%;}
+  table.compiled col.c-remarks{width:17%;}
+  table.compiled col.c-att{width:4.6%;}
+  table.compiled col.c-due{width:6.4%;}
   table.compiled col.c-status{width:7%;}
-  table.compiled col.c-time{width:8.5%;}
+  table.compiled col.c-time{width:8.2%;}
   table.compiled col.c-act{width:9.5%;}
   table.compiled .rowacts button{font-size:11px; padding:3px 7px;}
   table.compiled img.tt{max-width:100%; height:auto;}
@@ -380,7 +406,7 @@
       <div class="dashgrid">
         <div class="dashcard">
           <div class="dh">Needs attention</div>
-          <div class="dhsub">Aging, stale, blocked, or flagged work</div>
+          <div class="dhsub">Blocked, overdue, aging, stale, or flagged work</div>
           <div id="d-attention"></div>
         </div>
         <div class="dashcard">
@@ -411,10 +437,14 @@
       <div class="controls">
         <label style="font-size:13px; color:var(--ink-soft);">Week</label>
         <select id="board-week" style="width:auto;"></select>
-        <select id="statusfilter" style="width:auto;">
-          <option value="all">All statuses</option>
-          <option>Active</option><option>In progress</option><option>Done</option>
-        </select>
+        <div class="mswrap" id="statusfilter-wrap">
+          <button type="button" class="msbtn" id="statusfilter-btn">All statuses</button>
+          <div class="mspanel hidden" id="statusfilter-panel">
+            <label><input type="checkbox" value="Active" checked /> Active</label>
+            <label><input type="checkbox" value="In progress" checked /> In progress</label>
+            <label><input type="checkbox" value="Done" checked /> Done</label>
+          </div>
+        </div>
         <select id="memberfilter" style="width:auto;">
           <option value="all">All members</option>
         </select>
@@ -428,6 +458,7 @@
         <button class="primary small" id="addbtn">+ Add entry</button>
       </div>
       <div id="readonlynote" class="readonlynote hidden"></div>
+      <div id="boardbanner"></div>
       <div class="panel hidden" id="form">
         <div class="guide">
           <button class="guidetoggle" id="guidetoggle" type="button">
@@ -441,7 +472,10 @@
               <dt>Platform</dt><dd>Where it's happening: Shopee, Lazada, TikTok Shop, Amazon.</dd>
               <dt>Region</dt><dd>Market or territory &mdash; PH, SG, APAC, NA.</dd>
               <dt>Status</dt><dd><b>Active</b> = ongoing this week. <b>In progress</b> = actively being worked right now. <b>Done</b> = finished, no follow-up needed.</dd>
+              <dt>Owner</dt><dd>The single person accountable for this item &mdash; who to ask about it. Different from Members, which can list everyone helping.</dd>
+              <dt>Due date</dt><dd>Optional deadline. Items past their date show as <b>overdue</b>; items due within 7 days show as <b>due soon</b>.</dd>
               <dt>Priority</dt><dd><b>High</b> = blocks someone or has a hard deadline. <b>Medium</b> = normal. <b>Low</b> = nice to have.</dd>
+              <dt>Blocked</dt><dd>Tick when the work can't move forward. Blocked items are counted in the banner at the top of the board so the team can unblock them first.</dd>
               <dt>Category</dt><dd>Required. The bucket of work. Pick <i>Others</i> only if nothing fits, then describe the work in Remarks. Admins manage this list under Data.</dd>
               <dt>Focus this week</dt><dd><b>Required.</b> One short line on what you're actually doing &mdash; "Fix rejected listings for Acme", not "listings".</dd>
               <dt>Members</dt><dd>Who is doing the work. Separate names with commas. Only you (or an admin) can change this after saving.</dd>
@@ -462,6 +496,8 @@
           <div><label class="fl">Status</label><select id="f-status"><option>Active</option><option>In progress</option><option>Done</option></select><span class="fh">Done = no follow-up needed</span></div>
         </div>
         <div class="grid g3" style="margin-top:12px;">
+          <div><label class="fl">Owner</label><input id="f-owner" placeholder="e.g. Ana" /><span class="fh">The one person accountable — who to ask</span></div>
+          <div><label class="fl">Due date (optional)</label><input id="f-due" type="date" /><span class="fh">Leave blank if there's no deadline</span></div>
           <div><label class="fl">Priority</label><select id="f-prio"><option>Low</option><option selected>Medium</option><option>High</option></select><span class="fh">High = blocked or hard deadline</span></div>
           <div><label class="fl">Category <span class="req">required</span></label><select id="f-category">
             <option value="" disabled selected>Choose in the dropdown</option>
@@ -482,6 +518,7 @@
         </div>
         <div style="margin-top:12px;">
           <label class="chk"><input type="checkbox" id="f-discuss" /> <span>Flag for discussion <span class="uphint">— surface this for the team to talk through</span></span></label>
+          <label class="chk" style="margin-top:6px;"><input type="checkbox" id="f-blocked" /> <span>Blocked <span class="uphint">— can't move forward; note who/what you're waiting on in Remarks</span></span></label>
         </div>
         <div class="panelbtns">
           <button class="primary" id="savebtn">Save entry</button>
@@ -672,6 +709,8 @@ function weekAgeOf(e){ return weeksBetween(entryWeek(e), weekKeyNow()); }
 function daysSinceUpdate(e){ return Math.floor((Date.now()-(e.updated||e.created||Date.now()))/86400000); }
 function defaultState(){
   const now=Date.now();
+  // Seed due dates relative to today so overdue / due-soon states are visible.
+  const isoInDays=n=>{ const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
   return {
     teams: ["Team Fritz", "Team Marlon", "TOD"],
     reviewedAt: 0,
@@ -682,9 +721,9 @@ function defaultState(){
       {id:"u4", name:"Diego", team:"TOD", role:"member", pass:"3333"}
     ],
     entries: [
-      {id:1,team:"Team Fritz",member:"Ana, Ben",focus:"Onboarding flow redesign",category:"Product listings",remarks:"",status:"In progress",prio:"High",blockers:"",update:"Wireframes approved",img:"",discuss:false,created:now,updated:now,by:"Ana"},
-      {id:2,team:"Team Marlon",member:"Cara",focus:"API rate-limit fix",category:"Account health",remarks:"",status:"Active",prio:"High",blockers:"Waiting on infra access",update:"Escalated Monday",img:"",discuss:true,comments:[{by:"admin",text:"Who owns the infra ticket? Let's unblock this before Friday.",ts:now}],created:now,updated:now,by:"Cara"},
-      {id:3,team:"TOD",member:"Diego, Elle",focus:"Q3 reporting dashboard",category:"Order monitoring",remarks:"",status:"Active",prio:"Medium",blockers:"",update:"Kicks off Thursday",img:"",discuss:false,created:now,updated:now,by:"Diego"}
+      {id:1,team:"Team Fritz",member:"Ana, Ben",owner:"Ana",focus:"Onboarding flow redesign",category:"Product listings",remarks:"",status:"In progress",prio:"High",due:isoInDays(3),blocked:false,blockers:"",update:"Wireframes approved",img:"",discuss:false,created:now,updated:now,by:"Ana"},
+      {id:2,team:"Team Marlon",member:"Cara",owner:"Cara",focus:"API rate-limit fix",category:"Account health",remarks:"",status:"Active",prio:"High",due:"",blocked:true,blockers:"Waiting on infra access",update:"Escalated Monday",img:"",discuss:true,comments:[{by:"admin",text:"Who owns the infra ticket? Let's unblock this before Friday.",ts:now}],created:now,updated:now,by:"Cara"},
+      {id:3,team:"TOD",member:"Diego, Elle",owner:"Diego",focus:"Q3 reporting dashboard",category:"Order monitoring",remarks:"",status:"Active",prio:"Medium",due:isoInDays(-2),blocked:false,blockers:"",update:"Kicks off Thursday",img:"",discuss:false,created:now,updated:now,by:"Diego"}
     ],
     highlights: []
   };
@@ -836,6 +875,12 @@ function migrate(){
     if(typeof e.carriedFrom!=="string") e.carriedFrom="";
     if(typeof e.firstWeek!=="string") e.firstWeek=e.week;
     if(!Array.isArray(e.history)) e.history=[];
+    // Owner defaults to the first listed member so existing rows aren't blank.
+    if(typeof e.owner!=="string" || !e.owner.trim()){
+      e.owner=(splitMembers(e.member||"")[0]||"").trim();
+    }
+    if(typeof e.due!=="string") e.due="";
+    if(typeof e.blocked!=="boolean") e.blocked=false;
   });
 }
 // Read-only on other teams: no commenting, editing, or nudging there.
@@ -1038,9 +1083,15 @@ function renderDashboard(){
     const ip=it.filter(e=>e.status==="In progress").length;
     const dn=it.filter(e=>e.status==="Done").length;
     const fl=it.filter(e=>e.discuss).length;
+    const bl=it.filter(e=>e.blocked && e.status!=="Done").length;
+    const ov=it.filter(e=>{ const n=daysUntilDue(e); return e.status!=="Done" && n!==null && n<0; }).length;
+    const st=it.filter(e=>e.status!=="Done" && daysSinceUpdate(e)>=STALE_DAYS).length;
     og.innerHTML+='<div class="ovcard"><div class="t">'+esc(team)+'</div><div class="nums">'+
       '<span class="n-blue"><b>'+ac+'</b>active</span><span class="n-amber"><b>'+ip+'</b>in prog</span>'+
       '<span class="n-green"><b>'+dn+'</b>done</span><span class="n-gray"><b>'+it.length+'</b>total</span>'+
+      (bl?'<span class="n-red"><b>'+bl+'</b>blocked</span>':"")+
+      (ov?'<span class="n-red"><b>'+ov+'</b>overdue</span>':"")+
+      (st?'<span class="n-amber"><b>'+st+'</b>stale</span>':"")+
       (fl?'<span class="n-red"><b>'+fl+'</b>to discuss</span>':"")+'</div></div>';
   });
   if(!dashTeams.length) og.innerHTML='<div class="empty">No teams yet. Add one under Data.</div>';
@@ -1066,17 +1117,25 @@ function renderDashPanels(wk){
   const cur=scope.filter(inWeek);
 
   // --- Needs attention ---
-  const flagged=cur.filter(e=>e.status!=="Done" && (ageInfo(e)||e.discuss));
-  flagged.sort((a,b)=>{
-    const rank=x=>(ageInfo(x)&&ageInfo(x).some(t=>t.kind==="bad")?0:1);
-    return rank(a)-rank(b) || (b.discuss?1:0)-(a.discuss?1:0);
-  });
+  // Blocked and overdue rank highest, then aging/stale, then flagged.
+  const isOverdue=e=>{ const n=daysUntilDue(e); return n!==null && n<0; };
+  const flagged=cur.filter(e=>e.status!=="Done" && (e.blocked||isOverdue(e)||ageInfo(e)||e.discuss));
+  const attnRank=e=>{
+    if(e.blocked) return 0;
+    if(isOverdue(e)) return 1;
+    if(ageInfo(e)&&ageInfo(e).some(t=>t.kind==="bad")) return 2;
+    if(ageInfo(e)) return 3;
+    return 4;
+  };
+  flagged.sort((a,b)=> attnRank(a)-attnRank(b) || (b.discuss?1:0)-(a.discuss?1:0));
   document.getElementById("d-attention").innerHTML = flagged.length
     ? '<ul class="dlist">'+flagged.slice(0,12).map(e=>
-        '<li><div class="df">'+esc(e.focus)+ageBadges(e)+(e.discuss?'<span class="agetag">discuss</span>':"")+'</div>'+
-        '<div class="dm">'+esc(e.member||"-")+(e.region?' &middot; '+esc(e.region):"")+'</div></li>').join("")+
+        '<li><div class="df">'+esc(e.focus)+
+          (e.blocked?'<span class="blockedtag">Blocked</span>':"")+dueBadge(e)+ageBadges(e)+
+          (e.discuss?'<span class="agetag">discuss</span>':"")+'</div>'+
+        '<div class="dm">'+esc(e.owner||e.member||"-")+(e.region?' &middot; '+esc(e.region):"")+'</div></li>').join("")+
         '</ul>'+(flagged.length>12?'<div class="dmore">+'+(flagged.length-12)+' more</div>':"")
-    : '<div class="dempty">Nothing aging or flagged. Good week.</div>';
+    : '<div class="dempty">Nothing blocked, overdue, aging, or flagged. Good week.</div>';
 
   // --- Trend: last 6 weeks ---
   const weeks=Array.from(new Set(scope.map(entryWeek))).sort().slice(-6);
@@ -1178,6 +1237,25 @@ function populateMemberFilter(team){
   sel.innerHTML='<option value="all">All members</option>'+sorted.map(n=>'<option value="'+esc(n)+'"'+(n===prev?" selected":"")+'>'+esc(n)+'</option>').join("");
   if(prev!=="all" && !sorted.includes(prev)) sel.value="all";
 }
+// Rollup at the top of the board: what's blocked and what's overdue this week,
+// so a weekly review opens on the things that need unblocking or chasing.
+function renderBoardBanner(team,wk){
+  const el=document.getElementById("boardbanner"); if(!el) return;
+  const inWeek=e=>(wk==="all"||entryWeek(e)===wk);
+  const scope=state.entries.filter(e=>e.team===team && inWeek(e) && e.status!=="Done");
+  const blocked=scope.filter(e=>e.blocked);
+  const overdue=scope.filter(e=>{ const n=daysUntilDue(e); return n!==null && n<0; });
+  const parts=[];
+  if(blocked.length){
+    const names=Array.from(new Set(blocked.map(e=>(e.owner||splitMembers(e.member)[0]||"").trim()).filter(Boolean)));
+    parts.push('<b>'+blocked.length+' blocked</b>'+(names.length?' <span class="bwho">('+esc(names.slice(0,4).join(", "))+(names.length>4?" +"+(names.length-4)+" more":"")+')</span>':""));
+  }
+  if(overdue.length){
+    parts.push('<b>'+overdue.length+' overdue</b>');
+  }
+  if(!parts.length){ el.innerHTML=""; return; }
+  el.innerHTML='<div class="blockbanner">'+parts.join(' &nbsp;·&nbsp; ')+' — tackle these first.</div>';
+}
 function render(){
   document.getElementById("week").innerHTML=weekLabel();
   // Everyone can browse any team now, so honour the selected tab for all roles.
@@ -1194,18 +1272,19 @@ function render(){
   }
   if(readOnly) document.getElementById("form").classList.add("hidden");
   populateMemberFilter(team);
-  const sf=document.getElementById("statusfilter").value||"all";
+  const sf=statusFilterSet();
   const mf=document.getElementById("memberfilter").value||"all";
   const cf=document.getElementById("changedfilter").value||"all";
   const onlyDiscuss=false;
   const wk=document.getElementById("board-week").value;
+  renderBoardBanner(team,wk);
   const rv=state.reviewedAt||0;
   const useTable = true;
   document.getElementById("board").classList.toggle("hidden", useTable);
   document.getElementById("tablewrap").classList.toggle("hidden", !useTable);
   if(useTable){ renderTable([team],sf,wk,mf,cf,onlyDiscuss); return; }
   const board=document.getElementById("board"); board.innerHTML="";
-  let items=state.entries.filter(e=>e.team===team&&(sf==="all"||e.status===sf)&&(mf==="all"||nameListHas(e.member,mf))&&(wk==="all"||entryWeek(e)===wk)&&(!onlyDiscuss||e.discuss)&&(cf!=="since"||(e.updated||0)>rv));
+  let items=state.entries.filter(e=>e.team===team&&statusMatch(sf,e.status)&&(mf==="all"||nameListHas(e.member,mf))&&(wk==="all"||entryWeek(e)===wk)&&(!onlyDiscuss||e.discuss)&&(cf!=="since"||(e.updated||0)>rv));
   // flagged-for-discussion first, then by priority
   items.sort(compareEntries);
   const sec=document.createElement("div"); sec.className="team";
@@ -1225,7 +1304,8 @@ function render(){
         '<div class="focus">'+esc(e.focus)+(e.discuss?' <span class="flag">Discuss</span>':"")+(isNew?'<span class="newtag">new</span>':(isChanged?'<span class="newtag">updated</span>':""))+'</div>'+
         '<div class="who">'+ICO.users+' '+(esc(e.member)||"-")+' '+(e.prio?'<span class="prio '+PCLASS[e.prio]+'">'+e.prio+'</span>':"")+(e.category?' <span class="cat">'+esc(e.category)+'</span>':"")+' <span class="wk">Wk '+wknum+'</span></div>'+
       '</div>'+
-      '<span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span></div>'+
+      '<span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span>'+
+      (e.blocked&&e.status!=="Done"?' <span class="blockedtag">Blocked</span>':"")+dueBadge(e)+'</div>'+
       (remarksText(e)?'<div class="line">'+ICO.note+'<span>'+remarksHTML(e)+'</span></div>':"")+
       (e.img?'<div class="thumb"><img src="'+esc(e.img)+'" data-zoom="'+esc(e.img)+'" alt="attachment" /></div>':"")+
       '<div class="meta">'+ICO.clock+' updated '+ago(e.updated)+(e.by?' &middot; by '+esc(e.by):"")+'</div>'+
@@ -1329,17 +1409,17 @@ function compareEntries(a,b){
 function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   mf=mf||"all"; cf=cf||"all";
   const rv=state.reviewedAt||0;
-  let items=state.entries.filter(e=>teams.includes(e.team)&&(sf==="all"||e.status===sf)&&(mf==="all"||nameListHas(e.member,mf))&&(wk==="all"||entryWeek(e)===wk)&&(!onlyDiscuss||e.discuss)&&(cf!=="since"||(e.updated||0)>rv));
+  let items=state.entries.filter(e=>teams.includes(e.team)&&statusMatch(sf,e.status)&&(mf==="all"||nameListHas(e.member,mf))&&(wk==="all"||entryWeek(e)===wk)&&(!onlyDiscuss||e.discuss)&&(cf!=="since"||(e.updated||0)>rv));
   items.sort(compareEntries);
   let h='';
   if(rv) h+='<div class="reviewnote">Highlighted rows changed since last marked reviewed ('+fullTimestamp(rv)+').</div>';
   h+='<div class="tablescroll"><table class="compiled">'+
     '<colgroup><col class="c-week"/><col class="c-first"/><col class="c-members"/><col class="c-brand"/><col class="c-platform"/>'+
     '<col class="c-region"/><col class="c-category"/><col class="c-focus"/><col class="c-remarks"/>'+
-    '<col class="c-att"/><col class="c-status"/><col class="c-time"/><col class="c-act"/></colgroup>'+
+    '<col class="c-att"/><col class="c-due"/><col class="c-status"/><col class="c-time"/><col class="c-act"/></colgroup>'+
     '<thead><tr>'+
-    '<th>Week</th><th>First logged</th><th>Members</th><th>Brand</th><th>Platform</th><th>Region</th><th>Category</th><th>Focus Area</th><th>Remarks</th><th>Att.</th><th>Status</th><th>Last update</th><th></th></tr></thead><tbody>';
-  if(!items.length) h+='<tr><td colspan="13" style="color:var(--ink-faint);">No entries match.</td></tr>';
+    '<th>Week</th><th>First logged</th><th>Members</th><th>Brand</th><th>Platform</th><th>Region</th><th>Category</th><th>Focus Area</th><th>Remarks</th><th>Att.</th><th>Due</th><th>Status</th><th>Last update</th><th></th></tr></thead><tbody>';
+  if(!items.length) h+='<tr><td colspan="14" style="color:var(--ink-faint);">No entries match.</td></tr>';
   // Admin / manager / lead see entries grouped by region, regions A-Z
   const groupByRegion = (me.role==="admin"||me.role==="manager"||me.role==="lead");
   let groups;
@@ -1355,7 +1435,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   }
   groups.forEach(g=>{
   if(g.region!==null){
-    h+='<tr class="regiongroup"><td colspan="13">'+esc(g.region)+' <span class="rgcount">'+g.rows.length+' '+(g.rows.length===1?"entry":"entries")+'</span></td></tr>';
+    h+='<tr class="regiongroup"><td colspan="14">'+esc(g.region)+' <span class="rgcount">'+g.rows.length+' '+(g.rows.length===1?"entry":"entries")+'</span></td></tr>';
   }
   g.rows.forEach(e=>{
     const editable=canEdit(e);
@@ -1367,12 +1447,12 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
     h+='<tr class="'+(isChanged?"changed":"")+'">'+
       '<td><span class="wk">Wk '+wknum+'</span>'+(isNew?'<span class="newtag">new</span>':(isChanged?'<span class="newtag">upd</span>':""))+
         (e.carriedFrom?'<span class="carrytag" title="Carried forward from '+esc(weekKeyLabel(e.carriedFrom))+'">carried</span>':"")+
-        ageBadges(e)+'</td>'+
+        ageBadges(e)+dueBadge(e)+'</td>'+
       '<td class="tsfirst" title="'+esc(fullTimestamp(e.created))+(e.firstWeek?' &middot; first logged in '+esc(weekKeyLabel(e.firstWeek)):"")+'">'+
         fullTimestamp(e.created)+
         (e.firstWeek&&e.firstWeek!==entryWeek(e)?'<span class="tsweek">since '+esc(weekKeyLabel(e.firstWeek))+'</span>':"")+
       '</td>'+
-      '<td>'+(esc(e.member)||"-")+'</td>'+
+      '<td>'+(esc(e.member)||"-")+(e.owner&&!sameName(e.owner,(splitMembers(e.member)[0]||""))?'<span class="tsweek" style="display:block;font-size:11px;color:var(--ink-faint);">owner: '+esc(e.owner)+'</span>':(e.owner&&splitMembers(e.member).length>1?'<span class="tsweek" style="display:block;font-size:11px;color:var(--ink-faint);">owner: '+esc(e.owner)+'</span>':""))+'</td>'+
       '<td>'+(e.scope==="all"?'<span class="scopeall">All brands</span>':(esc(e.brand)||"-"))+'</td>'+
       '<td>'+(esc(e.platform)||"-")+'</td>'+
       '<td>'+(esc(e.region)||"-")+'</td>'+
@@ -1383,7 +1463,9 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
           (histOpen.has(String(e.id))?"hide":"")+' '+e.history.length+' earlier '+(e.history.length===1?"note":"notes")+'</button>':"")+
         '</td>'+
       '<td class="attcell">'+(e.img?'<img class="tt" src="'+esc(e.img)+'" data-zoom="'+esc(e.img)+'" alt="attachment" loading="lazy" onerror="this.classList.add(\'broken\');this.removeAttribute(\'data-zoom\');this.alt=\'image unavailable\';" />':"-")+'</td>'+
+      '<td>'+dueCell(e)+'</td>'+
       '<td><span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span>'+
+        (e.blocked&&e.status!=="Done"?'<br><span class="blockedtag">Blocked</span>':"")+
         (e.discuss?'<br><span class="flag">Discuss</span>':"")+(openNudges(e).length?'<br><span class="nudged">Nudged</span>':"")+'</td>'+
       '<td style="color:var(--ink-faint); font-size:12px;">'+fullTimestamp(e.updated)+(e.by?'<br>'+esc(e.by):"")+'</td>'+
       '<td><div class="rowacts">'+(editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button><button class="small" data-edit="'+e.id+'">Edit</button>'
@@ -1391,7 +1473,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
     '</tr>';
     const nh=nudgeHTML(e);
     if(histOpen.has(String(e.id)) && e.history && e.history.length){
-      h+='<tr class="cmtrow"><td colspan="13"><div class="histwrap"><div class="histh">Weekly trail</div>'+
+      h+='<tr class="cmtrow"><td colspan="14"><div class="histwrap"><div class="histh">Weekly trail</div>'+
         e.history.slice().reverse().map(x=>
           '<div class="histrow"><span class="histwk">'+esc(weekKeyLabel(x.week))+'</span>'+
           '<span class="histtxt">'+(esc(x.update)||'<i>no note</i>')+
@@ -1399,15 +1481,40 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
           '<span class="histst">'+esc(x.status||"")+'</span></div>').join("")+
         '</div></td></tr>';
     }
-    if(nh){ h+='<tr class="cmtrow"><td colspan="13">'+nh+'</td></tr>'; }
-    if(threadOpen){ h+='<tr class="cmtrow"><td colspan="13">'+commentsHTML(e)+'</td></tr>'; }
+    if(nh){ h+='<tr class="cmtrow"><td colspan="14">'+nh+'</td></tr>'; }
+    if(threadOpen){ h+='<tr class="cmtrow"><td colspan="14">'+commentsHTML(e)+'</td></tr>'; }
   });
   });
   h+='</tbody></table></div>';
   document.getElementById("tablewrap").innerHTML=h;
 }
 document.getElementById("board-week").onchange=render;
-document.getElementById("statusfilter").onchange=render;
+/* ---- multi-select status filter ---- */
+const ALL_STATUSES=["Active","In progress","Done"];
+function statusFilterCheckboxes(){ return Array.from(document.querySelectorAll("#statusfilter-panel input[type=checkbox]")); }
+// Returns the list of statuses currently ticked. Empty selection is treated as
+// "show all" so the board never goes blank when everything is unchecked.
+function statusFilterSet(){
+  const on=statusFilterCheckboxes().filter(c=>c.checked).map(c=>c.value);
+  return on.length?on:ALL_STATUSES.slice();
+}
+function statusMatch(set,status){ return !set || set.includes(status); }
+function updateStatusFilterLabel(){
+  const on=statusFilterCheckboxes().filter(c=>c.checked).map(c=>c.value);
+  const btn=document.getElementById("statusfilter-btn");
+  if(!on.length || on.length===ALL_STATUSES.length){ btn.textContent="All statuses"; }
+  else if(on.length===1){ btn.textContent=on[0]; }
+  else { btn.textContent=on.length+" statuses"; }
+}
+(function initStatusFilter(){
+  const wrap=document.getElementById("statusfilter-wrap");
+  const btn=document.getElementById("statusfilter-btn");
+  const panel=document.getElementById("statusfilter-panel");
+  btn.onclick=e=>{ e.stopPropagation(); panel.classList.toggle("hidden"); };
+  statusFilterCheckboxes().forEach(c=>c.addEventListener("change",()=>{ updateStatusFilterLabel(); render(); }));
+  document.addEventListener("click",e=>{ if(!wrap.contains(e.target)) panel.classList.add("hidden"); });
+  updateStatusFilterLabel();
+})();
 document.getElementById("memberfilter").onchange=render;
 document.getElementById("changedfilter").onchange=render;
 document.getElementById("reviewbtn").onclick=()=>{
@@ -1488,6 +1595,9 @@ function openForm(entry){
   document.getElementById("f-platform").value=entry?(entry.platform||""):"";
   document.getElementById("f-region").value=entry?(entry.region||""):"";
   document.getElementById("f-status").value=entry?entry.status:"Active";
+  document.getElementById("f-owner").value=entry?(entry.owner||""):me.name;
+  document.getElementById("f-due").value=entry?(entry.due||""):"";
+  document.getElementById("f-blocked").checked=entry?!!entry.blocked:false;
   document.getElementById("f-prio").value=entry?entry.prio:"Medium";
   fillCategoryOptions(entry?entry.category:"");
   document.getElementById("f-category").value=(entry&&entry.category)?entry.category:"";
@@ -1610,6 +1720,40 @@ function ageBadges(e){
   const a=ageInfo(e); if(!a) return "";
   return a.map(x=>'<span class="agetag '+x.kind+'" title="'+esc(x.title)+'">'+esc(x.label)+'</span>').join("");
 }
+/* ============ DUE DATES ============ */
+const DUE_SOON_DAYS=7;
+// Whole-day difference from today (local) to the due date. Negative = past due.
+function daysUntilDue(e){
+  if(!e.due) return null;
+  const d=new Date(e.due+"T00:00:00"); if(isNaN(d)) return null;
+  const today=new Date(); today.setHours(0,0,0,0);
+  return Math.round((d-today)/86400000);
+}
+// Done work is never "overdue" - the deadline stopped mattering once it shipped.
+function dueInfo(e){
+  if(e.status==="Done") return null;
+  const n=daysUntilDue(e); if(n===null) return null;
+  if(n<0)  return {kind:"over", label:(-n)+"d overdue", when:"was due "+fmtDue(e.due)};
+  if(n===0) return {kind:"soon", label:"due today", when:"due "+fmtDue(e.due)};
+  if(n<=DUE_SOON_DAYS) return {kind:"soon", label:"in "+n+"d", when:"due "+fmtDue(e.due)};
+  return {kind:"", label:"in "+n+"d", when:"due "+fmtDue(e.due)};
+}
+function fmtDue(iso){
+  const d=new Date(iso+"T00:00:00"); if(isNaN(d)) return iso;
+  return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+}
+// Compact overdue / due-soon pill shown inline in the Week column.
+function dueBadge(e){
+  const info=dueInfo(e); if(!info||!info.kind) return "";
+  return '<span class="duetag '+info.kind+'" title="'+esc(info.when)+'">'+esc(info.label)+'</span>';
+}
+function dueCell(e){
+  if(!e.due) return "-";
+  const info=dueInfo(e);
+  const cls=info?info.kind:"";
+  return '<span class="duedate"><span class="duetag '+cls+'">'+esc(fmtDue(e.due))+'</span>'+
+    (info&&info.kind?'<span class="duewhen">'+esc(info.label)+'</span>':"")+'</span>';
+}
 /* ============ CARRY FORWARD (move model) ============ */
 // One row per issue. Carrying MOVES the entry into the new week rather than
 // cloning it, so the board stays clean. The original creation date and each
@@ -1711,6 +1855,9 @@ document.getElementById("savebtn").onclick=async()=>{
     platform:document.getElementById("f-platform").value.trim(),
     region:document.getElementById("f-region").value.trim(),
     status:document.getElementById("f-status").value,
+    owner:document.getElementById("f-owner").value.trim(),
+    due:document.getElementById("f-due").value||"",
+    blocked:document.getElementById("f-blocked").checked,
     prio:document.getElementById("f-prio").value,
     category:categoryField.value,
     remarks:"",
@@ -1751,11 +1898,11 @@ document.getElementById("exportbtn").onclick=()=>{
   const _t=(activeTab&&state.teams.includes(activeTab))?activeTab:me.team;
   if(activeView==="board" && !isOwnTeam(_t)){ alert("Export is only available for your own team."); return; }
   const vt=visibleTeams();
-  const rows=[["Week","Team","Scope","Brand","Platform","Region","Members","Category","Focus Area","Status","Priority","Remarks","Needs discussion","Open nudges","Attachment URL","Comments","First logged","Last update","First week","Weekly trail"]];
+  const rows=[["Week","Team","Scope","Brand","Platform","Region","Members","Owner","Category","Focus Area","Status","Priority","Due date","Blocked","Remarks","Needs discussion","Open nudges","Attachment URL","Comments","First logged","Last update","First week","Weekly trail"]];
   state.entries.filter(e=>vt.includes(e.team)).forEach(e=>{
     const wknum=parseInt(entryWeek(e).split("-W")[1],10);
     const cmts=(e.comments||[]).map(c=>c.by+": "+c.text).join(" | ");
-    rows.push(["Wk "+wknum,e.team,e.scope==="all"?"All brands":"Brand specific",e.brand||"",e.platform||"",e.region||"",e.member,e.category||"",e.focus,e.status,e.prio||"",remarksText(e),e.discuss?"Yes":"",openNudges(e).map(n=>n.by+": "+n.text).join(" | "),e.img||"",cmts,new Date(e.created||Date.now()).toLocaleString(),new Date(e.updated||Date.now()).toLocaleString(),weekKeyLabel(e.firstWeek||entryWeek(e)),(e.history||[]).map(x=>weekKeyLabel(x.week)+": "+(x.update||"-")+(x.blockers?" [blocked: "+x.blockers+"]":"")).join(" | ")]);
+    rows.push(["Wk "+wknum,e.team,e.scope==="all"?"All brands":"Brand specific",e.brand||"",e.platform||"",e.region||"",e.member,e.owner||"",e.category||"",e.focus,e.status,e.prio||"",e.due||"",e.blocked?"Yes":"",remarksText(e),e.discuss?"Yes":"",openNudges(e).map(n=>n.by+": "+n.text).join(" | "),e.img||"",cmts,new Date(e.created||Date.now()).toLocaleString(),new Date(e.updated||Date.now()).toLocaleString(),weekKeyLabel(e.firstWeek||entryWeek(e)),(e.history||[]).map(x=>weekKeyLabel(x.week)+": "+(x.update||"-")+(x.blockers?" [blocked: "+x.blockers+"]":"")).join(" | ")]);
   });
   const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n");
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download="team-tracker.csv"; a.click();
