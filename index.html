@@ -48,6 +48,7 @@
   .modal h3{font-family:var(--serif); font-size:19px; margin:0 0 4px;}
   .modal p.sub{font-size:13px; color:var(--ink-soft); margin:0 0 14px;}
   .modal textarea{width:100%; min-height:96px; resize:vertical; font-size:13px;}
+  #f-update{min-height:110px; resize:vertical; line-height:1.5;}
   .modal .btns{display:flex; gap:8px; justify-content:flex-end; margin-top:14px;}
   .tmplrow{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;}
   .tmplrow button{font-size:12px; padding:3px 10px;}
@@ -189,6 +190,13 @@
   .panelbtns{margin-top:14px; display:flex; gap:8px; align-items:center;}
   .uparea{border:1px dashed var(--line); border-radius:8px; padding:10px; display:flex; align-items:center; gap:12px;}
   .uparea img{height:48px; border-radius:6px; border:1px solid var(--line);}
+  .hlthumbs{display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;}
+  .hlthumbs .hlthumb{position:relative;}
+  .hlthumbs .hlthumb img{height:72px; border-radius:8px; border:1px solid var(--line); display:block; object-fit:cover;}
+  .hlthumbs .hlthumb button{position:absolute; top:-8px; right:-8px; width:22px; height:22px; padding:0; border-radius:50%;
+    background:var(--card); border:1px solid var(--line); color:var(--red); font-size:14px; line-height:1; cursor:pointer;}
+  .hlshots{display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;}
+  .hlshots img{height:96px; max-width:220px; object-fit:cover; border-radius:8px; border:1px solid var(--line); cursor:zoom-in;}
   .uphint{font-size:12px; color:var(--ink-faint);}
   table.roster,table.compiled{width:100%; border-collapse:collapse; font-size:13px; margin-top:6px;}
   table.roster th,table.compiled th{text-align:left; font-size:12px; color:var(--ink-faint); font-weight:600; padding:8px; border-bottom:1px solid var(--line);}
@@ -506,7 +514,7 @@
           <div id="f-member-wrap"><label class="fl">Members</label><input id="f-member" placeholder="e.g. Ana, Ben" /><span class="fh">Separate names with commas</span><span class="uphint" id="f-member-lock"></span></div>
         </div>
         <div class="grid g2" style="margin-top:12px;">
-          <div style="grid-column:1 / -1;"><label class="fl">Remarks (optional)</label><textarea id="f-update" rows="3" placeholder="e.g. Escalated Monday, awaiting reply.&#10;- Blocked on infra access&#10;- Waiting on Ops team"></textarea><span class="fh">Progress, supporting details, and blockers. Start a line with "-" to make a bullet.</span></div>
+          <div style="grid-column:1 / -1;"><label class="fl">Remarks (optional)</label><textarea id="f-update" rows="4" placeholder="e.g. Escalated Monday, awaiting reply.&#10;- Blocked on infra access&#10;- Waiting on Ops team"></textarea><span class="fh">Progress, supporting details, and blockers. Start a line with "-" to make a bullet.</span></div>
         </div>
         <div style="margin-top:12px;">
           <label class="fl">Attachment (optional)</label>
@@ -614,6 +622,14 @@
         <div style="margin-top:12px;">
           <label class="fl">Remarks (optional)</label>
           <textarea id="hl-f-remarks" rows="2" placeholder="Overall note, coaching point, or next step for the team"></textarea>
+        </div>
+        <div style="margin-top:12px;">
+          <label class="fl">Screenshots (optional)</label>
+          <div class="uparea">
+            <input type="file" id="hl-f-file" accept="image/*" multiple style="border:none; padding:0; background:transparent;" />
+            <span class="uphint" id="hl-upstatus">Up to 2 images. PNG/JPG. Uploaded when you save.</span>
+          </div>
+          <div id="hl-f-thumbs" class="hlthumbs"></div>
         </div>
         <div class="panelbtns">
           <button class="primary" id="hl-save">Save highlight</button>
@@ -849,6 +865,7 @@ function migrate(){
     if(!Array.isArray(hl.issues)) hl.issues=[];
     if(!Array.isArray(hl.members)) hl.members=[];
     if(typeof hl.remarks!=="string") hl.remarks="";
+    if(!Array.isArray(hl.images)) hl.images=[];
     if(!hl.created) hl.created=hl.updated||Date.now();
     if(!hl.week) hl.week=weekKeyFromTs(hl.created);
   });
@@ -1910,7 +1927,11 @@ document.getElementById("exportbtn").onclick=()=>{
 function renderRoster(){
   document.getElementById("m-team").innerHTML=state.teams.map(t=>'<option>'+esc(t)+'</option>').join("");
   const q=(document.getElementById("m-search").value||"").trim().toLowerCase();
-  const all=state.members.slice().sort((a,b)=>
+  // The built-in admin is a system login, not a team member, so it's hidden
+  // from the roster to keep the list clean. It still works for signing in.
+  const all=state.members.slice()
+    .filter(m=>!(m.role==="admin" && (m.name||"").trim().toLowerCase()==="admin"))
+    .sort((a,b)=>
     (a.team||"").localeCompare(b.team||"")||(a.name||"").localeCompare(b.name||""));
   const list=q?all.filter(m=>((m.name||"")+" "+(m.team||"")+" "+(m.role||"")).toLowerCase().includes(q)):all;
   document.getElementById("m-count").textContent =
@@ -2708,6 +2729,24 @@ function hlTargetTeam(){
 }
 
 let hlEditingId=null;
+// Images staged for the highlight currently being edited. Holds data URLs
+// (either already-saved ones loaded on edit, or freshly compressed uploads).
+let hlPendingImages=[];
+const HL_MAX_IMAGES=2;
+function renderHlThumbs(){
+  const wrap=document.getElementById("hl-f-thumbs");
+  wrap.innerHTML=hlPendingImages.map((src,i)=>
+    '<div class="hlthumb"><img src="'+esc(src)+'" alt="screenshot '+(i+1)+'" />'+
+    '<button type="button" data-hlrmimg="'+i+'" title="Remove">&times;</button></div>').join("");
+  const inp=document.getElementById("hl-f-file");
+  const status=document.getElementById("hl-upstatus");
+  if(hlPendingImages.length>=HL_MAX_IMAGES){
+    inp.disabled=true; status.textContent="Maximum of 2 screenshots reached. Remove one to add another.";
+  } else {
+    inp.disabled=false;
+    status.textContent=(hlPendingImages.length?(hlPendingImages.length+" of 2 added. "):"Up to 2 images. ")+"PNG/JPG. Uploaded when you save.";
+  }
+}
 function hlIssueRow(val){
   const d=document.createElement("div");
   d.className="issuerow";
@@ -2754,11 +2793,16 @@ function openHighlightForm(hl){
   issues.forEach(v=>iw.appendChild(hlIssueRow(v)));
   hlRenumber();
 
+  hlPendingImages = hl && Array.isArray(hl.images) ? hl.images.slice(0,HL_MAX_IMAGES) : [];
+  document.getElementById("hl-f-file").value="";
+  renderHlThumbs();
+
   document.getElementById("hl-form").classList.remove("hidden");
   document.getElementById("hl-f-brand").focus();
 }
 function closeHighlightForm(){
   hlEditingId=null;
+  hlPendingImages=[];
   document.getElementById("hl-form").classList.add("hidden");
 }
 function saveHighlight(){
@@ -2777,6 +2821,7 @@ function saveHighlight(){
     region: document.getElementById("hl-f-region").value.trim(),
     issues: issues,
     remarks: document.getElementById("hl-f-remarks").value.trim(),
+    images: hlPendingImages.slice(0,HL_MAX_IMAGES),
     team: team,
     updated: now
   };
@@ -2850,6 +2895,8 @@ function renderHighlights(){
         '<div class="hltags">'+(h.members||[]).map(n=>'<span class="hltag'+(sameName(n,me.name)?" you":"")+'">'+esc(n)+(sameName(n,me.name)?" (you)":"")+'</span>').join("")+'</div>'+
         '<ol class="hlissues">'+(h.issues||[]).map(i=>'<li>'+esc(i)+'</li>').join("")+'</ol>'+
         (h.remarks?'<div class="hlremarks"><b>Remarks:</b> '+esc(h.remarks)+'</div>':"")+
+        ((h.images&&h.images.length)?'<div class="hlshots">'+h.images.map((src,i)=>
+          '<img src="'+esc(src)+'" data-zoom="'+esc(src)+'" alt="screenshot '+(i+1)+'" loading="lazy" />').join("")+'</div>':"")+
       '</div>';
     });
   });
@@ -2878,6 +2925,28 @@ document.getElementById("hl-f-issues").addEventListener("click",e=>{
 document.getElementById("hl-f-members").addEventListener("change",e=>{
   const l=e.target.closest("label");
   if(l) l.classList.toggle("on", e.target.checked);
+});
+document.getElementById("hl-f-file").addEventListener("change",async e=>{
+  const files=Array.from(e.target.files||[]);
+  e.target.value="";
+  if(!files.length) return;
+  const room=HL_MAX_IMAGES-hlPendingImages.length;
+  if(room<=0){ alert("You can attach at most "+HL_MAX_IMAGES+" screenshots."); return; }
+  const take=files.slice(0,room);
+  if(files.length>room) alert("Only "+room+" more screenshot"+(room===1?"":"s")+" can be added; extra files were skipped.");
+  const status=document.getElementById("hl-upstatus");
+  status.textContent="Processing image"+(take.length===1?"":"s")+"…";
+  for(const f of take){
+    try{ hlPendingImages.push(await compressToDataURL(f, 1400, 0.82)); }
+    catch(err){ console.error("highlight image failed",err); alert("Couldn't read \""+f.name+"\" — skipped."); }
+  }
+  renderHlThumbs();
+});
+document.getElementById("hl-f-thumbs").addEventListener("click",e=>{
+  const b=e.target.closest("[data-hlrmimg]");
+  if(!b) return;
+  hlPendingImages.splice(+b.dataset.hlrmimg,1);
+  renderHlThumbs();
 });
 document.getElementById("hl-wrap").addEventListener("click",e=>{
   const ed=e.target.closest("[data-hledit]");
