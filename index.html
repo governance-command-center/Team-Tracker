@@ -258,6 +258,14 @@
   .agetag.bad{background:#fdeceb; color:#a32b22; border-color:#f2c9c5;}
   .carrytag{display:inline-block; margin-left:4px; font-size:10.5px; font-weight:600; padding:1px 6px; border-radius:999px;
     background:var(--line-soft); color:var(--ink-faint); border:1px solid var(--line); white-space:nowrap;}
+  /* carried-out ghost row: shows an entry in the week it moved OUT of */
+  tr.ghostrow{opacity:.6;}
+  tr.ghostrow:hover{opacity:.85;}
+  tr.ghostrow td{font-style:italic;}
+  tr.ghostrow td.attcell,tr.ghostrow td:last-child{font-style:normal;}
+  .carriedouttag{display:inline-block; margin-left:4px; font-size:10.5px; font-weight:600; padding:1px 6px; border-radius:999px;
+    background:var(--amber-bg); color:var(--amber); border:1px solid #e3dccc; white-space:nowrap; cursor:pointer;}
+  .carriedouttag:hover{filter:brightness(.96);}
   /* due dates */
   .duetag{display:inline-block; font-size:10.5px; font-weight:700; padding:1px 6px; border-radius:999px; white-space:nowrap;
     background:var(--line-soft); color:var(--ink-soft); border:1px solid var(--line);}
@@ -1427,6 +1435,23 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   mf=mf||"all"; cf=cf||"all";
   const rv=state.reviewedAt||0;
   let items=state.entries.filter(e=>teams.includes(e.team)&&statusMatch(sf,e.status)&&(mf==="all"||nameListHas(e.member,mf))&&(wk==="all"||entryWeek(e)===wk)&&(!onlyDiscuss||e.discuss)&&(cf!=="since"||(e.updated||0)>rv));
+  // When a specific week is selected, also surface entries that were carried
+  // OUT of that week — as a read-only "ghost" row showing what was reported
+  // before the move, tagged with where it went. This way carrying an entry
+  // forward shows up in both the week it left and the week it landed in,
+  // instead of just vanishing from the original week's view.
+  if(wk!=="all"){
+    const ghosts=state.entries
+      .filter(e=>teams.includes(e.team) && entryWeek(e)!==wk && (mf==="all"||nameListHas(e.member,mf)) && (e.history||[]).some(h=>h.week===wk))
+      .map(e=>{
+        const snap=historySnapshotFor(e,wk);
+        return Object.assign({},e,{
+          status:snap.status||e.status, update:snap.update||"", blockers:"", remarks:"",
+          __ghost:true, __ghostWeek:wk, __ghostTarget:ghostTargetWeek(e,wk)
+        });
+      });
+    items=items.concat(ghosts);
+  }
   items.sort(compareEntries);
   let h='';
   if(rv) h+='<div class="reviewnote">Highlighted rows changed since last marked reviewed ('+fullTimestamp(rv)+').</div>';
@@ -1455,16 +1480,18 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
     h+='<tr class="regiongroup"><td colspan="14">'+esc(g.region)+' <span class="rgcount">'+g.rows.length+' '+(g.rows.length===1?"entry":"entries")+'</span></td></tr>';
   }
   g.rows.forEach(e=>{
-    const editable=canEdit(e);
-    const isChanged=rv && (e.updated||0)>rv;
-    const isNew=rv && (e.created||0)>rv;
-    const cn=(e.comments||[]).length; const ur=unreadCount(e);
-    const threadOpen=openThreads.has(String(e.id));
-    const wknum=parseInt(entryWeek(e).split("-W")[1],10);
-    h+='<tr class="'+(isChanged?"changed":"")+'">'+
+    const isGhost=!!e.__ghost;
+    const editable=!isGhost && canEdit(e);
+    const isChanged=!isGhost && rv && (e.updated||0)>rv;
+    const isNew=!isGhost && rv && (e.created||0)>rv;
+    const cn=(e.comments||[]).length; const ur=isGhost?0:unreadCount(e);
+    const threadOpen=!isGhost && openThreads.has(String(e.id));
+    const wknum=parseInt((isGhost?e.__ghostWeek:entryWeek(e)).split("-W")[1],10);
+    h+='<tr class="'+(isChanged?"changed":"")+(isGhost?" ghostrow":"")+'">'+
       '<td><span class="wk">Wk '+wknum+'</span>'+(isNew?'<span class="newtag">new</span>':(isChanged?'<span class="newtag">upd</span>':""))+
-        (e.carriedFrom?'<span class="carrytag" title="Carried forward from '+esc(weekKeyLabel(e.carriedFrom))+'">carried</span>':"")+
-        ageBadges(e)+dueBadge(e)+'</td>'+
+        (isGhost?'<span class="carriedouttag" data-jumpweek="'+esc(e.__ghostTarget)+'" title="This entry moved on to '+esc(weekKeyLabel(e.__ghostTarget))+' — click to jump there">&rarr; moved to '+esc(weekKeyLabel(e.__ghostTarget))+'</span>':
+        (e.carriedFrom?'<span class="carrytag" title="Carried forward from '+esc(weekKeyLabel(e.carriedFrom))+'">carried in</span>':""))+
+        (isGhost?"":ageBadges(e)+dueBadge(e))+'</td>'+
       '<td class="tsfirst" title="'+esc(fullTimestamp(e.created))+(e.firstWeek?' &middot; first logged in '+esc(weekKeyLabel(e.firstWeek)):"")+'">'+
         fullTimestamp(e.created)+
         (e.firstWeek&&e.firstWeek!==entryWeek(e)?'<span class="tsweek">since '+esc(weekKeyLabel(e.firstWeek))+'</span>':"")+
@@ -1476,20 +1503,21 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
       '<td>'+(e.category?'<span class="cat">'+esc(e.category)+'</span>':"-")+'</td>'+
       '<td style="font-weight:600;">'+esc(e.focus)+(e.prio?' <span class="prio '+PCLASS[e.prio]+'">'+e.prio+'</span>':"")+'</td>'+
       '<td>'+(remarksHTML(e)||"-")+
-        ((e.history&&e.history.length)?'<button class="histbtn" data-hist="'+e.id+'" title="Show what was reported in earlier weeks">'+
+        (!isGhost&&(e.history&&e.history.length)?'<button class="histbtn" data-hist="'+e.id+'" title="Show what was reported in earlier weeks">'+
           (histOpen.has(String(e.id))?"hide":"")+' '+e.history.length+' earlier '+(e.history.length===1?"note":"notes")+'</button>':"")+
         '</td>'+
-      '<td class="attcell">'+(e.img?'<img class="tt" src="'+esc(e.img)+'" data-zoom="'+esc(e.img)+'" alt="attachment" loading="lazy" onerror="this.classList.add(\'broken\');this.removeAttribute(\'data-zoom\');this.alt=\'image unavailable\';" />':"-")+'</td>'+
-      '<td>'+dueCell(e)+'</td>'+
+      '<td class="attcell">'+(!isGhost&&e.img?'<img class="tt" src="'+esc(e.img)+'" data-zoom="'+esc(e.img)+'" alt="attachment" loading="lazy" onerror="this.classList.add(\'broken\');this.removeAttribute(\'data-zoom\');this.alt=\'image unavailable\';" />':"-")+'</td>'+
+      '<td>'+(isGhost?"-":dueCell(e))+'</td>'+
       '<td><span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span>'+
         (e.blocked&&e.status!=="Done"?'<br><span class="blockedtag">Blocked</span>':"")+
-        (e.discuss?'<br><span class="flag">Discuss</span>':"")+(openNudges(e).length?'<br><span class="nudged">Nudged</span>':"")+'</td>'+
-      '<td style="color:var(--ink-faint); font-size:12px;">'+fullTimestamp(e.updated)+(e.by?'<br>'+esc(e.by):"")+'</td>'+
-      '<td><div class="rowacts">'+(editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button><button class="small" data-edit="'+e.id+'">Edit</button>'
-        :"")+(canNudge(e)?'<button class="small" data-nudge="'+e.id+'">Nudge</button>':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button></div></td>'+
+        (e.discuss?'<br><span class="flag">Discuss</span>':"")+(!isGhost&&openNudges(e).length?'<br><span class="nudged">Nudged</span>':"")+'</td>'+
+      '<td style="color:var(--ink-faint); font-size:12px;">'+(isGhost?"-":fullTimestamp(e.updated)+(e.by?'<br>'+esc(e.by):""))+'</td>'+
+      '<td><div class="rowacts">'+(isGhost?'<button class="small" data-jumpweek="'+esc(e.__ghostTarget)+'">View current &rarr;</button>':
+        ((editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button><button class="small" data-edit="'+e.id+'">Edit</button>'
+        :"")+(canNudge(e)?'<button class="small" data-nudge="'+e.id+'">Nudge</button>':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button>'))+'</div></td>'+
     '</tr>';
-    const nh=nudgeHTML(e);
-    if(histOpen.has(String(e.id)) && e.history && e.history.length){
+    const nh=isGhost?"":nudgeHTML(e);
+    if(!isGhost && histOpen.has(String(e.id)) && e.history && e.history.length){
       h+='<tr class="cmtrow"><td colspan="14"><div class="histwrap"><div class="histh">Weekly trail</div>'+
         e.history.slice().reverse().map(x=>
           '<div class="histrow"><span class="histwk">'+esc(weekKeyLabel(x.week))+'</span>'+
@@ -1499,7 +1527,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
         '</div></td></tr>';
     }
     if(nh){ h+='<tr class="cmtrow"><td colspan="14">'+nh+'</td></tr>'; }
-    if(threadOpen){ h+='<tr class="cmtrow"><td colspan="14">'+commentsHTML(e)+'</td></tr>'; }
+    if(!isGhost && threadOpen){ h+='<tr class="cmtrow"><td colspan="14">'+commentsHTML(e)+'</td></tr>'; }
   });
   });
   h+='</tbody></table></div>';
@@ -1541,6 +1569,11 @@ document.getElementById("reviewbtn").onclick=()=>{
 document.addEventListener("click",e=>{
   const z=e.target.closest("[data-zoom]");
   if(z){ document.getElementById("lightbox-img").src=z.dataset.zoom; document.getElementById("lightbox").classList.remove("hidden"); }
+  const jw=e.target.closest("[data-jumpweek]");
+  if(jw && jw.dataset.jumpweek){
+    const sel=document.getElementById("board-week");
+    sel.value=jw.dataset.jumpweek; boardWeek=jw.dataset.jumpweek; render();
+  }
 });
 document.getElementById("lightbox").onclick=()=>document.getElementById("lightbox").classList.add("hidden");
 document.addEventListener("keydown",e=>{
@@ -1696,12 +1729,13 @@ async function uploadImage(file, entryId){
       // Never lose the attachment because the host is down, out of quota, or the
       // key expired - keep a compressed local copy instead.
       console.warn("imgbb upload failed, storing image locally instead:", err);
-      return await compressToDataURL(file, 1000, 0.7);
+      return await compressToDataURL(file, 1600, 0.85);
     }
   }
   // No imgbb key set yet - store the image locally (compressed) rather than hanging on Firebase Storage,
-  // which requires the paid Blaze plan and isn't set up.
-  return await compressToDataURL(file, 1000, 0.7);
+  // which requires the paid Blaze plan and isn't set up. Sized to stay readable
+  // when zoomed in via the lightbox, not just as a small table thumbnail.
+  return await compressToDataURL(file, 1600, 0.85);
 }
 function compressToDataURL(file, maxDim, quality){
   return new Promise((res,rej)=>{
@@ -1796,6 +1830,19 @@ function carryEntryForward(e, targetWeek){
   e.updated=Date.now();
   e.carriedBy=me.name;
   return e;
+}
+// Look up what an entry looked like the last time it sat in week `wk`
+// (used to render a read-only "ghost" row in its original week once it has
+// been carried forward, so the move is visible at both ends).
+function historySnapshotFor(e, wk){
+  return (e.history||[]).find(h=>h.week===wk) || null;
+}
+// The week the entry moved into immediately after leaving `wk`.
+function ghostTargetWeek(e, wk){
+  const hist=e.history||[];
+  const idx=hist.findIndex(h=>h.week===wk);
+  if(idx===-1) return null;
+  return (idx+1<hist.length) ? hist[idx+1].week : entryWeek(e);
 }
 function carryableEntries(team, fromWeek){
   return state.entries.filter(e=>e.team===team && entryWeek(e)===fromWeek && e.status!=="Done");
@@ -2937,7 +2984,7 @@ document.getElementById("hl-f-file").addEventListener("change",async e=>{
   const status=document.getElementById("hl-upstatus");
   status.textContent="Processing image"+(take.length===1?"":"s")+"…";
   for(const f of take){
-    try{ hlPendingImages.push(await compressToDataURL(f, 1400, 0.82)); }
+    try{ hlPendingImages.push(await compressToDataURL(f, 1600, 0.85)); }
     catch(err){ console.error("highlight image failed",err); alert("Couldn't read \""+f.name+"\" — skipped."); }
   }
   renderHlThumbs();
