@@ -1248,7 +1248,7 @@ function renderDashPanels(wk){
   });
   document.getElementById("d-coverage").innerHTML=cov||'<div class="dempty">No roster yet. Add members under Data.</div>';
 }
-document.getElementById("dash-week").onchange=renderDashboard;
+document.getElementById("dash-week").onchange=e=>{ dashWeek=e.target.value; renderDashboard(); };
 function splitMembers(str){ return (str||"").split(",").map(s=>s.trim()).filter(Boolean); }
 function populateMemberFilter(team){
   const sel=document.getElementById("memberfilter");
@@ -1533,7 +1533,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
   h+='</tbody></table></div>';
   document.getElementById("tablewrap").innerHTML=h;
 }
-document.getElementById("board-week").onchange=render;
+document.getElementById("board-week").onchange=e=>{ boardWeek=e.target.value; render(); };
 /* ---- multi-select status filter ---- */
 const ALL_STATUSES=["Active","In progress","Done"];
 function statusFilterCheckboxes(){ return Array.from(document.querySelectorAll("#statusfilter-panel input[type=checkbox]")); }
