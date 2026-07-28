@@ -263,8 +263,8 @@
   tr.ghostrow:hover{opacity:.85;}
   tr.ghostrow td{font-style:italic;}
   tr.ghostrow td.attcell,tr.ghostrow td:last-child{font-style:normal;}
-  .carriedouttag{display:inline-block; margin-left:4px; font-size:10.5px; font-weight:600; padding:1px 6px; border-radius:999px;
-    background:var(--amber-bg); color:var(--amber); border:1px solid #e3dccc; white-space:nowrap; cursor:pointer;}
+  .carriedouttag{display:block; margin:3px 0 0; font-size:10px; font-weight:600; padding:1px 5px; border-radius:8px;
+    background:var(--amber-bg); color:var(--amber); border:1px solid #e3dccc; white-space:normal; line-height:1.3; cursor:pointer; width:fit-content;}
   .carriedouttag:hover{filter:brightness(.96);}
   /* due dates */
   .duetag{display:inline-block; font-size:10.5px; font-weight:700; padding:1px 6px; border-radius:999px; white-space:nowrap;
@@ -1489,7 +1489,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
     const wknum=parseInt((isGhost?e.__ghostWeek:entryWeek(e)).split("-W")[1],10);
     h+='<tr class="'+(isChanged?"changed":"")+(isGhost?" ghostrow":"")+'">'+
       '<td><span class="wk">Wk '+wknum+'</span>'+(isNew?'<span class="newtag">new</span>':(isChanged?'<span class="newtag">upd</span>':""))+
-        (isGhost?'<span class="carriedouttag" data-jumpweek="'+esc(e.__ghostTarget)+'" title="This entry moved on to '+esc(weekKeyLabel(e.__ghostTarget))+' — click to jump there">&rarr; moved to '+esc(weekKeyLabel(e.__ghostTarget))+'</span>':
+        (isGhost?'<span class="carriedouttag" data-jumpweek="'+esc(e.__ghostTarget)+'" title="This entry moved on to '+esc(weekKeyLabel(e.__ghostTarget))+' — click to jump there">&rarr; Wk '+esc(parseInt((e.__ghostTarget||"").split("-W")[1],10))+'</span>':
         (e.carriedFrom?'<span class="carrytag" title="Carried forward from '+esc(weekKeyLabel(e.carriedFrom))+'">carried in</span>':""))+
         (isGhost?"":ageBadges(e)+dueBadge(e))+'</td>'+
       '<td class="tsfirst" title="'+esc(fullTimestamp(e.created))+(e.firstWeek?' &middot; first logged in '+esc(weekKeyLabel(e.firstWeek)):"")+'">'+
