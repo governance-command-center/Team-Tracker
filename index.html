@@ -1489,7 +1489,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
     const wknum=parseInt((isGhost?e.__ghostWeek:entryWeek(e)).split("-W")[1],10);
     h+='<tr class="'+(isChanged?"changed":"")+(isGhost?" ghostrow":"")+'">'+
       '<td><span class="wk">Wk '+wknum+'</span>'+(isNew?'<span class="newtag">new</span>':(isChanged?'<span class="newtag">upd</span>':""))+
-        (isGhost?'<span class="carriedouttag" data-jumpweek="'+esc(e.__ghostTarget)+'" title="This entry moved on to '+esc(weekKeyLabel(e.__ghostTarget))+' — click to jump there">&rarr; Wk '+esc(parseInt((e.__ghostTarget||"").split("-W")[1],10))+'</span>':
+        (isGhost?'<span class="carriedouttag" data-jumpweek="'+esc(e.__ghostTarget)+'" title="This entry moved on to '+esc(weekKeyLabel(e.__ghostTarget))+' — click to jump there">&rarr; Wk '+parseInt((e.__ghostTarget||"").split("-W")[1],10)+'</span>':
         (e.carriedFrom?'<span class="carrytag" title="Carried forward from '+esc(weekKeyLabel(e.carriedFrom))+'">carried in</span>':""))+
         (isGhost?"":ageBadges(e)+dueBadge(e))+'</td>'+
       '<td class="tsfirst" title="'+esc(fullTimestamp(e.created))+(e.firstWeek?' &middot; first logged in '+esc(weekKeyLabel(e.firstWeek)):"")+'">'+
