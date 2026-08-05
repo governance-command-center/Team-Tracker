@@ -222,6 +222,29 @@
   table.dtable td{padding:4px 0; vertical-align:middle;}
   table.dtable td.k{width:34%; color:var(--ink-soft); overflow-wrap:anywhere; padding-right:8px;}
   table.dtable td.v{width:34px; text-align:right; font-weight:700;}
+  /* workload-by-person card */
+  .wlcard{grid-column:1 / -1;}
+  table.wltable{width:100%; border-collapse:collapse; font-size:12.5px;}
+  table.wltable th{text-align:right; font-size:11px; font-weight:600; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.03em; padding:0 8px 7px; border-bottom:1px solid var(--line);}
+  table.wltable th.who{text-align:left;}
+  table.wltable td{padding:7px 8px; border-bottom:1px solid var(--line-soft); text-align:right; vertical-align:middle;}
+  table.wltable tr:last-child td{border-bottom:none;}
+  table.wltable tr.atrisk td{background:#fdf5f4;}
+  table.wltable td.who{text-align:left;}
+  table.wltable .wlname{font-weight:600; color:var(--ink);}
+  table.wltable .wlteam{font-size:11px; color:var(--ink-faint); margin-top:1px;}
+  table.wltable .wnotlogged{display:inline-block; margin-left:6px; font-size:10px; font-weight:700; padding:1px 6px; border-radius:999px; background:#fdf0e3; color:#9a5b12; border:1px solid #f0d5b4; vertical-align:1px; text-transform:uppercase; letter-spacing:.02em;}
+  table.wltable td.wl0{color:var(--ink-faint);}
+  table.wltable td.wlopen{font-weight:700; color:var(--ink);}
+  table.wltable td.wlbad{color:var(--red); font-weight:700;}
+  table.wltable td.wlwarn{color:#9a5b12; font-weight:700;}
+  table.wltable td.load{width:26%; text-align:left; padding-left:12px;}
+  .wlbar{display:flex; height:8px; border-radius:999px; overflow:hidden; background:var(--line-soft);}
+  .wlbar>span{display:block; height:100%;}
+  .wlbar .s-ok{background:#c9d4e4;} .wlbar .s-warn{background:#e6b877;} .wlbar .s-bad{background:var(--red);}
+  .wllegend{font-size:11px; color:var(--ink-faint); margin-top:9px; display:flex; gap:14px; flex-wrap:wrap;}
+  .wllegend span{display:inline-flex; align-items:center; gap:5px;}
+  .wllegend i{width:9px; height:9px; border-radius:2px; display:inline-block;}
   .mbar{display:block; height:7px; background:var(--line-soft); border-radius:999px; overflow:hidden;}
   .mbar>span{display:block; height:100%; background:var(--ink); border-radius:999px;}
   .trend{display:flex; align-items:flex-end; gap:10px; height:104px; padding-top:6px;}
@@ -344,6 +367,18 @@
   .hlcard.tagged{border-left:3px solid var(--ink);}
   .hlcard .hlhead{display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap;}
   .hlcard .hlmeta{font-size:12.5px; color:var(--ink-faint); margin-top:2px;}
+  .hlcard .hlteam{font-weight:600; color:var(--accent); background:var(--accent-bg); padding:1px 7px; border-radius:999px; font-size:11px;}
+  .hlcard .hlactions{display:flex; align-items:center; gap:6px; white-space:nowrap; flex-shrink:0;}
+  .pinbtn{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:4px 10px; border-radius:999px;
+    border:1px solid var(--line); background:var(--card); color:var(--ink-soft); cursor:pointer; line-height:1;}
+  .pinbtn .pinico{transform:rotate(0deg); transition:transform .12s;}
+  .pinbtn:hover{border-color:var(--amber); color:var(--amber); background:var(--amber-bg);}
+  .pinbtn.on{background:var(--amber-bg); border-color:#e3dccc; color:var(--amber);}
+  .pinbtn.on .pinico{transform:rotate(-20deg); fill:var(--amber); stroke:var(--amber);}
+  .hlcard.pinned{border-left:3px solid var(--amber); background:#fdfbf6;}
+  .hlcard.pinned.newtag-hl{background:#fdf6f2;}
+  .pinnav{display:inline-flex; align-items:center; gap:7px;}
+  .pinnav svg{opacity:.75;}
   .hlcard .hltags{display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;}
   .hlcard .hltag{font-size:11.5px; padding:2px 8px; border-radius:999px; background:var(--line-soft); color:var(--ink-soft);}
   .hlcard .hltag.you{background:var(--ink); color:#fff; font-weight:600;}
@@ -444,6 +479,11 @@
           <div class="dh">Coverage</div>
           <div class="dhsub">Who has nothing logged this week</div>
           <div id="d-coverage"></div>
+        </div>
+        <div class="dashcard wlcard">
+          <div class="dh">Workload by person</div>
+          <div class="dhsub">Open work per person, and who is carrying the risk — most at-risk first</div>
+          <div id="d-workload"></div>
         </div>
       </div>
     </div>
@@ -647,6 +687,14 @@
       </div>
 
       <div id="hl-wrap"></div>
+    </div>
+
+    <!-- PINNED HIGHLIGHTS -->
+    <div id="view-pinned" class="hidden">
+      <div class="controls">
+        <span class="uphint">Pinned highlights stay here for everyone until unpinned. Use the <b>Pin</b> button on any highlight to add it.</span>
+      </div>
+      <div id="pinned-wrap"></div>
     </div>
 
     <!-- PRESENTATION DECKS -->
@@ -874,6 +922,7 @@ function migrate(){
     if(!Array.isArray(hl.members)) hl.members=[];
     if(typeof hl.remarks!=="string") hl.remarks="";
     if(!Array.isArray(hl.images)) hl.images=[];
+    if(typeof hl.pinned!=="boolean") hl.pinned=false;
     if(!hl.created) hl.created=hl.updated||Date.now();
     if(!hl.week) hl.week=weekKeyFromTs(hl.created);
   });
@@ -939,6 +988,24 @@ function sameName(a,b){
 }
 function nameListHas(list,who){
   return splitMembers(list).some(n=>sameName(n,who));
+}
+// The name every non-admin sees in place of an admin's real/login name.
+const ADMIN_DISPLAY_NAME="Vhino Santos";
+// Is this stored author-name an admin? Matches against the roster's admin
+// members (covers "admin", "Vhino Santos", or any other admin display name).
+function isAdminName(name){
+  if(!name) return false;
+  if(sameName(name, ADMIN_DISPLAY_NAME)) return true;
+  return (state.members||[]).some(m=>m.role==="admin" && sameName(m.name, name));
+}
+// What a given viewer should SEE for an author name. Admins keep seeing the
+// real name; everyone else sees "Vhino Santos" for any admin-authored content.
+// Only the rendered text changes — stored data (and permission checks that
+// compare against me.name) keep using the real name.
+function displayName(name){
+  if(!name) return name;
+  if(me && me.role==="admin") return name;
+  return isAdminName(name) ? ADMIN_DISPLAY_NAME : name;
 }
 function isOwner(entry){
   if(entry.team && me.team && entry.team!==me.team && me.role!=="admin") return false;
@@ -1048,6 +1115,9 @@ function buildSidebar(){
   const hlUnseen=unseenHighlights();
   mkItem("Highlights"+(hlUnseen?' <span class="navunread">'+hlUnseen+'</span>':""), NICO.hi, activeView==="highlights",
     ()=>{ activeView="highlights"; refreshViews(); }, myHighlights().length);
+  const pinnedCount=pinnedHighlights().length;
+  mkItem('<span class="pinnav">'+PIN_SVG+'Pinned</span>', "", activeView==="pinned",
+    ()=>{ activeView="pinned"; refreshViews(); }, pinnedCount, true);
   const lbl3=document.createElement("div"); lbl3.className="navlabel"; lbl3.textContent="Present"; sb.appendChild(lbl3);
   mkItem("Presentations", NICO.deck, activeView==="deck", ()=>{ activeView="deck"; refreshViews(); },
     (state.decks||[]).filter(d=>!d.archived).length);
@@ -1069,7 +1139,8 @@ function refreshViews(){
   document.getElementById("view-data").classList.toggle("hidden", activeView!=="data");
   document.getElementById("view-deck").classList.toggle("hidden", activeView!=="deck");
   document.getElementById("view-highlights").classList.toggle("hidden", activeView!=="highlights");
-  const title={dashboard:"Dashboard", board:activeTab, data:"Data", deck:"Presentations", highlights:"Weekly highlights"}[activeView]||"Dashboard";
+  document.getElementById("view-pinned").classList.toggle("hidden", activeView!=="pinned");
+  const title={dashboard:"Dashboard", board:activeTab, data:"Data", deck:"Presentations", highlights:"Weekly highlights", pinned:"Pinned highlights"}[activeView]||"Dashboard";
   document.getElementById("page-title").textContent=title;
   buildSidebar();
   if(activeView==="dashboard") renderDashboard();
@@ -1077,12 +1148,13 @@ function refreshViews(){
   if(activeView==="data"){ renderRoster(); renderTeams(); renderCategories(); }
   if(activeView==="deck") renderDecks();
   if(activeView==="highlights"){ closeHighlightForm(); renderHighlights(); }
+  if(activeView==="pinned") renderPinned();
 }
 function mountApp(){
   document.getElementById("week").innerHTML=weekLabel();
   const vt=visibleTeams();
   if(me.role!=="admin"){
-    if(activeView!=="deck"&&activeView!=="highlights"&&activeView!=="dashboard") activeView="board";
+    if(activeView!=="deck"&&activeView!=="highlights"&&activeView!=="pinned"&&activeView!=="dashboard") activeView="board";
     // Only default to their own team - don't yank them back when browsing others.
     if(!activeTab||!state.teams.includes(activeTab)) activeTab=me.team;
   }
@@ -1247,6 +1319,73 @@ function renderDashPanels(wk){
                      :'<div class="dempty">Everyone has logged something.</div>')+'</div>';
   });
   document.getElementById("d-coverage").innerHTML=cov||'<div class="dempty">No roster yet. Add members under Data.</div>';
+
+  // --- Workload by person ---
+  // Per-person view for a lead: how much open work each person carries, and how
+  // much of it is at risk (blocked / overdue / stale). An entry shared by two
+  // people counts toward each. Sorted so the most at-risk people surface first.
+  renderWorkload(cur, teams);
+}
+function renderWorkload(cur, teams){
+  const el=document.getElementById("d-workload");
+  if(!el) return;
+  const isOverdue=e=>{ const n=daysUntilDue(e); return n!==null && n<0; };
+  const isStale=e=>daysSinceUpdate(e)>=STALE_DAYS;
+  // Which team each roster name belongs to (for the label + coverage check).
+  const teamOf=new Map();
+  teams.forEach(t=>teamRoster(t).forEach(n=>{ if(!teamOf.has(n)) teamOf.set(n,t); }));
+  const map=new Map(); // name -> tally
+  const get=n=>{ if(!map.has(n)) map.set(n,{name:n,open:0,blocked:0,overdue:0,stale:0,done:0,logged:false}); return map.get(n); };
+  // Seed roster so people with zero entries still appear (a lead wants to see them).
+  teams.forEach(t=>teamRoster(t).forEach(n=>get(n)));
+  cur.forEach(e=>{
+    const names=splitMembers(e.member||"");
+    (names.length?names:["Unassigned"]).forEach(raw=>{
+      const n=(raw.trim()||"Unassigned");
+      // Fold onto a roster name where one matches, so "Ana" and "ana" merge.
+      let key=n; for(const r of teamOf.keys()){ if(sameName(r,n)){ key=r; break; } }
+      const w=get(key); w.logged=true;
+      if(e.status==="Done"){ w.done++; return; }
+      w.open++;
+      if(e.blocked) w.blocked++;
+      if(isOverdue(e)) w.overdue++;
+      if(isStale(e)) w.stale++;
+    });
+  });
+  const rows=Array.from(map.values()).filter(w=>w.open>0||w.done>0||teamOf.has(w.name));
+  if(!rows.length){ el.innerHTML='<div class="dempty">No people or entries to show for this week.</div>'; return; }
+  const riskScore=w=>w.blocked*3+w.overdue*3+w.stale; // at-risk weighting
+  rows.sort((a,b)=> riskScore(b)-riskScore(a) || b.open-a.open || a.name.localeCompare(b.name));
+  const maxOpen=Math.max(1, ...rows.map(w=>w.open));
+  const showTeam=teams.length>1;
+  const body=rows.map(w=>{
+    const atRisk=(w.blocked+w.overdue+w.stale)>0;
+    const risky=w.blocked+w.overdue; // red portion of the load bar
+    const ok=Math.max(0, w.open-risky-w.stale);
+    const pct=n=>Math.round(n/maxOpen*100);
+    const seg=(cls,n)=> n>0?'<span class="'+cls+'" style="width:'+pct(n)+'%"></span>':"";
+    const notLogged=!w.logged && teamOf.has(w.name);
+    return '<tr'+(atRisk?' class="atrisk"':"")+'>'+
+      '<td class="who"><div class="wlname">'+esc(w.name)+
+        (notLogged?'<span class="wnotlogged">not logged</span>':"")+'</div>'+
+        (showTeam&&teamOf.get(w.name)?'<div class="wlteam">'+esc(teamOf.get(w.name))+'</div>':"")+'</td>'+
+      '<td class="'+(w.open?"wlopen":"wl0")+'">'+w.open+'</td>'+
+      '<td class="'+(w.blocked?"wlbad":"wl0")+'">'+w.blocked+'</td>'+
+      '<td class="'+(w.overdue?"wlbad":"wl0")+'">'+w.overdue+'</td>'+
+      '<td class="'+(w.stale?"wlwarn":"wl0")+'">'+w.stale+'</td>'+
+      '<td class="'+(w.done?"":"wl0")+'">'+w.done+'</td>'+
+      '<td class="load"><div class="wlbar" title="'+w.open+' open">'+
+        seg("s-bad",risky)+seg("s-warn",w.stale)+seg("s-ok",ok)+'</div></td>'+
+    '</tr>';
+  }).join("");
+  el.innerHTML='<table class="wltable"><thead><tr>'+
+    '<th class="who">Person</th><th>Open</th><th>Blocked</th><th>Overdue</th><th>Stale</th><th>Done</th><th class="load" style="text-align:left">Load</th>'+
+    '</tr></thead><tbody>'+body+'</tbody></table>'+
+    '<div class="wllegend">'+
+      '<span><i style="background:var(--red)"></i>blocked / overdue</span>'+
+      '<span><i style="background:#e6b877"></i>stale (no update '+STALE_DAYS+'d+)</span>'+
+      '<span><i style="background:#c9d4e4"></i>on track</span>'+
+    '</div>';
 }
 document.getElementById("dash-week").onchange=e=>{ dashWeek=e.target.value; renderDashboard(); };
 function splitMembers(str){ return (str||"").split(",").map(s=>s.trim()).filter(Boolean); }
@@ -1333,7 +1472,7 @@ function render(){
       (e.blocked&&e.status!=="Done"?' <span class="blockedtag">Blocked</span>':"")+dueBadge(e)+'</div>'+
       (remarksText(e)?'<div class="line">'+ICO.note+'<span>'+remarksHTML(e)+'</span></div>':"")+
       (e.img?'<div class="thumb"><img src="'+esc(e.img)+'" data-zoom="'+esc(e.img)+'" alt="attachment" /></div>':"")+
-      '<div class="meta">'+ICO.clock+' updated '+ago(e.updated)+(e.by?' &middot; by '+esc(e.by):"")+'</div>'+
+      '<div class="meta">'+ICO.clock+' updated '+ago(e.updated)+(e.by?' &middot; by '+esc(displayName(e.by)):"")+'</div>'+
       '<div class="rowbtns">'+
         (editable?'<button class="small" data-cycle="'+e.id+'">Advance status</button>'+
         '<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag to discuss")+'</button>'+
@@ -1385,7 +1524,7 @@ function nudgeHTML(e){
   const canClear = canEdit(e) || canNudge();
   return open.map((n,i)=>{
     const idx=(e.nudges||[]).indexOf(n);
-    return '<div class="nudgebox">Nudge from <b>'+esc(n.by)+'</b> &middot; '+ago(n.ts)+'<br>'+esc(n.text)+
+    return '<div class="nudgebox">Nudge from <b>'+esc(displayName(n.by))+'</b> &middot; '+ago(n.ts)+'<br>'+esc(n.text)+
       (canClear?' <button class="small" style="margin-top:6px;" data-nresolve="'+e.id+':'+idx+'">Mark handled</button>':"")+'</div>';
   }).join("");
 }
@@ -1403,8 +1542,8 @@ function commentsHTML(e){
   if(!cmts.length){ h+='<div class="cmtempty">No comments yet. Start the discussion below.</div>'; }
   cmts.forEach((c,i)=>{
     const mine = c.by===me.name || me.role==="admin";
-    h+='<div class="cmt"><div class="av">'+esc(initials(c.by))+'</div><div class="body">'+
-       '<div class="meta2"><b>'+esc(c.by||"?")+'</b> &middot; '+fullTimestamp(c.ts)+
+    h+='<div class="cmt"><div class="av">'+esc(initials(displayName(c.by)))+'</div><div class="body">'+
+       '<div class="meta2"><b>'+esc(displayName(c.by)||"?")+'</b> &middot; '+fullTimestamp(c.ts)+
        (mine?' <button class="del2" data-cdel="'+e.id+':'+i+'" title="Delete comment">&times;</button>':"")+'</div>'+
        '<div class="txt">'+esc(c.text)+'</div></div></div>';
   });
@@ -1511,7 +1650,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
       '<td><span class="badge '+BCLASS[e.status]+'"><span class="d"></span>'+e.status+'</span>'+
         (e.blocked&&e.status!=="Done"?'<br><span class="blockedtag">Blocked</span>':"")+
         (e.discuss?'<br><span class="flag">Discuss</span>':"")+(!isGhost&&openNudges(e).length?'<br><span class="nudged">Nudged</span>':"")+'</td>'+
-      '<td style="color:var(--ink-faint); font-size:12px;">'+(isGhost?"-":fullTimestamp(e.updated)+(e.by?'<br>'+esc(e.by):""))+'</td>'+
+      '<td style="color:var(--ink-faint); font-size:12px;">'+(isGhost?"-":fullTimestamp(e.updated)+(e.by?'<br>'+esc(displayName(e.by)):""))+'</td>'+
       '<td><div class="rowacts">'+(isGhost?'<button class="small" data-jumpweek="'+esc(e.__ghostTarget)+'">View current &rarr;</button>':
         ((editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button><button class="small" data-edit="'+e.id+'">Edit</button>'
         :"")+(canNudge(e)?'<button class="small" data-nudge="'+e.id+'">Nudge</button>':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button>'))+'</div></td>'+
@@ -2740,8 +2879,7 @@ async function importDeckFiles(files){
   }
 }
 /* ================= LEAD HIGHLIGHTS ================= */
-function canPostHighlights(){ return me.role==="admin"||me.role==="lead"||me.role==="manager"; }
-function highlightScopeTeams(){ return me.role==="admin" ? state.teams.slice() : [me.team]; }
+function canPostHighlights(){ return me.role==="admin"||me.role==="lead"||me.role==="manager"; }function highlightScopeTeams(){ return me.role==="admin" ? state.teams.slice() : [me.team]; }
 function myHighlights(){
   // Everyone on a team sees all of that team's highlights; admin sees all teams.
   // Being tagged doesn't gate visibility - it only drives the red notification.
@@ -2749,6 +2887,14 @@ function myHighlights(){
   return (state.highlights||[]).filter(h=>h.team===me.team);
 }
 function isTaggedIn(h){ return (h.members||[]).some(n=>sameName(n,me.name)); }
+// Pinned highlights the current viewer can see, newest-updated first. A pin is
+// shared: once anyone pins a highlight it stays pinned for everyone who can see
+// it until someone unpins it.
+const PIN_SVG='<svg class="pinico" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>';
+function pinnedHighlights(){
+  return myHighlights().filter(h=>h.pinned)
+    .sort((a,b)=>(b.updated||0)-(a.updated||0));
+}
 function taggedHighlights(){ return myHighlights().filter(isTaggedIn); }
 // The red badge counts only highlights this person is TAGGED in and hasn't read.
 function unseenHighlights(){
@@ -2925,30 +3071,59 @@ function renderHighlights(){
   let out="";
   byWeek.forEach((rows,k)=>{
     out+='<div class="hlgroup">'+esc(weekKeyLabel(k))+'</div>';
-    rows.forEach(h=>{
-      const mine=isTaggedIn(h);
-      const isNewForMe=unseenSet.has(h.id);
-      const canEditHl = me.role==="admin" || h.by===me.name;
-      out+='<div class="hlcard'+(mine?" tagged":"")+(isNewForMe?" newtag-hl":"")+'">'+
-        '<div class="hlhead"><div>'+
-          '<div style="font-weight:600; font-size:14px;">'+
-            ([h.brand,h.platform,h.region].filter(Boolean).map(esc).join(' &middot; ') || 'General note')+
-          '</div>'+
-          '<div class="hlmeta">by '+esc(h.by||"?")+' &middot; '+fullTimestamp(h.updated)+'</div>'+
-          (mine?'<div class="foryou'+(isNewForMe?" unread":"")+'">'+(isNewForMe?"New — you were tagged":"You were tagged")+'</div>':"")+
-        '</div>'+
-        (canEditHl?'<div style="white-space:nowrap;"><button class="small" data-hledit="'+h.id+'">Edit</button> <button class="small danger" data-hldel="'+h.id+'">Remove</button></div>':"")+
-        '</div>'+
-        '<div class="hltags">'+(h.members||[]).map(n=>'<span class="hltag'+(sameName(n,me.name)?" you":"")+'">'+esc(n)+(sameName(n,me.name)?" (you)":"")+'</span>').join("")+'</div>'+
-        '<ol class="hlissues">'+(h.issues||[]).map(i=>'<li>'+esc(i)+'</li>').join("")+'</ol>'+
-        (h.remarks?'<div class="hlremarks"><b>Remarks:</b> '+esc(h.remarks)+'</div>':"")+
-        ((h.images&&h.images.length)?'<div class="hlshots">'+h.images.map((src,i)=>
-          '<img src="'+esc(src)+'" data-zoom="'+esc(src)+'" alt="screenshot '+(i+1)+'" loading="lazy" />').join("")+'</div>':"")+
-      '</div>';
-    });
+    rows.forEach(h=>{ out+=highlightCardHTML(h, unseenSet); });
   });
   wrap.innerHTML=out;
   markHighlightsSeen();
+}
+function renderPinned(){
+  const wrap=document.getElementById("pinned-wrap");
+  if(!wrap) return;
+  const items=pinnedHighlights();
+  if(!items.length){
+    wrap.innerHTML='<div class="empty">No pinned highlights yet. Open <b>Highlights</b> and use the <b>Pin</b> button to keep important ones here.</div>';
+    return;
+  }
+  const unseenSet=new Set(items.filter(isUnseenTag).map(h=>h.id));
+  // Group by week, newest first, same as the Highlights list.
+  const byWeek=new Map();
+  items.forEach(h=>{ const k=h.week||"—"; if(!byWeek.has(k)) byWeek.set(k,[]); byWeek.get(k).push(h); });
+  const weeks=Array.from(byWeek.keys()).sort((a,b)=>(b||"").localeCompare(a||""));
+  let out="";
+  weeks.forEach(k=>{
+    out+='<div class="hlgroup">'+esc(weekKeyLabel(k))+'</div>';
+    byWeek.get(k).forEach(h=>{ out+=highlightCardHTML(h, unseenSet); });
+  });
+  wrap.innerHTML=out;
+}
+document.getElementById("pinned-wrap").addEventListener("click",e=>{ handleHighlightClick(e); });
+// Shared card markup so the Highlights list and the Pinned view render identically.
+function highlightCardHTML(h, unseenSet){
+  const mine=isTaggedIn(h);
+  const isNewForMe=unseenSet ? unseenSet.has(h.id) : isUnseenTag(h);
+  const canEditHl = me.role==="admin" || h.by===me.name;
+  const pinned=!!h.pinned;
+  return '<div class="hlcard'+(mine?" tagged":"")+(isNewForMe?" newtag-hl":"")+(pinned?" pinned":"")+'">'+
+    '<div class="hlhead"><div>'+
+      '<div style="font-weight:600; font-size:14px;">'+
+        ([h.brand,h.platform,h.region].filter(Boolean).map(esc).join(' &middot; ') || 'General note')+
+      '</div>'+
+      '<div class="hlmeta">'+
+        (h.team?'<span class="hlteam">'+esc(h.team)+'</span> &middot; ':"")+
+        'by '+esc(displayName(h.by)||"?")+' &middot; '+fullTimestamp(h.updated)+'</div>'+
+      (mine?'<div class="foryou'+(isNewForMe?" unread":"")+'">'+(isNewForMe?"New — you were tagged":"You were tagged")+'</div>':"")+
+    '</div>'+
+    '<div class="hlactions">'+
+      '<button class="pinbtn'+(pinned?" on":"")+'" data-hlpin="'+h.id+'" title="'+(pinned?"Unpin — remove from Pinned":"Pin — keep in Pinned until removed")+'">'+PIN_SVG+'<span>'+(pinned?"Pinned":"Pin")+'</span></button>'+
+      (canEditHl?' <button class="small" data-hledit="'+h.id+'">Edit</button> <button class="small danger" data-hldel="'+h.id+'">Remove</button>':"")+
+    '</div>'+
+    '</div>'+
+    '<div class="hltags">'+(h.members||[]).map(n=>'<span class="hltag'+(sameName(n,me.name)?" you":"")+'">'+esc(displayName(n))+(sameName(n,me.name)?" (you)":"")+'</span>').join("")+'</div>'+
+    '<ol class="hlissues">'+(h.issues||[]).map(i=>'<li>'+esc(i)+'</li>').join("")+'</ol>'+
+    (h.remarks?'<div class="hlremarks"><b>Remarks:</b> '+esc(h.remarks)+'</div>':"")+
+    ((h.images&&h.images.length)?'<div class="hlshots">'+h.images.map((src,i)=>
+      '<img src="'+esc(src)+'" data-zoom="'+esc(src)+'" alt="screenshot '+(i+1)+'" loading="lazy" />').join("")+'</div>':"")+
+  '</div>';
 }
 document.getElementById("hl-addbtn").onclick=()=>openHighlightForm(null);
 document.getElementById("hl-cancel").onclick=closeHighlightForm;
@@ -2996,15 +3171,27 @@ document.getElementById("hl-f-thumbs").addEventListener("click",e=>{
   renderHlThumbs();
 });
 document.getElementById("hl-wrap").addEventListener("click",e=>{
+  if(handleHighlightClick(e)) return;
+});
+// Shared click handling for highlight cards (used by both the list and Pinned view).
+function handleHighlightClick(e){
+  const pn=e.target.closest("[data-hlpin]");
+  if(pn){
+    const h=state.highlights.find(x=>x.id===pn.dataset.hlpin);
+    if(h){ h.pinned=!h.pinned; persist(); renderHighlights(); renderPinned(); buildSidebar(); }
+    return true;
+  }
   const ed=e.target.closest("[data-hledit]");
-  if(ed){ const h=state.highlights.find(x=>x.id===ed.dataset.hledit); if(h) openHighlightForm(h); return; }
+  if(ed){ const h=state.highlights.find(x=>x.id===ed.dataset.hledit); if(h){ activeView="highlights"; refreshViews(); openHighlightForm(h); } return true; }
   const dl=e.target.closest("[data-hldel]");
   if(dl){
-    if(!confirm("Remove this highlight? The tagged members will no longer see it.")) return;
+    if(!confirm("Remove this highlight? The tagged members will no longer see it.")) return true;
     state.highlights=state.highlights.filter(x=>x.id!==dl.dataset.hldel);
-    persist(); renderHighlights(); buildSidebar();
+    persist(); renderHighlights(); renderPinned(); buildSidebar();
+    return true;
   }
-});
+  return false;
+}
 
 function renderDecks(){
   const filter=document.getElementById("deck-filter").value;
@@ -3020,7 +3207,7 @@ function renderDecks(){
         (d.thumb?'<img class="th" src="'+esc(d.thumb)+'" alt="">':'<div class="thph">No preview</div>')+
         '<div class="meta3">'+
           '<div class="nm">'+esc(d.name)+(d.archived?' <span class="cat">Archived</span>':"")+'</div>'+
-          '<div class="sm">'+d.slides.length+' slides &middot; '+fmtSize(bytesOfDeck(d))+' &middot; '+esc(d.by)+' &middot; '+new Date(d.created).toLocaleDateString()+'</div>'+
+          '<div class="sm">'+d.slides.length+' slides &middot; '+fmtSize(bytesOfDeck(d))+' &middot; '+esc(displayName(d.by))+' &middot; '+new Date(d.created).toLocaleDateString()+'</div>'+
         '</div>'+
         '<div class="acts">'+
           '<button class="primary small" data-present="'+d.id+'">Present</button>'+
