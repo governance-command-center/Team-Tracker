@@ -56,6 +56,52 @@
   .nudgebox b{color:var(--ink);}
   .nudgelist{margin-top:10px;}
   .nudgelist .item{border-bottom:1px solid var(--line-soft); padding:7px 0; font-size:13px;}
+  /* emphasised nudge button on near-due / overdue rows */
+  button.small.nudgehot{background:var(--red-bg); border-color:#e7cfcb; color:var(--red); font-weight:600;}
+  button.small.nudgehot:hover{background:#f6ddd6;}
+  /* ===== top-of-view alert pop-ups (nudges + new messages) ===== */
+  .alertstack{position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:150;
+    width:min(560px,calc(100vw - 28px)); display:flex; flex-direction:column; gap:10px; pointer-events:none;}
+  .alerttoast{pointer-events:auto; background:var(--card); border:1px solid var(--line); border-left:4px solid var(--amber);
+    border-radius:12px; box-shadow:0 10px 34px rgba(20,18,14,.20); padding:12px 14px; display:flex; gap:12px; align-items:flex-start;
+    animation:toastIn .22s ease;}
+  .alerttoast.msg{border-left-color:var(--accent);}
+  @keyframes toastIn{from{opacity:0; transform:translateY(-8px);} to{opacity:1; transform:translateY(0);}}
+  .alerttoast .ti{flex-shrink:0; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:var(--amber-bg); color:var(--amber); font-size:16px;}
+  .alerttoast.msg .ti{background:var(--accent-bg); color:var(--accent);}
+  .alerttoast .tbody{flex:1; min-width:0;}
+  .alerttoast .tt{font-weight:700; font-size:13.5px; color:var(--ink); margin-bottom:2px;}
+  .alerttoast .tmeta{font-size:12px; color:var(--ink-faint); margin-bottom:5px;}
+  .alerttoast .tmsg{font-size:13px; color:var(--ink-soft); white-space:pre-wrap; word-wrap:break-word;}
+  .alerttoast .tacts{margin-top:9px; display:flex; gap:7px; flex-wrap:wrap;}
+  .alerttoast .tclose{flex-shrink:0; border:none; background:transparent; color:var(--ink-faint); font-size:18px; line-height:1; cursor:pointer; padding:0 2px;}
+  .alerttoast .tclose:hover{color:var(--ink);}
+  /* ===== broadcast composer ===== */
+  .bcfield{margin-bottom:14px;}
+  .bcfield label.fl{margin-bottom:6px;}
+  .bctmpls{display:flex; gap:6px; flex-wrap:wrap;}
+  .bctmpls button{font-size:12.5px; padding:5px 11px;}
+  .bctmpls button.on{background:var(--accent); border-color:var(--accent); color:#fff;}
+  #bc-msg{width:100%; min-height:96px; resize:vertical; font-size:13.5px;}
+  .bcsent{margin-top:6px;}
+  .bcsentrow{border:1px solid var(--line); border-radius:10px; padding:11px 13px; margin-bottom:10px; background:var(--card);}
+  .bcsentrow .bh{display:flex; justify-content:space-between; gap:10px; align-items:baseline; flex-wrap:wrap;}
+  .bcsentrow .bh .to{font-weight:600; font-size:13px; color:var(--accent); background:var(--accent-bg); padding:1px 9px; border-radius:999px;}
+  .bcsentrow .bh .tm{font-size:12px; color:var(--ink-faint);}
+  .bcsentrow .btxt{font-size:13.5px; color:var(--ink-soft); margin-top:7px; white-space:pre-wrap; word-wrap:break-word;}
+  .bcsentrow .bread{font-size:12px; color:var(--ink-faint); margin-top:8px;}
+  /* ===== messages inbox ===== */
+  .msgcard{border:1px solid var(--line); border-radius:12px; padding:13px 15px; margin-bottom:11px; background:var(--card);}
+  .msgcard.unread{border-left:4px solid var(--accent); background:#f8fbff;}
+  .msgcard .mh{display:flex; justify-content:space-between; gap:10px; align-items:baseline; flex-wrap:wrap;}
+  .msgcard .mfrom{font-weight:600; font-size:13.5px;}
+  .msgcard .mfrom .newtag{margin-left:6px;}
+  .msgcard .mtime{font-size:12px; color:var(--ink-faint);}
+  .msgcard .mto{font-size:11.5px; color:var(--ink-faint); margin-top:2px;}
+  .msgcard .mtxt{font-size:14px; color:var(--ink); margin-top:9px; white-space:pre-wrap; word-wrap:break-word; line-height:1.55;}
+  .msgcard .newtag{font-size:10px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; padding:1px 7px; border-radius:999px; background:var(--red); color:#fff;}
+  .msgempty{font-size:13px; color:var(--ink-faint); padding:14px 0;}
   /* presentation deck */
   .decklist{margin-top:1rem; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;}
   .deckrow{display:flex; align-items:center; gap:14px; padding:10px 14px; border-bottom:1px solid var(--line-soft);}
@@ -768,11 +814,53 @@
       <div class="storagebar" id="deck-bar"><i style="width:0%"></i></div>
     </div>
 
+    <!-- BROADCAST (admin / lead / manager) -->
+    <div id="view-broadcast" class="hidden">
+      <div class="panel" style="margin-top:0;">
+        <div class="bcfield">
+          <label class="fl">Quick messages — pick one to start, then edit if you like</label>
+          <div class="bctmpls" id="bc-tmpls"></div>
+        </div>
+        <div class="bcfield">
+          <label class="fl">Message</label>
+          <textarea id="bc-msg" placeholder="Write an update, reminder, or announcement…"></textarea>
+        </div>
+        <div class="bcfield" style="margin-bottom:0;">
+          <label class="fl">Send to</label>
+          <div class="grid g2">
+            <select id="bc-audience">
+              <option value="all">Everyone</option>
+              <option value="team">A whole team</option>
+              <option value="member">One person</option>
+            </select>
+            <select id="bc-target" class="hidden"></select>
+          </div>
+        </div>
+        <div class="panelbtns">
+          <button class="primary" id="bc-send">Send message</button>
+          <span class="uphint" id="bc-hint"></span>
+        </div>
+      </div>
+      <h2 style="font-size:18px; margin:1.5rem 0 .25rem;">Recently sent</h2>
+      <div class="bcsent" id="bc-sent"></div>
+    </div>
+
+    <!-- MESSAGES (everyone) -->
+    <div id="view-messages" class="hidden">
+      <div class="controls">
+        <span class="uphint">Updates, reminders, and announcements sent to you by admins, leads, and managers.</span>
+        <span class="spacer"></span>
+        <button class="small" id="msg-markall">Mark all read</button>
+      </div>
+      <div id="msg-wrap"></div>
+    </div>
+
     <footer>
       <strong>Live sharing + screenshots:</strong> paste your Firebase keys into the <code>firebaseConfig</code> block near the bottom for live data sync, and paste a free imgbb API key into <code>IMGBB_API_KEY</code> for image evidence uploads. Until then it runs in local mode - data and images stay in this browser only. <strong>Passcodes</strong> are lightweight access control, not hardened security.
     </footer>
   </div>
 </div>
+<div class="alertstack" id="alertstack"></div>
 <div class="lightbox hidden" id="lightbox"><img id="lightbox-img" alt="evidence" /></div>
 
 <div class="modal hidden" id="nudgemodal">
@@ -842,7 +930,8 @@ function defaultState(){
       {id:2,team:"Team Marlon",member:"Cara",owner:"Cara",focus:"API rate-limit fix",category:"Account health",remarks:"",status:"Active",prio:"High",due:"",blocked:true,blockers:"Waiting on infra access",update:"Escalated Monday",img:"",discuss:true,comments:[{by:"admin",text:"Who owns the infra ticket? Let's unblock this before Friday.",ts:now}],created:now,updated:now,by:"Cara"},
       {id:3,team:"TOD",member:"Diego, Elle",owner:"Diego",focus:"Q3 reporting dashboard",category:"Order monitoring",remarks:"",status:"Active",prio:"Medium",due:isoInDays(-2),blocked:false,blockers:"",update:"Kicks off Thursday",img:"",discuss:false,created:now,updated:now,by:"Diego"}
     ],
-    highlights: []
+    highlights: [],
+    broadcasts: []
   };
 }
 const ORDER=["Active","In progress","Done"];
@@ -859,7 +948,9 @@ const NICO={
   team:'<svg class="nico" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M2 21v-1a6 6 0 0 1 12 0v1M16 3.5a3 3 0 0 1 0 7"/></svg>',
   data:'<svg class="nico" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>',
   deck:'<svg class="nico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8.5 20h7"/></svg>',
-  hi:'<svg class="nico" viewBox="0 0 24 24"><path d="M12 2.6l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.1l6.1-.9z"/></svg>'
+  hi:'<svg class="nico" viewBox="0 0 24 24"><path d="M12 2.6l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.1l6.1-.9z"/></svg>',
+  mail:'<svg class="nico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+  cast:'<svg class="nico" viewBox="0 0 24 24"><path d="M3 11v2M6 8v8M18 4l-8 4v8l8 4z"/><path d="M18 8a4 4 0 0 1 0 8"/></svg>'
 };
 let state=null, me=null, activeView="dashboard", activeTab=null;
 let dashWeek="all", boardWeek="all";
@@ -943,8 +1034,52 @@ const NUDGE_TEMPLATES=[
   {label:"Before the meeting", text:"Please update this before our next sync so we can review it as a team."},
   {label:"Almost done?", text:"Looks close to the finish line — can you confirm whether this can be marked Done?"}
 ];
+const BROADCAST_TEMPLATES=[
+  {label:"Weekly reminder", text:"Reminder: please make sure your tracker entries are updated before our weekly sync. Post the latest status, blockers, and any due-date changes."},
+  {label:"Deadline approaching", text:"Heads up — several tasks are due soon. Please review your near-due and overdue items today and update or escalate anything at risk."},
+  {label:"Great work", text:"Thank you all for the strong effort this week. Great progress across the board — keep it up!"},
+  {label:"Meeting announcement", text:"Team meeting scheduled. Please come prepared with a short update on your current tasks and flag anything you'd like to discuss."}
+];
+// Does broadcast b reach member m?
+function broadcastReaches(b,m){
+  if(!b||!m) return false;
+  if(b.audience==="all") return true;
+  if(b.audience==="team") return m.team===b.target;
+  if(b.audience==="member") return m.id===b.target || sameName(m.name,b.target);
+  return false;
+}
+function myMessages(){
+  if(!me) return [];
+  return (state.broadcasts||[]).filter(b=>broadcastReaches(b,me)).sort((a,b)=>b.ts-a.ts);
+}
+function broadcastRead(b){ return (b.readBy||[]).includes(me.id); }
+function unreadMessages(){ return myMessages().filter(b=>!broadcastRead(b)); }
+function markMessageRead(b){ if(!b.readBy) b.readBy=[]; if(!b.readBy.includes(me.id)){ b.readBy.push(me.id); persist(); } }
+function audienceLabel(b){
+  if(b.audience==="all") return "Everyone";
+  if(b.audience==="team") return b.target;
+  if(b.audience==="member"){ const m=state.members.find(x=>x.id===b.target); return m?m.name:b.target; }
+  return "-";
+}
+function canBroadcast(){ return me && (me.role==="admin"||me.role==="lead"||me.role==="manager"); }
+// Open nudges on entries that belong to the signed-in member (as member or owner).
+function myOpenNudges(){
+  if(!me) return [];
+  const out=[];
+  (state.entries||[]).forEach(e=>{
+    const mine = nameListHas(e.member, me.name) || sameName(e.owner, me.name) || (e.createdById && e.createdById===me.id);
+    if(!mine) return;
+    openNudges(e).forEach(n=>{ if(n.by!==me.name) out.push({entry:e, nudge:n}); });
+  });
+  return out;
+}
 function migrate(){
   if(typeof state.reviewedAt!=="number") state.reviewedAt=0;
+  if(!Array.isArray(state.broadcasts)) state.broadcasts=[];
+  state.broadcasts.forEach(b=>{
+    if(!Array.isArray(b.readBy)) b.readBy=[];
+    if(!b.ts) b.ts=Date.now();
+  });
   if(!Array.isArray(state.decks)) state.decks=[];
   if(!Array.isArray(state.highlights)) state.highlights=[];
   // Categories used to be hardcoded in the markup; move them into state so
@@ -1185,6 +1320,15 @@ function buildSidebar(){
   const lbl3=document.createElement("div"); lbl3.className="navlabel"; lbl3.textContent="Present"; sb.appendChild(lbl3);
   mkItem("Presentations", NICO.deck, activeView==="deck", ()=>{ activeView="deck"; refreshViews(); },
     (state.decks||[]).filter(d=>!d.archived).length);
+  // Messaging: everyone gets an inbox; senders also get a Broadcast composer.
+  const lblM=document.createElement("div"); lblM.className="navlabel"; lblM.textContent="Messages"; sb.appendChild(lblM);
+  const unreadM=unreadMessages().length;
+  mkItem("Messages"+(unreadM?' <span class="navunread">'+unreadM+'</span>':""), NICO.mail, activeView==="messages",
+    ()=>{ activeView="messages"; refreshViews(); }, myMessages().length);
+  if(canBroadcast()){
+    mkItem("Broadcast", NICO.cast, activeView==="broadcast", ()=>{ activeView="broadcast"; refreshViews(); },
+      (state.broadcasts||[]).length);
+  }
   if(me.role==="admin"){
     const lbl2=document.createElement("div"); lbl2.className="navlabel"; lbl2.textContent="Manage"; sb.appendChild(lbl2);
     mkItem("Data", NICO.data, activeView==="data", ()=>{ activeView="data"; refreshViews(); });
@@ -1204,7 +1348,9 @@ function refreshViews(){
   document.getElementById("view-deck").classList.toggle("hidden", activeView!=="deck");
   document.getElementById("view-highlights").classList.toggle("hidden", activeView!=="highlights");
   document.getElementById("view-pinned").classList.toggle("hidden", activeView!=="pinned");
-  const title={dashboard:"Dashboard", board:activeTab, data:"Data", deck:"Presentations", highlights:"Weekly highlights", pinned:"Pinned highlights"}[activeView]||"Dashboard";
+  document.getElementById("view-broadcast").classList.toggle("hidden", activeView!=="broadcast");
+  document.getElementById("view-messages").classList.toggle("hidden", activeView!=="messages");
+  const title={dashboard:"Dashboard", board:activeTab, data:"Data", deck:"Presentations", highlights:"Weekly highlights", pinned:"Pinned highlights", broadcast:"Broadcast a message", messages:"Messages"}[activeView]||"Dashboard";
   document.getElementById("page-title").textContent=title;
   buildSidebar();
   if(activeView==="dashboard") renderDashboard();
@@ -1213,12 +1359,15 @@ function refreshViews(){
   if(activeView==="deck") renderDecks();
   if(activeView==="highlights"){ closeHighlightForm(); renderHighlights(); }
   if(activeView==="pinned") renderPinned();
+  if(activeView==="broadcast") renderBroadcast();
+  if(activeView==="messages") renderMessages();
+  renderAlerts();
 }
 function mountApp(){
   document.getElementById("week").innerHTML=weekLabel();
   const vt=visibleTeams();
   if(me.role!=="admin"){
-    if(activeView!=="deck"&&activeView!=="highlights"&&activeView!=="pinned"&&activeView!=="dashboard") activeView="board";
+    if(activeView!=="deck"&&activeView!=="highlights"&&activeView!=="pinned"&&activeView!=="dashboard"&&activeView!=="messages"&&!(activeView==="broadcast"&&canBroadcast())) activeView="board";
     // Only default to their own team - don't yank them back when browsing others.
     if(!activeTab||!state.teams.includes(activeTab)) activeTab=me.team;
   }
@@ -1542,7 +1691,7 @@ function render(){
         '<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag to discuss")+'</button>'+
         '<button class="small" data-edit="'+e.id+'">Edit</button>':"")+
         '<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button>'+
-        (canNudge(e)?'<button class="small" data-nudge="'+e.id+'">Nudge</button>':"")+
+        (canNudge(e)?nudgeBtnHTML(e,true):"")+
         (editable?'<button class="small danger" data-del="'+e.id+'">Remove</button>':"")+
       '</div>'+
       nudgeHTML(e)+
@@ -1581,6 +1730,20 @@ document.getElementById("nudge-send").onclick=()=>{
   it.updated=Date.now();
   closeNudge(); persist(); render(); buildSidebar();
 };
+// Nudge button, emphasised (red) when the task is due soon or overdue.
+function nudgeBtnHTML(e, withLabel){
+  const info=dueInfo(e);
+  const hot=info&&info.kind;
+  const title = info&&info.kind==="over" ? "Overdue — send a reminder"
+              : info&&info.kind==="soon" ? "Due soon — send a reminder"
+              : "Send a reminder";
+  let label="Nudge";
+  if(withLabel){
+    if(info&&info.kind==="over") label="Nudge \u2014 overdue";
+    else if(info&&info.kind==="soon") label="Nudge \u2014 due soon";
+  }
+  return '<button class="small'+(hot?" nudgehot":"")+'" data-nudge="'+e.id+'" title="'+esc(title)+'">'+label+'</button>';
+}
 function openNudges(e){ return (e.nudges||[]).filter(n=>!n.resolved); }
 function nudgeHTML(e){
   const open=openNudges(e);
@@ -1717,7 +1880,7 @@ function renderTable(teams,sf,wk,mf,cf,onlyDiscuss){
       '<td style="color:var(--ink-faint); font-size:12px;">'+(isGhost?"-":fullTimestamp(e.updated)+(e.by?'<br>'+esc(displayName(e.by)):""))+'</td>'+
       '<td><div class="rowacts">'+(isGhost?'<button class="small" data-jumpweek="'+esc(e.__ghostTarget)+'">View current &rarr;</button>':
         ((editable?'<button class="small" data-discuss="'+e.id+'">'+(e.discuss?"Unflag":"Flag")+'</button><button class="small" data-edit="'+e.id+'">Edit</button>'
-        :"")+(canNudge(e)?'<button class="small" data-nudge="'+e.id+'">Nudge</button>':"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button>'))+'</div></td>'+
+        :"")+(canNudge(e)?nudgeBtnHTML(e):"")+'<button class="cbtn'+(threadOpen?" on":"")+'" data-thread="'+e.id+'">Comments'+(cn?" ("+cn+")":"")+(ur?'<span class="unread">'+ur+'</span>':"")+'</button>'))+'</div></td>'+
     '</tr>';
     const nh=isGhost?"":nudgeHTML(e);
     if(!isGhost && histOpen.has(String(e.id)) && e.history && e.history.length){
@@ -3330,6 +3493,134 @@ function closeStage(){
   if(stageEl) stageEl.remove();
   stageEl=null; stageDeck=null;
 }
+/* ============ BROADCAST / MESSAGES ============ */
+let bcTmplChosen=null;
+function renderBroadcast(){
+  if(!canBroadcast()){ activeView="messages"; refreshViews(); return; }
+  // templates
+  const tw=document.getElementById("bc-tmpls");
+  tw.innerHTML=BROADCAST_TEMPLATES.map((t,i)=>'<button data-bctmpl="'+i+'"'+(bcTmplChosen===i?' class="on"':"")+'>'+esc(t.label)+'</button>').join("");
+  // audience target dropdown
+  const aud=document.getElementById("bc-audience").value;
+  const tgt=document.getElementById("bc-target");
+  if(aud==="team"){
+    tgt.classList.remove("hidden");
+    tgt.innerHTML=state.teams.map(t=>'<option value="'+esc(t)+'">'+esc(t)+'</option>').join("");
+  } else if(aud==="member"){
+    tgt.classList.remove("hidden");
+    const roster=state.members.filter(m=>!(m.role==="admin"&&sameName(m.name,"admin")));
+    tgt.innerHTML=roster.map(m=>'<option value="'+esc(m.id)+'">'+esc(displayName(m.name))+' — '+esc(m.team)+'</option>').join("");
+  } else {
+    tgt.classList.add("hidden"); tgt.innerHTML="";
+  }
+  // recently sent
+  const sent=(state.broadcasts||[]).slice().sort((a,b)=>b.ts-a.ts);
+  const wrap=document.getElementById("bc-sent");
+  if(!sent.length){ wrap.innerHTML='<div class="msgempty">Nothing sent yet.</div>'; }
+  else {
+    wrap.innerHTML=sent.map(b=>{
+      const recips=state.members.filter(m=>broadcastReaches(b,m)&&!(m.role==="admin"&&sameName(m.name,"admin")));
+      const readN=recips.filter(m=>(b.readBy||[]).includes(m.id)).length;
+      return '<div class="bcsentrow"><div class="bh"><span class="to">'+esc(audienceLabel(b))+'</span>'+
+        '<span class="tm">'+esc(displayName(b.by))+' &middot; '+ago(b.ts)+'</span></div>'+
+        '<div class="btxt">'+esc(b.text)+'</div>'+
+        '<div class="bread">Read by '+readN+' of '+recips.length+'</div></div>';
+    }).join("");
+  }
+}
+document.getElementById("bc-audience").onchange=()=>renderBroadcast();
+document.getElementById("bc-tmpls").addEventListener("click",e=>{
+  const t=e.target.closest("[data-bctmpl]"); if(!t) return;
+  bcTmplChosen=+t.dataset.bctmpl;
+  document.getElementById("bc-msg").value=BROADCAST_TEMPLATES[bcTmplChosen].text;
+  renderBroadcast();
+});
+document.getElementById("bc-send").onclick=()=>{
+  if(!canBroadcast()) return;
+  const text=document.getElementById("bc-msg").value.trim();
+  if(!text){ alert("Write a message or pick a quick message first."); return; }
+  const audience=document.getElementById("bc-audience").value;
+  let target=null;
+  if(audience==="team"||audience==="member") target=document.getElementById("bc-target").value;
+  if((audience==="team"||audience==="member")&&!target){ alert("Pick who this should go to."); return; }
+  state.broadcasts=state.broadcasts||[];
+  state.broadcasts.push({id:"b"+Date.now(), by:me.name, text:text, audience:audience, target:target, ts:Date.now(), readBy:[]});
+  document.getElementById("bc-msg").value=""; bcTmplChosen=null;
+  const hint=document.getElementById("bc-hint");
+  hint.textContent="Sent."; setTimeout(()=>{ if(hint) hint.textContent=""; }, 2500);
+  persist(); renderBroadcast(); buildSidebar();
+};
+function renderMessages(){
+  const wrap=document.getElementById("msg-wrap");
+  const msgs=myMessages();
+  if(!msgs.length){ wrap.innerHTML='<div class="msgempty">No messages yet.</div>'; }
+  else {
+    wrap.innerHTML=msgs.map(b=>{
+      const unread=!broadcastRead(b);
+      return '<div class="msgcard'+(unread?" unread":"")+'"><div class="mh">'+
+        '<div class="mfrom">'+esc(displayName(b.by))+(unread?' <span class="newtag">new</span>':"")+'</div>'+
+        '<div class="mtime">'+ago(b.ts)+'</div></div>'+
+        '<div class="mto">Sent to '+esc(audienceLabel(b))+'</div>'+
+        '<div class="mtxt">'+esc(b.text)+'</div></div>';
+    }).join("");
+  }
+  // Opening the inbox marks everything read.
+  let changed=false;
+  msgs.forEach(b=>{ if(!broadcastRead(b)){ b.readBy.push(me.id); changed=true; } });
+  if(changed){ persist(); buildSidebar(); }
+}
+document.getElementById("msg-markall").onclick=()=>{
+  let changed=false;
+  myMessages().forEach(b=>{ if(!broadcastRead(b)){ b.readBy.push(me.id); changed=true; } });
+  if(changed){ persist(); renderMessages(); buildSidebar(); }
+};
+/* ---- top-of-view pop-up alerts (unresolved nudges + unread messages) ---- */
+let dismissedAlerts=new Set();
+function alertKey(kind,id){ return kind+":"+id; }
+function renderAlerts(){
+  const stack=document.getElementById("alertstack"); if(!stack||!me){ return; }
+  const items=[];
+  // unresolved nudges pointed at me
+  myOpenNudges().forEach(({entry,nudge})=>{
+    const idx=(entry.nudges||[]).indexOf(nudge);
+    const key=alertKey("nudge", entry.id+"#"+idx+"#"+nudge.ts);
+    if(dismissedAlerts.has(key)) return;
+    items.push({
+      key, cls:"", icon:"\u23F0", title:"Nudge from "+displayName(nudge.by),
+      meta:'On "'+entry.focus+'" \u00b7 '+ago(nudge.ts), msg:nudge.text,
+      go:()=>{ activeView="board"; activeTab=entry.team; dismissedAlerts.add(key); refreshViews(); renderAlerts(); }
+    });
+  });
+  // unread messages sent to me
+  unreadMessages().forEach(b=>{
+    const key=alertKey("msg", b.id);
+    if(dismissedAlerts.has(key)) return;
+    items.push({
+      key, cls:"msg", icon:"\u2709", title:"New message from "+displayName(b.by),
+      meta:"Sent to "+audienceLabel(b)+" \u00b7 "+ago(b.ts), msg:b.text,
+      go:()=>{ activeView="messages"; dismissedAlerts.add(key); refreshViews(); renderAlerts(); }
+    });
+  });
+  stack.innerHTML=items.slice(0,4).map(it=>
+    '<div class="alerttoast '+it.cls+'" data-akey="'+esc(it.key)+'">'+
+      '<div class="ti">'+it.icon+'</div>'+
+      '<div class="tbody"><div class="tt">'+esc(it.title)+'</div>'+
+      '<div class="tmeta">'+esc(it.meta)+'</div>'+
+      '<div class="tmsg">'+esc(it.msg)+'</div>'+
+      '<div class="tacts"><button class="small '+(it.cls==="msg"?"":"nudgehot")+'" data-ago="'+esc(it.key)+'">'+(it.cls==="msg"?"Open messages":"View task")+'</button>'+
+      '<button class="small" data-adismiss="'+esc(it.key)+'">Dismiss</button></div></div>'+
+      '<button class="tclose" data-adismiss="'+esc(it.key)+'">&times;</button>'+
+    '</div>'
+  ).join("");
+  // wire actions
+  stack.querySelectorAll("[data-ago]").forEach(btn=>{
+    btn.onclick=()=>{ const it=items.find(x=>x.key===btn.dataset.ago); if(it) it.go(); };
+  });
+  stack.querySelectorAll("[data-adismiss]").forEach(btn=>{
+    btn.onclick=()=>{ dismissedAlerts.add(btn.dataset.adismiss); renderAlerts(); };
+  });
+}
+/* ============ /BROADCAST / MESSAGES ============ */
 /* ============ /PRESENTATION DECKS ============ */
 function markSync(live){
   const el=document.getElementById("sync"), tx=document.getElementById("synctext");
