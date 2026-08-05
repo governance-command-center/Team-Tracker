@@ -390,6 +390,10 @@
   .hlcard .foryou.unread{background:var(--red); color:#fff;}
   .navunread{background:var(--red); color:#fff; border-radius:999px; padding:1px 6px; font-size:11px; font-weight:700; margin-left:4px;}
   .hlgroup{font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft); margin-top:22px;}
+  .hlgroup.sub{margin-top:12px; margin-left:2px; font-size:11px; color:var(--ink-faint);}
+  .hlteamgroup{font-family:var(--serif); font-size:17px; font-weight:600; color:var(--ink); margin-top:26px; padding-bottom:6px; border-bottom:2px solid var(--ink); display:flex; align-items:baseline; gap:8px;}
+  .hlteamgroup:first-child{margin-top:8px;}
+  .hlteamgroup .hltgcount{font-family:var(--sans); font-size:12px; font-weight:500; color:var(--ink-faint);}
   table.compiled tr.regiongroup td{background:var(--line-soft); font-weight:700; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink); border-bottom:1px solid var(--line); padding:7px 8px;}
   table.compiled tr.regiongroup:hover td{background:var(--line-soft);}
   table.compiled tr.regiongroup .rgcount{font-weight:500; text-transform:none; letter-spacing:0; color:var(--ink-faint); margin-left:6px;}
@@ -2881,10 +2885,14 @@ async function importDeckFiles(files){
 /* ================= LEAD HIGHLIGHTS ================= */
 function canPostHighlights(){ return me.role==="admin"||me.role==="lead"||me.role==="manager"; }function highlightScopeTeams(){ return me.role==="admin" ? state.teams.slice() : [me.team]; }
 function myHighlights(){
-  // Everyone on a team sees all of that team's highlights; admin sees all teams.
-  // Being tagged doesn't gate visibility - it only drives the red notification.
-  if(me.role==="admin") return (state.highlights||[]).slice();
-  return (state.highlights||[]).filter(h=>h.team===me.team);
+  // Visibility is role-specific:
+  //  - admin: every highlight across all teams
+  //  - lead / manager: every highlight for their own team (team-wide view)
+  //  - member: only highlights they were tagged in (personal view)
+  const all=state.highlights||[];
+  if(me.role==="admin") return all.slice();
+  if(me.role==="lead"||me.role==="manager") return all.filter(h=>h.team===me.team);
+  return all.filter(h=>h.team===me.team && (h.members||[]).some(n=>sameName(n,me.name)));
 }
 function isTaggedIn(h){ return (h.members||[]).some(n=>sameName(n,me.name)); }
 // Pinned highlights the current viewer can see, newest-updated first. A pin is
@@ -3040,15 +3048,24 @@ function populateHighlightFilters(){
   const sorted=Array.from(names).sort((a,b)=>a.localeCompare(b));
   msel.innerHTML='<option value="all">All members</option>'+sorted.map(n=>'<option value="'+esc(n)+'"'+(n===prevM?" selected":"")+'>'+esc(n)+'</option>').join("");
   if(prevM!=="all" && !sorted.includes(prevM)) msel.value="all";
-  msel.classList.remove("hidden");
+  const isMemberView = !canPostHighlights() && me.role!=="admin";
+  msel.classList.toggle("hidden", isMemberView);
 }
 function renderHighlights(){
   document.getElementById("hl-addbtn").classList.toggle("hidden", !canPostHighlights());
   const tagCount=unseenHighlights();
-  document.getElementById("hl-scope").textContent = canPostHighlights()
-    ? "Posting to "+hlTargetTeam()+" — the whole team can read these; tagged members get a notification."
-    : (tagCount ? tagCount+" new highlight"+(tagCount===1?"":"s")+" tagged to you."
-                : "Weekly observations for your team.");
+  const isMemberView = !canPostHighlights() && me.role!=="admin";
+  document.getElementById("hl-scope").textContent = me.role==="admin"
+    ? "Viewing every team's highlights, grouped by team."
+    : canPostHighlights()
+      ? "Posting to "+hlTargetTeam()+" — leads see the whole team; each tagged member sees only their own."
+      : (tagCount ? tagCount+" new highlight"+(tagCount===1?"":"s")+" tagged to you."
+                  : "Highlights tagged to you.");
+  // A member only ever sees their own tagged highlights, so the member filter and
+  // "tagged to me" toggle are redundant — hide them for members.
+  const minefilterWrap=document.getElementById("hl-minefilter").closest("label");
+  document.getElementById("hl-memberfilter").classList.toggle("hidden", isMemberView);
+  if(minefilterWrap) minefilterWrap.classList.toggle("hidden", isMemberView);
   populateHighlightFilters();
 
   const wk=document.getElementById("hl-week").value||"all";
@@ -3065,14 +3082,31 @@ function renderHighlights(){
       : "No highlights posted for your team yet.")+'</div>';
     return;
   }
-  // group by week, newest first
-  const byWeek=new Map();
-  items.forEach(h=>{ const k=h.week||"—"; if(!byWeek.has(k)) byWeek.set(k,[]); byWeek.get(k).push(h); });
   let out="";
-  byWeek.forEach((rows,k)=>{
-    out+='<div class="hlgroup">'+esc(weekKeyLabel(k))+'</div>';
-    rows.forEach(h=>{ out+=highlightCardHTML(h, unseenSet); });
-  });
+  if(me.role==="admin"){
+    // Admin view: group by team, then by week (newest first) within each team.
+    const byTeam=new Map();
+    items.forEach(h=>{ const t=h.team||"—"; if(!byTeam.has(t)) byTeam.set(t,[]); byTeam.get(t).push(h); });
+    const teamsOrder=Array.from(byTeam.keys()).sort((a,b)=>a.localeCompare(b));
+    teamsOrder.forEach(t=>{
+      const rows=byTeam.get(t);
+      out+='<div class="hlteamgroup">'+esc(t)+' <span class="hltgcount">'+rows.length+'</span></div>';
+      const byWeek=new Map();
+      rows.forEach(h=>{ const k=h.week||"—"; if(!byWeek.has(k)) byWeek.set(k,[]); byWeek.get(k).push(h); });
+      Array.from(byWeek.keys()).sort((a,b)=>(b||"").localeCompare(a||"")).forEach(k=>{
+        out+='<div class="hlgroup sub">'+esc(weekKeyLabel(k))+'</div>';
+        byWeek.get(k).forEach(h=>{ out+=highlightCardHTML(h, unseenSet); });
+      });
+    });
+  } else {
+    // group by week, newest first
+    const byWeek=new Map();
+    items.forEach(h=>{ const k=h.week||"—"; if(!byWeek.has(k)) byWeek.set(k,[]); byWeek.get(k).push(h); });
+    Array.from(byWeek.keys()).sort((a,b)=>(b||"").localeCompare(a||"")).forEach(k=>{
+      out+='<div class="hlgroup">'+esc(weekKeyLabel(k))+'</div>';
+      byWeek.get(k).forEach(h=>{ out+=highlightCardHTML(h, unseenSet); });
+    });
+  }
   wrap.innerHTML=out;
   markHighlightsSeen();
 }
@@ -3085,15 +3119,31 @@ function renderPinned(){
     return;
   }
   const unseenSet=new Set(items.filter(isUnseenTag).map(h=>h.id));
-  // Group by week, newest first, same as the Highlights list.
-  const byWeek=new Map();
-  items.forEach(h=>{ const k=h.week||"—"; if(!byWeek.has(k)) byWeek.set(k,[]); byWeek.get(k).push(h); });
-  const weeks=Array.from(byWeek.keys()).sort((a,b)=>(b||"").localeCompare(a||""));
   let out="";
-  weeks.forEach(k=>{
-    out+='<div class="hlgroup">'+esc(weekKeyLabel(k))+'</div>';
-    byWeek.get(k).forEach(h=>{ out+=highlightCardHTML(h, unseenSet); });
-  });
+  if(me.role==="admin"){
+    // Admin: group by team, then week (newest first) within each team.
+    const byTeam=new Map();
+    items.forEach(h=>{ const t=h.team||"—"; if(!byTeam.has(t)) byTeam.set(t,[]); byTeam.get(t).push(h); });
+    Array.from(byTeam.keys()).sort((a,b)=>a.localeCompare(b)).forEach(t=>{
+      const rows=byTeam.get(t);
+      out+='<div class="hlteamgroup">'+esc(t)+' <span class="hltgcount">'+rows.length+'</span></div>';
+      const byWeek=new Map();
+      rows.forEach(h=>{ const k=h.week||"—"; if(!byWeek.has(k)) byWeek.set(k,[]); byWeek.get(k).push(h); });
+      Array.from(byWeek.keys()).sort((a,b)=>(b||"").localeCompare(a||"")).forEach(k=>{
+        out+='<div class="hlgroup sub">'+esc(weekKeyLabel(k))+'</div>';
+        byWeek.get(k).forEach(h=>{ out+=highlightCardHTML(h, unseenSet); });
+      });
+    });
+  } else {
+    // Pinned stay visible across all weeks; group by week so each card shows
+    // the week it belongs to. (The main Highlights list stays week-scoped.)
+    const byWeek=new Map();
+    items.forEach(h=>{ const k=h.week||"—"; if(!byWeek.has(k)) byWeek.set(k,[]); byWeek.get(k).push(h); });
+    Array.from(byWeek.keys()).sort((a,b)=>(b||"").localeCompare(a||"")).forEach(k=>{
+      out+='<div class="hlgroup">'+esc(weekKeyLabel(k))+'</div>';
+      byWeek.get(k).forEach(h=>{ out+=highlightCardHTML(h, unseenSet); });
+    });
+  }
   wrap.innerHTML=out;
 }
 document.getElementById("pinned-wrap").addEventListener("click",e=>{ handleHighlightClick(e); });
