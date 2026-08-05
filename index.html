@@ -48,7 +48,7 @@
   .modal h3{font-family:var(--serif); font-size:19px; margin:0 0 4px;}
   .modal p.sub{font-size:13px; color:var(--ink-soft); margin:0 0 14px;}
   .modal textarea{width:100%; min-height:96px; resize:vertical; font-size:13px;}
-  #f-update{min-height:110px; resize:vertical; line-height:1.5;}
+  #f-update{min-height:220px; resize:vertical; line-height:1.5; width:100%;}
   .modal .btns{display:flex; gap:8px; justify-content:flex-end; margin-top:14px;}
   .tmplrow{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;}
   .tmplrow button{font-size:12px; padding:3px 10px;}
@@ -522,7 +522,7 @@
           <div id="f-member-wrap"><label class="fl">Members</label><input id="f-member" placeholder="e.g. Ana, Ben" /><span class="fh">Separate names with commas</span><span class="uphint" id="f-member-lock"></span></div>
         </div>
         <div class="grid g2" style="margin-top:12px;">
-          <div style="grid-column:1 / -1;"><label class="fl">Remarks (optional)</label><textarea id="f-update" rows="4" placeholder="e.g. Escalated Monday, awaiting reply.&#10;- Blocked on infra access&#10;- Waiting on Ops team"></textarea><span class="fh">Progress, supporting details, and blockers. Start a line with "-" to make a bullet.</span></div>
+          <div style="grid-column:1 / -1; max-width:50%;"><label class="fl">Remarks (optional)</label><textarea id="f-update" rows="10" placeholder="e.g. Escalated Monday, awaiting reply.&#10;- Blocked on infra access&#10;- Waiting on Ops team"></textarea><span class="fh">Progress, supporting details, and blockers. Start a line with "-" to make a bullet.</span></div>
         </div>
         <div style="margin-top:12px;">
           <label class="fl">Attachment (optional)</label>
