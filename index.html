@@ -394,6 +394,48 @@
   .hlteamgroup{font-family:var(--serif); font-size:17px; font-weight:600; color:var(--ink); margin-top:26px; padding-bottom:6px; border-bottom:2px solid var(--ink); display:flex; align-items:baseline; gap:8px;}
   .hlteamgroup:first-child{margin-top:8px;}
   .hlteamgroup .hltgcount{font-family:var(--sans); font-size:12px; font-weight:500; color:var(--ink-faint);}
+  /* ===== Highlights notepad ===== */
+  :root{ --note-bg:#eaf2fb; --note-line:#cddcf0; --note-margin:#e6a9a0; --note-ink:#20303f; }
+  .notehead{display:flex; align-items:center; gap:10px; padding:12px 14px 0;}
+  .noteweek{width:auto;}
+  .notetitle{width:100%; border:none; border-radius:0; background:transparent; font-family:var(--serif); font-size:22px; font-weight:600; padding:10px 16px 6px; color:var(--note-ink);}
+  .notetitle:focus{outline:none; box-shadow:none;}
+  .notetoolbar{display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding:8px 14px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); background:var(--paper); position:sticky; top:0; z-index:2;}
+  .notetoolbar .tbtn{font-size:13px; padding:5px 9px; border:1px solid var(--line); background:var(--card); border-radius:7px; cursor:pointer; line-height:1; color:var(--ink);}
+  .notetoolbar .tbtn:hover{background:var(--line-soft);}
+  .notetoolbar .tsel{font-size:12.5px; padding:5px 6px; border:1px solid var(--line); border-radius:7px; background:var(--card); cursor:pointer;}
+  .notetoolbar .tsep{width:1px; align-self:stretch; background:var(--line); margin:2px 4px;}
+  /* the literal notebook page */
+  .notepaper{
+    background-color:var(--note-bg);
+    background-image:repeating-linear-gradient(var(--note-bg), var(--note-bg) 27px, var(--note-line) 27px, var(--note-line) 28px);
+    background-attachment:local;
+    line-height:28px;
+    color:var(--note-ink);
+    padding:6px 18px 24px 54px;
+    position:relative;
+  }
+  .notepaper::before{content:""; position:absolute; top:0; bottom:0; left:38px; width:2px; background:var(--note-margin); opacity:.7;}
+  .noteedit{min-height:340px; outline:none; border-radius:0 0 14px 14px;}
+  .noteedit:empty::before{content:"Start typing your note…"; color:#9fb2c7;}
+  .notepaper img{max-width:100%; height:auto; border-radius:6px; border:1px solid var(--note-line); margin:4px 0; display:block; box-shadow:0 1px 4px rgba(30,50,70,.12);}
+  .notepaper ul,.notepaper ol{margin:0; padding-left:26px;}
+  .notepaper hr{border:none; border-top:2px dashed var(--note-margin); margin:6px 0; opacity:.7;}
+  .notepaper h2,.notepaper h3{margin:2px 0; font-family:var(--serif);}
+  .notefoot{display:flex; gap:8px; align-items:center; padding:12px 16px; background:var(--paper); border-top:1px solid var(--line);}
+  /* saved note cards */
+  .notecard{border:1px solid var(--line); border-radius:14px; margin-top:14px; background:var(--card); overflow:hidden; box-shadow:0 1px 3px rgba(20,18,14,.05);}
+  .notecard.pinned{border-left:4px solid var(--amber);}
+  .notecard.newnote{border-left:4px solid var(--red);}
+  .notecardhead{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:13px 16px 4px;}
+  .notecardtitle{font-family:var(--serif); font-size:18px; font-weight:600; color:var(--ink); min-width:0; overflow-wrap:anywhere;}
+  .notecardtitle .untitled{color:var(--ink-faint); font-style:italic; font-weight:400;}
+  .notecardmeta{font-size:12px; color:var(--ink-faint); padding:0 16px 10px;}
+  .notecardmeta .hlteam{font-weight:600; color:var(--accent); background:var(--accent-bg); padding:1px 7px; border-radius:999px; font-size:11px;}
+  .notecardmeta .newdot{background:var(--red); color:#fff; font-weight:700; font-size:10px; padding:1px 6px; border-radius:999px; letter-spacing:.02em; text-transform:uppercase;}
+  .notecard .notebody{border-top:1px solid var(--line); min-height:56px; border-radius:0 0 14px 14px;}
+  .notecard .notebody .untitled{color:#9fb2c7; font-style:italic;}
+  .hlactions{display:flex; align-items:center; gap:6px; white-space:nowrap; flex-shrink:0;}
   table.compiled tr.regiongroup td{background:var(--line-soft); font-weight:700; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink); border-bottom:1px solid var(--line); padding:7px 8px;}
   table.compiled tr.regiongroup:hover td{background:var(--line-soft);}
   table.compiled tr.regiongroup .rgcount{font-weight:500; text-transform:none; letter-spacing:0; color:var(--ink-faint); margin-left:6px;}
@@ -640,53 +682,52 @@
       </div>
     </div>
 
-    <!-- LEAD HIGHLIGHTS -->
+    <!-- HIGHLIGHTS (NOTEPAD) -->
     <div id="view-highlights" class="hidden">
       <div class="controls">
         <label style="font-size:13px; color:var(--ink-soft);">Week</label>
         <select id="hl-week" style="width:auto;"></select>
-        <select id="hl-memberfilter" style="width:auto;"><option value="all">All members</option></select>
-        <label class="chk pillchk"><input type="checkbox" id="hl-minefilter" /> <span>Tagged to me</span></label>
         <span class="spacer"></span>
         <span class="uphint" id="hl-scope"></span>
-        <button class="primary small hidden" id="hl-addbtn">+ Add highlight</button>
+        <button class="primary small hidden" id="hl-addbtn">+ New note</button>
       </div>
 
-      <div class="panel hidden" id="hl-form">
-        <div class="grid g3">
-          <div><label class="fl">Week</label><select id="hl-f-week"></select></div>
-          <div><label class="fl">Brand</label><input id="hl-f-brand" placeholder="e.g. Acme Co." /></div>
-          <div><label class="fl">Platform</label><input id="hl-f-platform" placeholder="e.g. Shopee, Lazada" /></div>
-        </div>
-        <div class="grid g2" style="margin-top:12px;">
-          <div><label class="fl">Region</label><input id="hl-f-region" placeholder="e.g. NA, EU, APAC" /></div>
-          <div>
-            <label class="fl">Tag members <span class="req">required</span></label>
-            <div class="tagbox" id="hl-f-members"></div>
-            <span class="fh">Tick everyone this highlight is for. They will see it in their own Highlights tab.</span>
-          </div>
-        </div>
-        <div style="margin-top:14px;">
-          <label class="fl">Issues / observations <span class="req">required</span></label>
-          <div id="hl-f-issues"></div>
-          <button class="small" type="button" id="hl-addissue" style="margin-top:8px;">+ Add another issue</button>
-        </div>
-        <div style="margin-top:12px;">
-          <label class="fl">Remarks (optional)</label>
-          <textarea id="hl-f-remarks" rows="2" placeholder="Overall note, coaching point, or next step for the team"></textarea>
-        </div>
-        <div style="margin-top:12px;">
-          <label class="fl">Screenshots (optional)</label>
-          <div class="uparea">
-            <input type="file" id="hl-f-file" accept="image/*" multiple style="border:none; padding:0; background:transparent;" />
-            <span class="uphint" id="hl-upstatus">Up to 2 images. PNG/JPG. Uploaded when you save.</span>
-          </div>
-          <div id="hl-f-thumbs" class="hlthumbs"></div>
-        </div>
-        <div class="panelbtns">
-          <button class="primary" id="hl-save">Save highlight</button>
-          <button class="ghost" id="hl-cancel">Cancel</button>
+      <div class="panel hidden" id="hl-form" style="padding:0; overflow:hidden;">
+        <div class="notehead">
+          <select id="hl-f-week" class="noteweek"></select>
+          <span class="spacer"></span>
           <span class="uphint" id="hl-err" style="color:var(--red);"></span>
+        </div>
+        <input id="hl-f-title" class="notetitle" placeholder="Note title…" />
+        <div class="notetoolbar" id="hl-toolbar">
+          <button type="button" class="tbtn" data-cmd="bold" title="Bold"><b>B</b></button>
+          <button type="button" class="tbtn" data-cmd="italic" title="Italic"><i>I</i></button>
+          <button type="button" class="tbtn" data-cmd="underline" title="Underline"><u>U</u></button>
+          <span class="tsep"></span>
+          <button type="button" class="tbtn" data-cmd="uppercase" title="UPPERCASE selection">AA</button>
+          <button type="button" class="tbtn" data-cmd="insertUnorderedList" title="Bullet list">&bull; List</button>
+          <button type="button" class="tbtn" data-cmd="divider" title="Insert divider">&mdash; Divider</button>
+          <span class="tsep"></span>
+          <select class="tsel" id="hl-font" title="Font"><option value="">Font</option>
+            <option value="var(--sans)">Sans</option>
+            <option value="var(--serif)">Serif</option>
+            <option value="'Courier New',monospace">Mono</option>
+          </select>
+          <select class="tsel" id="hl-size" title="Size"><option value="">Size</option>
+            <option value="1">Small</option>
+            <option value="3">Normal</option>
+            <option value="5">Large</option>
+            <option value="7">Huge</option>
+          </select>
+          <span class="tsep"></span>
+          <button type="button" class="tbtn" id="hl-img-btn" title="Attach image">🖼 Image</button>
+          <input type="file" id="hl-f-file" accept="image/*" multiple class="hidden" />
+        </div>
+        <div id="hl-f-body" class="notepaper noteedit" contenteditable="true" spellcheck="true"></div>
+        <div class="notefoot">
+          <button class="primary" id="hl-save">Save note</button>
+          <button class="ghost" id="hl-cancel">Cancel</button>
+          <span class="uphint" id="hl-upstatus"></span>
         </div>
       </div>
 
@@ -696,7 +737,7 @@
     <!-- PINNED HIGHLIGHTS -->
     <div id="view-pinned" class="hidden">
       <div class="controls">
-        <span class="uphint">Pinned highlights stay here for everyone until unpinned. Use the <b>Pin</b> button on any highlight to add it.</span>
+        <span class="uphint">Pinned notes stay here for the whole team until unpinned. Use the <b>Pin</b> button on any note to add it.</span>
       </div>
       <div id="pinned-wrap"></div>
     </div>
@@ -922,13 +963,29 @@ function migrate(){
     if(typeof m.pass==="string") m.pass=m.pass.trim();
   });
   state.highlights.forEach(hl=>{
-    if(!Array.isArray(hl.issues)) hl.issues=[];
-    if(!Array.isArray(hl.members)) hl.members=[];
-    if(typeof hl.remarks!=="string") hl.remarks="";
-    if(!Array.isArray(hl.images)) hl.images=[];
     if(typeof hl.pinned!=="boolean") hl.pinned=false;
     if(!hl.created) hl.created=hl.updated||Date.now();
     if(!hl.week) hl.week=weekKeyFromTs(hl.created);
+    // Convert legacy structured highlights (issues/members/remarks/images) into
+    // the notepad shape (title + body HTML) so old notes still render.
+    if(typeof hl.body!=="string"){
+      const titleBits=[hl.brand,hl.platform,hl.region].filter(Boolean);
+      if(typeof hl.title!=="string") hl.title = titleBits.join(" · ") || "";
+      let body="";
+      if(Array.isArray(hl.members) && hl.members.length){
+        body+='<div><b>Tagged:</b> '+hl.members.map(esc).join(", ")+'</div>';
+      }
+      if(Array.isArray(hl.issues) && hl.issues.length){
+        body+='<ul>'+hl.issues.map(i=>'<li>'+esc(i)+'</li>').join("")+'</ul>';
+      }
+      if(hl.remarks) body+='<div><b>Remarks:</b> '+esc(hl.remarks)+'</div>';
+      if(Array.isArray(hl.images)) hl.images.forEach(src=>{ body+='<img src="'+src+'" alt="image" />'; });
+      hl.body=body;
+      // Drop the now-unused structured fields.
+      delete hl.issues; delete hl.members; delete hl.remarks; delete hl.images;
+      delete hl.brand; delete hl.platform; delete hl.region;
+    }
+    if(typeof hl.title!=="string") hl.title="";
   });
   state.decks.forEach(d=>{ if(typeof d.archived!=="boolean") d.archived=false; if(!Array.isArray(d.slides)) d.slides=[]; });
   state.entries.forEach(e=>{
@@ -963,12 +1020,15 @@ function migrate(){
 }
 // Read-only on other teams: no commenting, editing, or nudging there.
 function canComment(entry){ return me.role==="admin" ? true : entry.team===me.team; }
-// Everyone can browse every team (read-only for teams that aren't theirs) so
-// issues raised elsewhere are visible. Own team is listed first.
+// Team tabs: admin, leads and managers can browse every team (read-only on
+// teams that aren't theirs). Plain members only see their own team's tab.
 function visibleTeams(){
   if(me.role==="admin") return state.teams;
-  const rest=state.teams.filter(t=>t!==me.team);
-  return state.teams.includes(me.team) ? [me.team].concat(rest) : state.teams.slice();
+  if(me.role==="lead"||me.role==="manager"){
+    const rest=state.teams.filter(t=>t!==me.team);
+    return state.teams.includes(me.team) ? [me.team].concat(rest) : state.teams.slice();
+  }
+  return state.teams.includes(me.team) ? [me.team] : [];
 }
 function isOwnTeam(team){ return me.role==="admin" || team===me.team; }
 function canEdit(entry){
@@ -2882,40 +2942,32 @@ async function importDeckFiles(files){
     renderDecks(); buildSidebar();
   }
 }
-/* ================= LEAD HIGHLIGHTS ================= */
-function canPostHighlights(){ return me.role==="admin"||me.role==="lead"||me.role==="manager"; }function highlightScopeTeams(){ return me.role==="admin" ? state.teams.slice() : [me.team]; }
+/* ================= HIGHLIGHTS (NOTEPAD) ================= */
+// Highlights are now free-form notes. Each note stores rich-text HTML in `body`,
+// plus a title, team, week, author and pinned flag. Only admin/lead/manager can
+// create or edit; everyone on the team can read. Body HTML is sanitised on save.
+function canPostHighlights(){ return me.role==="admin"||me.role==="lead"||me.role==="manager"; }
 function myHighlights(){
-  // Visibility is role-specific:
-  //  - admin: every highlight across all teams
-  //  - lead / manager: every highlight for their own team (team-wide view)
-  //  - member: only highlights they were tagged in (personal view)
+  // Admin sees every team's notes; everyone else sees all notes for their team.
   const all=state.highlights||[];
   if(me.role==="admin") return all.slice();
-  if(me.role==="lead"||me.role==="manager") return all.filter(h=>h.team===me.team);
-  return all.filter(h=>h.team===me.team && (h.members||[]).some(n=>sameName(n,me.name)));
+  return all.filter(h=>h.team===me.team);
 }
-function isTaggedIn(h){ return (h.members||[]).some(n=>sameName(n,me.name)); }
-// Pinned highlights the current viewer can see, newest-updated first. A pin is
-// shared: once anyone pins a highlight it stays pinned for everyone who can see
-// it until someone unpins it.
 const PIN_SVG='<svg class="pinico" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>';
 function pinnedHighlights(){
-  return myHighlights().filter(h=>h.pinned)
-    .sort((a,b)=>(b.updated||0)-(a.updated||0));
+  return myHighlights().filter(h=>h.pinned).sort((a,b)=>(b.updated||0)-(a.updated||0));
 }
-function taggedHighlights(){ return myHighlights().filter(isTaggedIn); }
-// The red badge counts only highlights this person is TAGGED in and hasn't read.
+// The red badge tracks unread NEW notes on the viewer's team (by update time).
 function unseenHighlights(){
   const seen=loadSeen();
-  return taggedHighlights().filter(h=>(h.updated||0) > (seen["hl:"+h.id]||0)).length;
+  return myHighlights().filter(h=>(h.updated||0) > (seen["hl:"+h.id]||0) && h.by!==me.name).length;
 }
-function isUnseenTag(h){
-  if(!isTaggedIn(h)) return false;
-  return (h.updated||0) > (loadSeen()["hl:"+h.id]||0);
+function isUnseen(h){
+  return (h.updated||0) > (loadSeen()["hl:"+h.id]||0) && h.by!==me.name;
 }
 function markHighlightsSeen(){
   const o=loadSeen();
-  taggedHighlights().forEach(h=>{ o["hl:"+h.id]=Date.now(); });
+  myHighlights().forEach(h=>{ o["hl:"+h.id]=Date.now(); });
   saveSeen(o);
 }
 function teamRoster(team){
@@ -2929,100 +2981,77 @@ function hlTargetTeam(){
   return (activeTab && state.teams.includes(activeTab)) ? activeTab : (state.teams[0]||"");
 }
 
+// ---- Rich-text sanitiser: keep a safe subset of formatting tags/attrs ----
+const HL_ALLOWED_TAGS=new Set(["B","STRONG","I","EM","U","UL","OL","LI","BR","HR","DIV","P","SPAN","FONT","IMG","H2","H3","BLOCKQUOTE"]);
+function sanitizeNoteHTML(html){
+  const doc=document.implementation.createHTMLDocument("");
+  const root=doc.createElement("div"); root.innerHTML=html||"";
+  (function walk(node){
+    Array.from(node.childNodes).forEach(child=>{
+      if(child.nodeType===1){
+        if(!HL_ALLOWED_TAGS.has(child.tagName)){
+          // Unwrap disallowed elements (keep their text/children), drop scripts entirely.
+          if(child.tagName==="SCRIPT"||child.tagName==="STYLE"){ child.remove(); return; }
+          const parent=child.parentNode;
+          while(child.firstChild) parent.insertBefore(child.firstChild, child);
+          parent.removeChild(child);
+          return;
+        }
+        // Strip all attributes except a safe whitelist per tag.
+        Array.from(child.attributes).forEach(a=>{
+          const name=a.name.toLowerCase(), val=a.value;
+          const ok =
+            (child.tagName==="IMG" && name==="src" && /^data:image\//i.test(val)) ||
+            (child.tagName==="IMG" && (name==="alt")) ||
+            (child.tagName==="FONT" && (name==="face"||name==="size")) ||
+            (name==="style" && /^(font-family|font-size|text-align|font-weight|font-style|text-decoration)\s*:/i.test(val) && !/url\(|expression|javascript:/i.test(val));
+          if(!ok) child.removeAttribute(a.name);
+        });
+        walk(child);
+      } else if(child.nodeType===8){ child.remove(); } // comments
+    });
+  })(root);
+  return root.innerHTML;
+}
+
 let hlEditingId=null;
-// Images staged for the highlight currently being edited. Holds data URLs
-// (either already-saved ones loaded on edit, or freshly compressed uploads).
-let hlPendingImages=[];
-const HL_MAX_IMAGES=2;
-function renderHlThumbs(){
-  const wrap=document.getElementById("hl-f-thumbs");
-  wrap.innerHTML=hlPendingImages.map((src,i)=>
-    '<div class="hlthumb"><img src="'+esc(src)+'" alt="screenshot '+(i+1)+'" />'+
-    '<button type="button" data-hlrmimg="'+i+'" title="Remove">&times;</button></div>').join("");
-  const inp=document.getElementById("hl-f-file");
-  const status=document.getElementById("hl-upstatus");
-  if(hlPendingImages.length>=HL_MAX_IMAGES){
-    inp.disabled=true; status.textContent="Maximum of 2 screenshots reached. Remove one to add another.";
-  } else {
-    inp.disabled=false;
-    status.textContent=(hlPendingImages.length?(hlPendingImages.length+" of 2 added. "):"Up to 2 images. ")+"PNG/JPG. Uploaded when you save.";
-  }
-}
-function hlIssueRow(val){
-  const d=document.createElement("div");
-  d.className="issuerow";
-  d.innerHTML='<span class="inum"></span><input class="hl-issue" placeholder="Describe the issue or observation" />'+
-              '<button class="small danger hl-rmissue" type="button" title="Remove">&times;</button>';
-  d.querySelector("input").value=val||"";
-  return d;
-}
-function hlRenumber(){
-  document.querySelectorAll("#hl-f-issues .issuerow").forEach((r,i)=>{
-    r.querySelector(".inum").textContent=(i+1)+".";
-  });
-  const rows=document.querySelectorAll("#hl-f-issues .issuerow");
-  rows.forEach(r=>{ r.querySelector(".hl-rmissue").style.visibility = rows.length>1 ? "visible" : "hidden"; });
-}
+let hlPendingImages=[]; // not used for gallery any more, images live inline in body
 function openHighlightForm(hl){
   if(!canPostHighlights()) return;
   hlEditingId = hl ? hl.id : null;
-  const team=hl ? hl.team : hlTargetTeam();
   const keys=allWeekKeys();
   const wsel=document.getElementById("hl-f-week");
   const curWk = hl ? hl.week : weekKeyNow();
   const allKeys = keys.includes(curWk) ? keys : [curWk].concat(keys);
   wsel.innerHTML=allKeys.map(k=>'<option value="'+k+'"'+(k===curWk?" selected":"")+'>'+weekKeyLabel(k)+'</option>').join("");
-
-  document.getElementById("hl-f-brand").value = hl ? (hl.brand||"") : "";
-  document.getElementById("hl-f-platform").value = hl ? (hl.platform||"") : "";
-  document.getElementById("hl-f-region").value = hl ? (hl.region||"") : "";
-  document.getElementById("hl-f-remarks").value = hl ? (hl.remarks||"") : "";
+  document.getElementById("hl-f-title").value = hl ? (hl.title||"") : "";
+  document.getElementById("hl-f-body").innerHTML = hl ? (hl.body||"") : "";
   document.getElementById("hl-err").textContent="";
-
-  const roster=teamRoster(team);
-  const chosen=new Set(hl?(hl.members||[]):[]);
-  const tb=document.getElementById("hl-f-members");
-  if(!roster.length){
-    tb.innerHTML='<span class="none">No members on '+esc(team)+' yet. Add them under Data.</span>';
-  } else {
-    tb.innerHTML=roster.map(n=>'<label class="'+(chosen.has(n)?"on":"")+'"><input type="checkbox" value="'+esc(n)+'"'+(chosen.has(n)?" checked":"")+' /> '+esc(n)+'</label>').join("");
-  }
-
-  const iw=document.getElementById("hl-f-issues");
-  iw.innerHTML="";
-  const issues = hl && hl.issues && hl.issues.length ? hl.issues : [""];
-  issues.forEach(v=>iw.appendChild(hlIssueRow(v)));
-  hlRenumber();
-
-  hlPendingImages = hl && Array.isArray(hl.images) ? hl.images.slice(0,HL_MAX_IMAGES) : [];
+  document.getElementById("hl-upstatus").textContent="";
   document.getElementById("hl-f-file").value="";
-  renderHlThumbs();
-
+  document.getElementById("hl-font").value="";
+  document.getElementById("hl-size").value="";
   document.getElementById("hl-form").classList.remove("hidden");
-  document.getElementById("hl-f-brand").focus();
+  document.getElementById("hl-f-title").focus();
 }
 function closeHighlightForm(){
   hlEditingId=null;
-  hlPendingImages=[];
-  document.getElementById("hl-form").classList.add("hidden");
+  const f=document.getElementById("hl-form");
+  if(f) f.classList.add("hidden");
 }
 function saveHighlight(){
-  const team=hlEditingId ? (state.highlights.find(h=>h.id==hlEditingId)||{}).team || hlTargetTeam() : hlTargetTeam();
-  const members=Array.from(document.querySelectorAll("#hl-f-members input:checked")).map(i=>i.value);
-  const issues=Array.from(document.querySelectorAll("#hl-f-issues .hl-issue")).map(i=>i.value.trim()).filter(Boolean);
+  const title=document.getElementById("hl-f-title").value.trim();
+  const bodyRaw=document.getElementById("hl-f-body").innerHTML;
+  const body=sanitizeNoteHTML(bodyRaw);
+  const textOnly=document.getElementById("hl-f-body").innerText.trim();
   const err=document.getElementById("hl-err");
-  if(!members.length){ err.textContent="Tag at least one member."; return; }
-  if(!issues.length){ err.textContent="Write at least one issue or observation."; return; }
+  if(!title && !textOnly && !/<img/i.test(body)){ err.textContent="Write a title or some note content first."; return; }
+  const team=hlEditingId ? ((state.highlights.find(h=>h.id==hlEditingId)||{}).team || hlTargetTeam()) : hlTargetTeam();
   const now=Date.now();
   const payload={
     week: document.getElementById("hl-f-week").value,
-    members: members,
-    brand: document.getElementById("hl-f-brand").value.trim(),
-    platform: document.getElementById("hl-f-platform").value.trim(),
-    region: document.getElementById("hl-f-region").value.trim(),
-    issues: issues,
-    remarks: document.getElementById("hl-f-remarks").value.trim(),
-    images: hlPendingImages.slice(0,HL_MAX_IMAGES),
+    title: title,
+    body: body,
     team: team,
     updated: now
   };
@@ -3030,84 +3059,56 @@ function saveHighlight(){
     const ex=state.highlights.find(h=>h.id==hlEditingId);
     if(ex) Object.assign(ex, payload);
   } else {
-    state.highlights.push(Object.assign({id:"hl"+now+Math.random().toString(36).slice(2,6), created:now, by:me.name}, payload));
+    state.highlights.push(Object.assign({id:"hl"+now+Math.random().toString(36).slice(2,6), created:now, by:me.name, pinned:false}, payload));
   }
   closeHighlightForm(); persist(); renderHighlights(); buildSidebar();
 }
+
+// Toolbar commands
+function hlExec(cmd){
+  const body=document.getElementById("hl-f-body");
+  body.focus();
+  if(cmd==="divider"){ document.execCommand("insertHTML", false, '<hr>'); return; }
+  if(cmd==="uppercase"){
+    const sel=window.getSelection();
+    if(sel && sel.rangeCount && !sel.isCollapsed){
+      const txt=sel.toString().toUpperCase();
+      document.execCommand("insertText", false, txt);
+    }
+    return;
+  }
+  document.execCommand(cmd, false, null);
+}
+
 function populateHighlightFilters(){
   const keys=allWeekKeys();
   const wsel=document.getElementById("hl-week");
   const prevW=wsel.value;
   wsel.innerHTML='<option value="all">All weeks</option>'+keys.map(k=>'<option value="'+k+'"'+(k===prevW?" selected":"")+'>'+weekKeyLabel(k)+'</option>').join("");
   if(prevW && (prevW==="all"||keys.includes(prevW))) wsel.value=prevW;
-
-  const msel=document.getElementById("hl-memberfilter");
-  const prevM=msel.value;
-  const names=new Set();
-  myHighlights().forEach(h=>(h.members||[]).forEach(n=>names.add(n)));
-  const sorted=Array.from(names).sort((a,b)=>a.localeCompare(b));
-  msel.innerHTML='<option value="all">All members</option>'+sorted.map(n=>'<option value="'+esc(n)+'"'+(n===prevM?" selected":"")+'>'+esc(n)+'</option>').join("");
-  if(prevM!=="all" && !sorted.includes(prevM)) msel.value="all";
-  const isMemberView = !canPostHighlights() && me.role!=="admin";
-  msel.classList.toggle("hidden", isMemberView);
 }
 function renderHighlights(){
   document.getElementById("hl-addbtn").classList.toggle("hidden", !canPostHighlights());
-  const tagCount=unseenHighlights();
-  const isMemberView = !canPostHighlights() && me.role!=="admin";
   document.getElementById("hl-scope").textContent = me.role==="admin"
-    ? "Viewing every team's highlights, grouped by team."
+    ? "All teams' notes, grouped by team."
     : canPostHighlights()
-      ? "Posting to "+hlTargetTeam()+" — leads see the whole team; each tagged member sees only their own."
-      : (tagCount ? tagCount+" new highlight"+(tagCount===1?"":"s")+" tagged to you."
-                  : "Highlights tagged to you.");
-  // A member only ever sees their own tagged highlights, so the member filter and
-  // "tagged to me" toggle are redundant — hide them for members.
-  const minefilterWrap=document.getElementById("hl-minefilter").closest("label");
-  document.getElementById("hl-memberfilter").classList.toggle("hidden", isMemberView);
-  if(minefilterWrap) minefilterWrap.classList.toggle("hidden", isMemberView);
+      ? "Notes for "+hlTargetTeam()+" — the whole team can read these."
+      : "Your team's notes. Pinned ones stay under Pinned.";
   populateHighlightFilters();
 
   const wk=document.getElementById("hl-week").value||"all";
-  const mf=document.getElementById("hl-memberfilter").value||"all";
-  const onlyMine=document.getElementById("hl-minefilter").checked;
-  let items=myHighlights().filter(h=>(wk==="all"||h.week===wk)&&(mf==="all"||(h.members||[]).some(n=>sameName(n,mf)))&&(!onlyMine||isTaggedIn(h)));
+  let items=myHighlights().filter(h=>(wk==="all"||h.week===wk));
   items.sort((a,b)=>(b.week||"").localeCompare(a.week||"")||(b.updated||0)-(a.updated||0));
 
-  const unseenSet=new Set(items.filter(isUnseenTag).map(h=>h.id));
+  const unseenSet=new Set(items.filter(isUnseen).map(h=>h.id));
   const wrap=document.getElementById("hl-wrap");
   if(!items.length){
     wrap.innerHTML='<div class="empty">'+(canPostHighlights()
-      ? "No highlights yet. Use <b>+ Add highlight</b> to flag observations for the week."
-      : "No highlights posted for your team yet.")+'</div>';
+      ? "No notes yet. Use <b>+ New note</b> to start one."
+      : "No notes for your team yet.")+'</div>';
     return;
   }
-  let out="";
-  if(me.role==="admin"){
-    // Admin view: group by team, then by week (newest first) within each team.
-    const byTeam=new Map();
-    items.forEach(h=>{ const t=h.team||"—"; if(!byTeam.has(t)) byTeam.set(t,[]); byTeam.get(t).push(h); });
-    const teamsOrder=Array.from(byTeam.keys()).sort((a,b)=>a.localeCompare(b));
-    teamsOrder.forEach(t=>{
-      const rows=byTeam.get(t);
-      out+='<div class="hlteamgroup">'+esc(t)+' <span class="hltgcount">'+rows.length+'</span></div>';
-      const byWeek=new Map();
-      rows.forEach(h=>{ const k=h.week||"—"; if(!byWeek.has(k)) byWeek.set(k,[]); byWeek.get(k).push(h); });
-      Array.from(byWeek.keys()).sort((a,b)=>(b||"").localeCompare(a||"")).forEach(k=>{
-        out+='<div class="hlgroup sub">'+esc(weekKeyLabel(k))+'</div>';
-        byWeek.get(k).forEach(h=>{ out+=highlightCardHTML(h, unseenSet); });
-      });
-    });
-  } else {
-    // group by week, newest first
-    const byWeek=new Map();
-    items.forEach(h=>{ const k=h.week||"—"; if(!byWeek.has(k)) byWeek.set(k,[]); byWeek.get(k).push(h); });
-    Array.from(byWeek.keys()).sort((a,b)=>(b||"").localeCompare(a||"")).forEach(k=>{
-      out+='<div class="hlgroup">'+esc(weekKeyLabel(k))+'</div>';
-      byWeek.get(k).forEach(h=>{ out+=highlightCardHTML(h, unseenSet); });
-    });
-  }
-  wrap.innerHTML=out;
+  wrap.innerHTML=groupedNotesHTML(items, unseenSet);
   markHighlightsSeen();
 }
 function renderPinned(){
@@ -3115,115 +3116,93 @@ function renderPinned(){
   if(!wrap) return;
   const items=pinnedHighlights();
   if(!items.length){
-    wrap.innerHTML='<div class="empty">No pinned highlights yet. Open <b>Highlights</b> and use the <b>Pin</b> button to keep important ones here.</div>';
+    wrap.innerHTML='<div class="empty">No pinned notes yet. Open <b>Highlights</b> and use the <b>Pin</b> button to keep important ones here.</div>';
     return;
   }
-  const unseenSet=new Set(items.filter(isUnseenTag).map(h=>h.id));
+  const unseenSet=new Set(items.filter(isUnseen).map(h=>h.id));
+  wrap.innerHTML=groupedNotesHTML(items, unseenSet);
+}
+// Shared grouping: by team (admin) then week, else by week. Newest week first.
+function groupedNotesHTML(items, unseenSet){
   let out="";
+  const byWeekBlock=(rows)=>{
+    const byWeek=new Map();
+    rows.forEach(h=>{ const k=h.week||"—"; if(!byWeek.has(k)) byWeek.set(k,[]); byWeek.get(k).push(h); });
+    let s="";
+    Array.from(byWeek.keys()).sort((a,b)=>(b||"").localeCompare(a||"")).forEach(k=>{
+      s+='<div class="hlgroup'+(me.role==="admin"?" sub":"")+'">'+esc(weekKeyLabel(k))+'</div>';
+      byWeek.get(k).forEach(h=>{ s+=noteCardHTML(h, unseenSet); });
+    });
+    return s;
+  };
   if(me.role==="admin"){
-    // Admin: group by team, then week (newest first) within each team.
     const byTeam=new Map();
     items.forEach(h=>{ const t=h.team||"—"; if(!byTeam.has(t)) byTeam.set(t,[]); byTeam.get(t).push(h); });
     Array.from(byTeam.keys()).sort((a,b)=>a.localeCompare(b)).forEach(t=>{
       const rows=byTeam.get(t);
       out+='<div class="hlteamgroup">'+esc(t)+' <span class="hltgcount">'+rows.length+'</span></div>';
-      const byWeek=new Map();
-      rows.forEach(h=>{ const k=h.week||"—"; if(!byWeek.has(k)) byWeek.set(k,[]); byWeek.get(k).push(h); });
-      Array.from(byWeek.keys()).sort((a,b)=>(b||"").localeCompare(a||"")).forEach(k=>{
-        out+='<div class="hlgroup sub">'+esc(weekKeyLabel(k))+'</div>';
-        byWeek.get(k).forEach(h=>{ out+=highlightCardHTML(h, unseenSet); });
-      });
+      out+=byWeekBlock(rows);
     });
   } else {
-    // Pinned stay visible across all weeks; group by week so each card shows
-    // the week it belongs to. (The main Highlights list stays week-scoped.)
-    const byWeek=new Map();
-    items.forEach(h=>{ const k=h.week||"—"; if(!byWeek.has(k)) byWeek.set(k,[]); byWeek.get(k).push(h); });
-    Array.from(byWeek.keys()).sort((a,b)=>(b||"").localeCompare(a||"")).forEach(k=>{
-      out+='<div class="hlgroup">'+esc(weekKeyLabel(k))+'</div>';
-      byWeek.get(k).forEach(h=>{ out+=highlightCardHTML(h, unseenSet); });
-    });
+    out=byWeekBlock(items);
   }
-  wrap.innerHTML=out;
+  return out;
 }
-document.getElementById("pinned-wrap").addEventListener("click",e=>{ handleHighlightClick(e); });
-// Shared card markup so the Highlights list and the Pinned view render identically.
-function highlightCardHTML(h, unseenSet){
-  const mine=isTaggedIn(h);
-  const isNewForMe=unseenSet ? unseenSet.has(h.id) : isUnseenTag(h);
-  const canEditHl = me.role==="admin" || h.by===me.name;
+function noteCardHTML(h, unseenSet){
+  const isNew=unseenSet ? unseenSet.has(h.id) : isUnseen(h);
+  const canEditHl = me.role==="admin" || h.by===me.name || canPostHighlights();
   const pinned=!!h.pinned;
-  return '<div class="hlcard'+(mine?" tagged":"")+(isNewForMe?" newtag-hl":"")+(pinned?" pinned":"")+'">'+
-    '<div class="hlhead"><div>'+
-      '<div style="font-weight:600; font-size:14px;">'+
-        ([h.brand,h.platform,h.region].filter(Boolean).map(esc).join(' &middot; ') || 'General note')+
+  return '<div class="notecard'+(pinned?" pinned":"")+(isNew?" newnote":"")+'">'+
+    '<div class="notecardhead">'+
+      '<div class="notecardtitle">'+(h.title?esc(h.title):'<span class="untitled">Untitled note</span>')+'</div>'+
+      '<div class="hlactions">'+
+        '<button class="pinbtn'+(pinned?" on":"")+'" data-hlpin="'+h.id+'" title="'+(pinned?"Unpin":"Pin — keep under Pinned until removed")+'">'+PIN_SVG+'<span>'+(pinned?"Pinned":"Pin")+'</span></button>'+
+        (canPostHighlights()?' <button class="small" data-hledit="'+h.id+'">Edit</button> <button class="small danger" data-hldel="'+h.id+'">Remove</button>':"")+
       '</div>'+
-      '<div class="hlmeta">'+
-        (h.team?'<span class="hlteam">'+esc(h.team)+'</span> &middot; ':"")+
-        'by '+esc(displayName(h.by)||"?")+' &middot; '+fullTimestamp(h.updated)+'</div>'+
-      (mine?'<div class="foryou'+(isNewForMe?" unread":"")+'">'+(isNewForMe?"New — you were tagged":"You were tagged")+'</div>':"")+
     '</div>'+
-    '<div class="hlactions">'+
-      '<button class="pinbtn'+(pinned?" on":"")+'" data-hlpin="'+h.id+'" title="'+(pinned?"Unpin — remove from Pinned":"Pin — keep in Pinned until removed")+'">'+PIN_SVG+'<span>'+(pinned?"Pinned":"Pin")+'</span></button>'+
-      (canEditHl?' <button class="small" data-hledit="'+h.id+'">Edit</button> <button class="small danger" data-hldel="'+h.id+'">Remove</button>':"")+
-    '</div>'+
-    '</div>'+
-    '<div class="hltags">'+(h.members||[]).map(n=>'<span class="hltag'+(sameName(n,me.name)?" you":"")+'">'+esc(displayName(n))+(sameName(n,me.name)?" (you)":"")+'</span>').join("")+'</div>'+
-    '<ol class="hlissues">'+(h.issues||[]).map(i=>'<li>'+esc(i)+'</li>').join("")+'</ol>'+
-    (h.remarks?'<div class="hlremarks"><b>Remarks:</b> '+esc(h.remarks)+'</div>':"")+
-    ((h.images&&h.images.length)?'<div class="hlshots">'+h.images.map((src,i)=>
-      '<img src="'+esc(src)+'" data-zoom="'+esc(src)+'" alt="screenshot '+(i+1)+'" loading="lazy" />').join("")+'</div>':"")+
+    '<div class="notecardmeta">'+(h.team?'<span class="hlteam">'+esc(h.team)+'</span> &middot; ':"")+'by '+esc(displayName(h.by)||"?")+' &middot; '+fullTimestamp(h.updated)+(isNew?' <span class="newdot">new</span>':"")+'</div>'+
+    '<div class="notepaper notebody">'+(h.body||'<span class="untitled">(empty note)</span>')+'</div>'+
   '</div>';
 }
+
+// ---- wiring ----
 document.getElementById("hl-addbtn").onclick=()=>openHighlightForm(null);
 document.getElementById("hl-cancel").onclick=closeHighlightForm;
 document.getElementById("hl-save").onclick=saveHighlight;
 document.getElementById("hl-week").onchange=renderHighlights;
-document.getElementById("hl-memberfilter").onchange=renderHighlights;
-document.getElementById("hl-minefilter").onchange=renderHighlights;
-document.getElementById("hl-addissue").onclick=()=>{
-  document.getElementById("hl-f-issues").appendChild(hlIssueRow(""));
-  hlRenumber();
-  const rows=document.querySelectorAll("#hl-f-issues .hl-issue");
-  rows[rows.length-1].focus();
-};
-document.getElementById("hl-f-issues").addEventListener("click",e=>{
-  const b=e.target.closest(".hl-rmissue");
-  if(!b) return;
-  if(document.querySelectorAll("#hl-f-issues .issuerow").length<=1) return;
-  b.closest(".issuerow").remove();
-  hlRenumber();
+document.getElementById("hl-toolbar").addEventListener("click",e=>{
+  const b=e.target.closest(".tbtn"); if(!b) return;
+  e.preventDefault();
+  if(b.id==="hl-img-btn"){ document.getElementById("hl-f-file").click(); return; }
+  hlExec(b.dataset.cmd);
 });
-document.getElementById("hl-f-members").addEventListener("change",e=>{
-  const l=e.target.closest("label");
-  if(l) l.classList.toggle("on", e.target.checked);
+document.getElementById("hl-font").addEventListener("change",e=>{
+  const body=document.getElementById("hl-f-body"); body.focus();
+  if(e.target.value){ document.execCommand("fontName", false, e.target.value); }
+  e.target.value="";
+});
+document.getElementById("hl-size").addEventListener("change",e=>{
+  const body=document.getElementById("hl-f-body"); body.focus();
+  if(e.target.value){ document.execCommand("fontSize", false, e.target.value); }
+  e.target.value="";
 });
 document.getElementById("hl-f-file").addEventListener("change",async e=>{
   const files=Array.from(e.target.files||[]);
   e.target.value="";
   if(!files.length) return;
-  const room=HL_MAX_IMAGES-hlPendingImages.length;
-  if(room<=0){ alert("You can attach at most "+HL_MAX_IMAGES+" screenshots."); return; }
-  const take=files.slice(0,room);
-  if(files.length>room) alert("Only "+room+" more screenshot"+(room===1?"":"s")+" can be added; extra files were skipped.");
   const status=document.getElementById("hl-upstatus");
-  status.textContent="Processing image"+(take.length===1?"":"s")+"…";
-  for(const f of take){
-    try{ hlPendingImages.push(await compressToDataURL(f, 1600, 0.85)); }
-    catch(err){ console.error("highlight image failed",err); alert("Couldn't read \""+f.name+"\" — skipped."); }
+  status.textContent="Adding image"+(files.length>1?"s":"")+"…";
+  const body=document.getElementById("hl-f-body"); body.focus();
+  for(const f of files){
+    try{
+      const du=await compressToDataURL(f, 1400, 0.82);
+      document.execCommand("insertHTML", false, '<img src="'+du+'" alt="image" />');
+    }catch(err){ console.error(err); }
   }
-  renderHlThumbs();
+  status.textContent="";
 });
-document.getElementById("hl-f-thumbs").addEventListener("click",e=>{
-  const b=e.target.closest("[data-hlrmimg]");
-  if(!b) return;
-  hlPendingImages.splice(+b.dataset.hlrmimg,1);
-  renderHlThumbs();
-});
-document.getElementById("hl-wrap").addEventListener("click",e=>{
-  if(handleHighlightClick(e)) return;
-});
-// Shared click handling for highlight cards (used by both the list and Pinned view).
+document.getElementById("hl-wrap").addEventListener("click",e=>{ handleHighlightClick(e); });
+document.getElementById("pinned-wrap").addEventListener("click",e=>{ handleHighlightClick(e); });
 function handleHighlightClick(e){
   const pn=e.target.closest("[data-hlpin]");
   if(pn){
@@ -3235,7 +3214,7 @@ function handleHighlightClick(e){
   if(ed){ const h=state.highlights.find(x=>x.id===ed.dataset.hledit); if(h){ activeView="highlights"; refreshViews(); openHighlightForm(h); } return true; }
   const dl=e.target.closest("[data-hldel]");
   if(dl){
-    if(!confirm("Remove this highlight? The tagged members will no longer see it.")) return true;
+    if(!confirm("Remove this note?")) return true;
     state.highlights=state.highlights.filter(x=>x.id!==dl.dataset.hldel);
     persist(); renderHighlights(); renderPinned(); buildSidebar();
     return true;
