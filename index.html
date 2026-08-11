@@ -1039,7 +1039,8 @@ function defaultState(){
     broadcasts: [],
     managerFocus: [],
     bossReviews: [],
-    fieldConfig: defaultFieldConfig()
+    fieldConfig: defaultFieldConfig(),
+    fieldConfigVersion: 2
   };
 }
 // Field definitions for the two admin-authored narrative sections ("My Focus"
@@ -1049,14 +1050,9 @@ function defaultState(){
 function defaultFieldConfig(){
   return {
     focus: [
-      {key:"focus", label:"Focus", type:"text", core:true, locked:true, enabled:true},
-      {key:"status", label:"Status", type:"select", options:["On track","Monitor","At risk","Done"], core:true, enabled:true},
-      {key:"why", label:"Why it matters", type:"textarea", core:true, enabled:true},
-      {key:"target", label:"Target this week", type:"textarea", core:true, enabled:true},
-      {key:"next", label:"Next step", type:"textarea", core:true, enabled:true},
-      {key:"outcome", label:"Outcome / result", type:"textarea", core:true, enabled:true},
-      {key:"support", label:"Support needed", type:"textarea", core:true, enabled:true},
-      {key:"visibility", label:"Leadership visibility", type:"select", options:["No","Yes"], core:true, enabled:true}
+      {key:"focus", label:"Focus area", type:"text", core:true, locked:true, enabled:true},
+      {key:"remarks", label:"Remarks", type:"textarea", core:true, enabled:true},
+      {key:"status", label:"Status", type:"select", options:["On track","Monitor","At risk","Done"], core:true, enabled:true}
     ],
     boss: [
       {key:"changed", label:"What changed?", type:"textarea", core:true, enabled:true},
@@ -1065,6 +1061,10 @@ function defaultFieldConfig(){
     ]
   };
 }
+// Bump this when the shipped default field set changes, so existing saved
+// states pick up the new defaults once, without wiping fields an admin has
+// since added or renamed on top of them.
+const FIELD_CONFIG_VERSION=2;
 // Backfill/repair state.fieldConfig so older saved states (and any partial
 // edits) always have both sections with usable field definitions.
 function ensureFieldConfig(){
@@ -1074,6 +1074,16 @@ function ensureFieldConfig(){
     if(!Array.isArray(state.fieldConfig[section]) || !state.fieldConfig[section].length){
       state.fieldConfig[section]=def[section];
     }
+  });
+  // One-time reset of the "My Focus" fields to the current shipped default
+  // (Focus area / Remarks / Status) for states saved before this default
+  // changed. Runs once per state, guarded by the version stamp, so any admin
+  // customization made afterward sticks.
+  if(state.fieldConfigVersion!==FIELD_CONFIG_VERSION){
+    state.fieldConfig.focus=def.focus;
+    state.fieldConfigVersion=FIELD_CONFIG_VERSION;
+  }
+  ["focus","boss"].forEach(section=>{
     state.fieldConfig[section].forEach(f=>{
       if(typeof f.enabled!=="boolean") f.enabled=true;
       if(typeof f.core!=="boolean") f.core=false;
@@ -1400,7 +1410,7 @@ function finishLogin(m){
   document.getElementById("gate-err").textContent="";
   document.getElementById("gate").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
-  mounted=true; bindManagement();
+  mounted=true;
 mountApp();
 }
 function tryLogin(){
@@ -1604,7 +1614,7 @@ function renderFocus(){
   const fields=enabledFields("focus");
   const titleField=fields.find(f=>f.locked)||fields[0]||{key:"focus",label:"Focus"};
   const showStatus=fields.some(f=>f.key==="status"), showVisibility=fields.some(f=>f.key==="visibility");
-  const detailFields=fields.filter(f=>f.key!==titleField.key);
+  const detailFields=fields.filter(f=>f.key!==titleField.key && f.key!=="status" && f.key!=="visibility");
   const list=document.getElementById("focus-list");
   list.innerHTML=rows.length?rows.map(x=>{
     const metaBits=[];
@@ -1625,6 +1635,7 @@ function renderFocus(){
 }
 let editingFocusId=null;
 let focusFormOpen=false;
+let mgmtBound=false;
 function renderFocusFormInputs(){
   const wrap=document.getElementById("focus-fields-form"); if(!wrap) return;
   const fields=enabledFields("focus");
@@ -1766,6 +1777,7 @@ function refreshViews(){
   renderAlerts();
 }
 function mountApp(){
+  if(!mgmtBound){ bindManagement(); mgmtBound=true; }
   document.getElementById("week").innerHTML=weekLabel();
   const vt=visibleTeams();
   if(me.role!=="admin"){
