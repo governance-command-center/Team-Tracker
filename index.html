@@ -509,6 +509,20 @@
   .reviewnote{font-size:12px; color:var(--ink-faint); margin:0 0 10px;}
   svg.ico{width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; vertical-align:-2px;}
   svg.nico{width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0;}
+
+/* ============ MANAGEMENT LAYER ============ */
+.mgmt-wrap{display:grid;gap:16px}
+.mgmt-hero{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:20px 22px;border:1px solid var(--line);background:var(--card);border-radius:14px}
+.mgmt-hero h2{margin:3px 0 5px;font-size:25px;letter-spacing:-.02em}.mgmt-hero p{margin:0;color:var(--ink-soft);font-size:13px}
+.mgmt-actions{display:flex;gap:8px;flex-wrap:wrap}.mgmt-actions button{white-space:nowrap}
+.mgmt-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.mgmt-card{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:15px}.mgmt-card h3{font-size:13px;margin:0 0 4px}.mgmt-card .sub{font-size:12px;color:var(--ink-faint)}
+.mgmt-kpi{font-size:28px;font-weight:750;margin-top:10px}.mgmt-kpi small{font-size:12px;font-weight:500;color:var(--ink-soft)}
+.mgmt-section{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:16px}.mgmt-section h3{margin:0 0 4px;font-size:16px}.mgmt-section .section-sub{font-size:12px;color:var(--ink-faint);margin-bottom:14px}
+.focus-list{display:grid;gap:10px}.focus-row{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--bg)}.focus-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.focus-title{font-weight:700}.focus-meta{font-size:11px;color:var(--ink-faint);margin-top:4px}.focus-body{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;font-size:12px}.focus-field{padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card)}.focus-field b{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);margin-bottom:3px}
+.mgmt-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mgmt-form .full{grid-column:1/-1}.mgmt-form label{display:block}.mgmt-form textarea{min-height:74px;resize:vertical}.mgmt-form .hint{font-size:11px;color:var(--ink-faint);margin-top:4px}.mgmt-form-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px}
+.boss-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:12px}.boss-box{border:1px solid var(--line);border-radius:10px;padding:13px;background:var(--bg)}.boss-box h4{margin:0 0 8px;font-size:13px}.boss-box textarea{width:100%;min-height:100px;resize:vertical}.boss-item{padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}.boss-item:last-child{border-bottom:0}.boss-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 6px;border-radius:8px;background:var(--accent-bg);color:var(--accent);margin-right:6px}
+.boss-auto{display:grid;gap:8px}.auto-row{display:flex;gap:9px;align-items:flex-start;padding:9px;border:1px solid var(--line);border-radius:9px;background:var(--card);font-size:12px}.auto-dot{width:8px;height:8px;border-radius:50%;background:currentColor;margin-top:4px;flex:0 0 auto}.auto-row strong{display:block}.auto-row span{color:var(--ink-soft)}
+@media(max-width:900px){.mgmt-grid,.boss-grid{grid-template-columns:1fr}.mgmt-form{grid-template-columns:1fr}.focus-body{grid-template-columns:1fr}.mgmt-hero{flex-direction:column}}
 </style>
 </head>
 <body>
@@ -576,6 +590,67 @@
           <div class="dh">Workload by person</div>
           <div class="dhsub">Open work per person, and who is carrying the risk — most at-risk first</div>
           <div id="d-workload"></div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- MY FOCUS / MANAGEMENT LAYER -->
+    <div id="view-focus" class="hidden">
+      <div class="mgmt-wrap">
+        <div class="mgmt-hero">
+          <div><div class="kicker">Management</div><h2>My Weekly Focus</h2><p>Keep your own priorities separate from team activity, then use them to build the leadership story.</p></div>
+          <div class="mgmt-actions"><select id="focus-week" style="width:auto;"></select><button class="primary small" id="focus-add">+ Add focus</button></div>
+        </div>
+        <div class="mgmt-grid" id="focus-kpis"></div>
+        <div class="mgmt-section">
+          <h3>This week's priorities</h3><div class="section-sub">Aim for 3–5 items. These are the things you personally want to move, decide, or improve.</div>
+          <div id="focus-list" class="focus-list"></div>
+        </div>
+        <div class="mgmt-section hidden" id="focus-form-wrap">
+          <h3>Add / edit focus</h3><div class="section-sub">Keep the entry outcome-oriented. This is for your management work, not the team's task list.</div>
+          <div class="mgmt-form">
+            <label><span class="fl">Focus <span class="req">required</span></span><input id="mf-focus" placeholder="e.g. Improve governance audit automation" /></label>
+            <label><span class="fl">Status</span><select id="mf-status"><option>On track</option><option>Monitor</option><option>At risk</option><option>Done</option></select></label>
+            <label class="full"><span class="fl">Why it matters</span><textarea id="mf-why" placeholder="What business / team outcome does this support?"></textarea></label>
+            <label><span class="fl">Target this week</span><textarea id="mf-target" placeholder="What should be different by Friday?"></textarea></label>
+            <label><span class="fl">Next step</span><textarea id="mf-next" placeholder="What will you personally do next?"></textarea></label>
+            <label><span class="fl">Outcome / result</span><textarea id="mf-outcome" placeholder="What happened? Add a result when known."></textarea></label>
+            <label><span class="fl">Support needed</span><textarea id="mf-support" placeholder="Optional: approval, resource, alignment, escalation."></textarea></label>
+            <label><span class="fl">Leadership visibility</span><select id="mf-visibility"><option>No</option><option>Yes</option></select></label>
+            <div class="mgmt-form-actions"><button class="ghost small" id="mf-cancel">Cancel</button><button class="primary small" id="mf-save">Save focus</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEEKLY BOSS REVIEW -->
+    <div id="view-boss" class="hidden">
+      <div class="mgmt-wrap">
+        <div class="mgmt-hero">
+          <div><div class="kicker">Leadership</div><h2>Weekly Boss Review</h2><p>A meeting-ready view: what you focused on, what changed, what is at risk, and what you need.</p></div>
+          <div class="mgmt-actions"><select id="boss-week" style="width:auto;"></select><button class="primary small" id="boss-save">Save review</button></div>
+        </div>
+        <div class="boss-grid">
+          <div class="mgmt-section">
+            <h3>Auto-generated talking points</h3><div class="section-sub">Pulled from team updates, your focus areas, and management signals for the selected week.</div>
+            <div id="boss-auto" class="boss-auto"></div>
+          </div>
+          <div class="mgmt-section">
+            <h3>Leadership snapshot</h3><div class="section-sub">A quick read before the meeting.</div>
+            <div id="boss-kpis" class="mgmt-grid" style="grid-template-columns:1fr 1fr;"></div>
+          </div>
+        </div>
+        <div class="mgmt-section">
+          <h3>Your meeting narrative</h3><div class="section-sub">The system gives you the facts; these fields let you add your management judgment.</div>
+          <div class="boss-grid">
+            <div class="boss-box"><h4>What changed?</h4><textarea id="br-changed" placeholder="What materially changed since last week?"></textarea></div>
+            <div class="boss-box"><h4>Key wins</h4><textarea id="br-wins" placeholder="What should your boss know went well?"></textarea></div>
+            <div class="boss-box"><h4>Risks / concerns</h4><textarea id="br-risks" placeholder="What may affect delivery, quality, people, or priorities?"></textarea></div>
+            <div class="boss-box"><h4>Decisions / asks</h4><textarea id="br-asks" placeholder="What decision, support, approval, or alignment do you need?"></textarea></div>
+            <div class="boss-box"><h4>Next week's focus</h4><textarea id="br-next" placeholder="What will you carry into next week?"></textarea></div>
+            <div class="boss-box"><h4>Boss talking point</h4><textarea id="br-talk" placeholder="One sentence you want to make sure gets discussed."></textarea></div>
+          </div>
         </div>
       </div>
     </div>
@@ -931,7 +1006,9 @@ function defaultState(){
       {id:3,team:"TOD",member:"Diego, Elle",owner:"Diego",focus:"Q3 reporting dashboard",category:"Order monitoring",remarks:"",status:"Active",prio:"Medium",due:isoInDays(-2),blocked:false,blockers:"",update:"Kicks off Thursday",img:"",discuss:false,created:now,updated:now,by:"Diego"}
     ],
     highlights: [],
-    broadcasts: []
+    broadcasts: [],
+    managerFocus: [],
+    bossReviews: []
   };
 }
 const ORDER=["Active","In progress","Done"];
@@ -950,7 +1027,9 @@ const NICO={
   deck:'<svg class="nico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8.5 20h7"/></svg>',
   hi:'<svg class="nico" viewBox="0 0 24 24"><path d="M12 2.6l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.1l6.1-.9z"/></svg>',
   mail:'<svg class="nico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
-  cast:'<svg class="nico" viewBox="0 0 24 24"><path d="M3 11v2M6 8v8M18 4l-8 4v8l8 4z"/><path d="M18 8a4 4 0 0 1 0 8"/></svg>'
+  cast:'<svg class="nico" viewBox="0 0 24 24"><path d="M3 11v2M6 8v8M18 4l-8 4v8l8 4z"/><path d="M18 8a4 4 0 0 1 0 8"/></svg>',
+  focus:'<svg class="nico" viewBox="0 0 24 24"><path d="M4 18l5-5 4 3 7-8"/><path d="M17 8h3v3"/><circle cx="6" cy="19" r="1"/><circle cx="13" cy="16" r="1"/></svg>',
+  boss:'<svg class="nico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6M7 16h8"/></svg>'
 };
 let state=null, me=null, activeView="dashboard", activeTab=null;
 let dashWeek="all", boardWeek="all";
@@ -1082,6 +1161,8 @@ function migrate(){
   });
   if(!Array.isArray(state.decks)) state.decks=[];
   if(!Array.isArray(state.highlights)) state.highlights=[];
+  if(!Array.isArray(state.managerFocus)) state.managerFocus=[];
+  if(!Array.isArray(state.bossReviews)) state.bossReviews=[];
   // Categories used to be hardcoded in the markup; move them into state so
   // admins can edit them. Any category already on an entry is preserved.
   if(!Array.isArray(state.categories) || !state.categories.length){
@@ -1242,7 +1323,8 @@ function finishLogin(m){
   document.getElementById("gate-err").textContent="";
   document.getElementById("gate").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
-  mounted=true; mountApp();
+  mounted=true; bindManagement();
+mountApp();
 }
 function tryLogin(){
   const err=document.getElementById("gate-err");
@@ -1310,6 +1392,13 @@ function buildSidebar(){
     const label=t+(teamUnread?' <span class="navunread">'+teamUnread+'</span>':"");
     mkItem(label, NICO.team, activeView==="board"&&activeTab===t, ()=>{ activeView="board"; activeTab=t; refreshViews(); }, teamEntries.length);
   });
+  if(me.role==="admin"||me.role==="lead"||me.role==="manager"){
+    const lblG=document.createElement("div"); lblG.className="navlabel"; lblG.textContent="Management"; sb.appendChild(lblG);
+    const mfCount=(state.managerFocus||[]).filter(x=>x.ownerId===me.id && x.week===weekKeyNow()).length;
+    mkItem("My Focus", NICO.focus, activeView==="focus", ()=>{ activeView="focus"; refreshViews(); }, mfCount);
+    const br=Array.isArray(state.bossReviews)?state.bossReviews.find(x=>x.ownerId===me.id&&x.week===weekKeyNow()):null;
+    mkItem("Boss Review", NICO.boss, activeView==="boss", ()=>{ activeView="boss"; refreshViews(); }, br?1:null);
+  }
   const lblH=document.createElement("div"); lblH.className="navlabel"; lblH.textContent="Weekly"; sb.appendChild(lblH);
   const hlUnseen=unseenHighlights();
   mkItem("Highlights"+(hlUnseen?' <span class="navunread">'+hlUnseen+'</span>':""), NICO.hi, activeView==="highlights",
@@ -1341,8 +1430,98 @@ function buildSidebar(){
     '<button class="ghost small" id="logout" style="margin-top:6px; width:100%;">Sign out</button>';
   sb.appendChild(foot);
 }
+
+/* ============ MANAGEMENT FUNCTIONS ============ */
+function managerWeeks(){ return allWeekKeys().length ? allWeekKeys() : [weekKeyNow()]; }
+function ensureManagerDefaults(){
+  if(!Array.isArray(state.managerFocus)) state.managerFocus=[];
+  if(!Array.isArray(state.bossReviews)) state.bossReviews=[];
+}
+function focusFor(wk){ return (state.managerFocus||[]).filter(x=>x.ownerId===me.id && x.week===wk).sort((a,b)=>(a.created||0)-(b.created||0)); }
+function reviewFor(wk){ return (state.bossReviews||[]).find(x=>x.ownerId===me.id && x.week===wk); }
+function managerScope(wk){
+  const teams=me.role==="admin"?state.teams:[me.team];
+  return (state.entries||[]).filter(e=>teams.includes(e.team) && (wk==="all"||entryWeek(e)===wk));
+}
+function fillWeekSelect(id, value){
+  const el=document.getElementById(id); if(!el) return;
+  const keys=managerWeeks();
+  el.innerHTML=keys.map(k=>'<option value="'+esc(k)+'">'+esc(weekKeyLabel(k))+'</option>').join("");
+  if(keys.includes(value)) el.value=value; else if(keys.includes(weekKeyNow())) el.value=weekKeyNow(); else el.value=keys[keys.length-1];
+}
+function renderFocus(){
+  ensureManagerDefaults();
+  const el=document.getElementById("focus-week"); if(!el) return;
+  fillWeekSelect("focus-week", el.value||weekKeyNow());
+  const wk=el.value, rows=focusFor(wk), entries=managerScope(wk), open=entries.filter(e=>e.status!=="Done");
+  const atRisk=rows.filter(x=>x.status==="At risk").length;
+  const leadership=rows.filter(x=>x.visibility==="Yes").length;
+  document.getElementById("focus-kpis").innerHTML=
+    '<div class="mgmt-card"><h3>My priorities</h3><div class="sub">Personal management focus</div><div class="mgmt-kpi">'+rows.length+' <small>items</small></div></div>'+ 
+    '<div class="mgmt-card"><h3>At risk</h3><div class="sub">Needs your intervention</div><div class="mgmt-kpi">'+atRisk+' <small>focus areas</small></div></div>'+ 
+    '<div class="mgmt-card"><h3>Team signals</h3><div class="sub">Open work in the selected week</div><div class="mgmt-kpi">'+open.length+' <small>open items</small></div></div>';
+  const list=document.getElementById("focus-list");
+  list.innerHTML=rows.length?rows.map(x=>'<div class="focus-row"><div class="focus-top"><div><div class="focus-title">'+esc(x.focus)+'</div><div class="focus-meta">'+esc(x.status)+' · '+(x.visibility==="Yes"?'Leadership visible':'Internal')+'</div></div><div><button class="small" data-mf-edit="'+esc(String(x.id))+'">Edit</button> <button class="small" data-mf-del="'+esc(String(x.id))+'">Delete</button></div></div><div class="focus-body">'+
+    '<div class="focus-field"><b>Why it matters</b>'+esc(x.why||"-")+'</div><div class="focus-field"><b>Target</b>'+esc(x.target||"-")+'</div>'+ 
+    '<div class="focus-field"><b>Next step</b>'+esc(x.next||"-")+'</div><div class="focus-field"><b>Outcome</b>'+esc(x.outcome||"-")+'</div>'+ 
+    '<div class="focus-field"><b>Support</b>'+esc(x.support||"-")+'</div></div></div>').join(""):'<div class="dempty">No focus areas yet. Add 3–5 priorities for the week.</div>';
+  document.getElementById("focus-form-wrap").classList.add("hidden");
+}
+let editingFocusId=null;
+function openFocusForm(item){
+  editingFocusId=item?item.id:null;
+  document.getElementById("focus-form-wrap").classList.remove("hidden");
+  document.getElementById("mf-focus").value=item?.focus||""; document.getElementById("mf-status").value=item?.status||"On track";
+  document.getElementById("mf-why").value=item?.why||""; document.getElementById("mf-target").value=item?.target||""; document.getElementById("mf-next").value=item?.next||"";
+  document.getElementById("mf-outcome").value=item?.outcome||""; document.getElementById("mf-support").value=item?.support||""; document.getElementById("mf-visibility").value=item?.visibility||"No";
+  document.getElementById("mf-focus").focus();
+}
+function saveFocus(){
+  const wk=document.getElementById("focus-week").value, focus=document.getElementById("mf-focus").value.trim();
+  if(!focus){ alert("Focus is required."); return; }
+  const rec={id:editingFocusId||("mf_"+Date.now()),ownerId:me.id,owner:me.name,week:wk,focus,status:document.getElementById("mf-status").value,why:document.getElementById("mf-why").value.trim(),target:document.getElementById("mf-target").value.trim(),next:document.getElementById("mf-next").value.trim(),outcome:document.getElementById("mf-outcome").value.trim(),support:document.getElementById("mf-support").value.trim(),visibility:document.getElementById("mf-visibility").value,created:Date.now(),updated:Date.now()};
+  const old=(state.managerFocus||[]).find(x=>String(x.id)===String(editingFocusId)); if(old){ rec.created=old.created||rec.created; Object.assign(old,rec); } else state.managerFocus.push(rec);
+  persist(); editingFocusId=null; renderFocus(); buildSidebar();
+}
+function autoBossData(wk){
+  const entries=managerScope(wk), open=entries.filter(e=>e.status!=="Done");
+  const blocked=open.filter(e=>e.blocked), overdue=open.filter(e=>{const n=daysUntilDue(e);return n!==null&&n<0;}), discuss=open.filter(e=>e.discuss), stale=open.filter(e=>daysSinceUpdate(e)>=STALE_DAYS);
+  const carry=open.filter(e=>(e.history||[]).length>=1);
+  const done=entries.filter(e=>e.status==="Done"); const focus=focusFor(wk);
+  return {entries,open,blocked,overdue,discuss,stale,carry,done,focus};
+}
+function renderBossReview(){
+  ensureManagerDefaults(); const sel=document.getElementById("boss-week"); fillWeekSelect("boss-week", sel.value||weekKeyNow()); const wk=sel.value; const d=autoBossData(wk), review=reviewFor(wk);
+  document.getElementById("boss-kpis").innerHTML='<div class="mgmt-card"><h3>Open</h3><div class="mgmt-kpi">'+d.open.length+'</div></div><div class="mgmt-card"><h3>Done</h3><div class="mgmt-kpi">'+d.done.length+'</div></div><div class="mgmt-card"><h3>At risk</h3><div class="mgmt-kpi">'+(d.blocked.length+d.overdue.length)+'</div></div><div class="mgmt-card"><h3>My focus</h3><div class="mgmt-kpi">'+d.focus.length+'</div></div>';
+  const rows=[];
+  d.focus.filter(x=>x.visibility==="Yes"||x.status==="At risk").forEach(x=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(x.focus)+'</strong><span>My focus · '+esc(x.status)+(x.visibility==="Yes"?' · leadership visible':'')+'</span></div></div>'));
+  d.blocked.slice(0,6).forEach(e=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(e.focus)+'</strong><span>Blocked · '+esc(e.owner||e.member||"-")+(e.blockers?' · '+esc(e.blockers):'')+'</span></div></div>'));
+  d.overdue.slice(0,6).forEach(e=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(e.focus)+'</strong><span>Overdue · '+esc(e.owner||e.member||"-")+'</span></div></div>'));
+  d.discuss.filter(e=>!d.blocked.includes(e)&&!d.overdue.includes(e)).slice(0,5).forEach(e=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(e.focus)+'</strong><span>Flagged for discussion · '+esc(e.owner||e.member||"-")+'</span></div></div>'));
+  if(!rows.length) rows.push('<div class="dempty">No major management signals. Good week — use the narrative fields to capture wins and next steps.</div>');
+  document.getElementById("boss-auto").innerHTML=rows.join("");
+  document.getElementById("br-changed").value=review?.changed||""; document.getElementById("br-wins").value=review?.wins||""; document.getElementById("br-risks").value=review?.risks||""; document.getElementById("br-asks").value=review?.asks||""; document.getElementById("br-next").value=review?.next||""; document.getElementById("br-talk").value=review?.talk||"";
+}
+function saveBossReview(){
+  const wk=document.getElementById("boss-week").value, old=reviewFor(wk); const rec={id:old?.id||("br_"+Date.now()),ownerId:me.id,owner:me.name,week:wk,changed:document.getElementById("br-changed").value.trim(),wins:document.getElementById("br-wins").value.trim(),risks:document.getElementById("br-risks").value.trim(),asks:document.getElementById("br-asks").value.trim(),next:document.getElementById("br-next").value.trim(),talk:document.getElementById("br-talk").value.trim(),updated:Date.now()};
+  if(old) Object.assign(old,rec); else state.bossReviews.push(rec); persist(); buildSidebar(); alert("Weekly boss review saved.");
+}
+function bindManagement(){
+  document.getElementById("focus-week").onchange=()=>renderFocus();
+  document.getElementById("boss-week").onchange=()=>renderBossReview();
+  document.getElementById("focus-add").onclick=()=>openFocusForm();
+  document.getElementById("mf-cancel").onclick=()=>{editingFocusId=null;document.getElementById("focus-form-wrap").classList.add("hidden");};
+  document.getElementById("mf-save").onclick=saveFocus;
+  document.getElementById("boss-save").onclick=saveBossReview;
+  document.addEventListener("click",e=>{
+    const ed=e.target.closest("[data-mf-edit]"); if(ed){const x=(state.managerFocus||[]).find(x=>String(x.id)===String(ed.dataset.mfEdit));if(x)openFocusForm(x);}
+    const de=e.target.closest("[data-mf-del]"); if(de){if(!confirm("Delete this focus area?"))return;state.managerFocus=state.managerFocus.filter(x=>String(x.id)!==String(de.dataset.mfDel));persist();renderFocus();buildSidebar();}
+  });
+}
 function refreshViews(){
   document.getElementById("view-dashboard").classList.toggle("hidden", activeView!=="dashboard");
+  document.getElementById("view-focus").classList.toggle("hidden", activeView!=="focus");
+  document.getElementById("view-boss").classList.toggle("hidden", activeView!=="boss");
   document.getElementById("view-board").classList.toggle("hidden", activeView!=="board");
   document.getElementById("view-data").classList.toggle("hidden", activeView!=="data");
   document.getElementById("view-deck").classList.toggle("hidden", activeView!=="deck");
@@ -1350,10 +1529,12 @@ function refreshViews(){
   document.getElementById("view-pinned").classList.toggle("hidden", activeView!=="pinned");
   document.getElementById("view-broadcast").classList.toggle("hidden", activeView!=="broadcast");
   document.getElementById("view-messages").classList.toggle("hidden", activeView!=="messages");
-  const title={dashboard:"Dashboard", board:activeTab, data:"Data", deck:"Presentations", highlights:"Weekly highlights", pinned:"Pinned highlights", broadcast:"Broadcast a message", messages:"Messages"}[activeView]||"Dashboard";
+  const title={dashboard:"Dashboard", focus:"My Weekly Focus", boss:"Weekly Boss Review", board:activeTab, data:"Data", deck:"Presentations", highlights:"Weekly highlights", pinned:"Pinned highlights", broadcast:"Broadcast a message", messages:"Messages"}[activeView]||"Dashboard";
   document.getElementById("page-title").textContent=title;
   buildSidebar();
   if(activeView==="dashboard") renderDashboard();
+  if(activeView==="focus") renderFocus();
+  if(activeView==="boss") renderBossReview();
   if(activeView==="board") render();
   if(activeView==="data"){ renderRoster(); renderTeams(); renderCategories(); }
   if(activeView==="deck") renderDecks();
@@ -1367,7 +1548,7 @@ function mountApp(){
   document.getElementById("week").innerHTML=weekLabel();
   const vt=visibleTeams();
   if(me.role!=="admin"){
-    if(activeView!=="deck"&&activeView!=="highlights"&&activeView!=="pinned"&&activeView!=="dashboard"&&activeView!=="messages"&&!(activeView==="broadcast"&&canBroadcast())) activeView="board";
+    if(activeView!=="deck"&&activeView!=="highlights"&&activeView!=="pinned"&&activeView!=="dashboard"&&activeView!=="messages"&&activeView!=="focus"&&activeView!=="boss"&&!(activeView==="broadcast"&&canBroadcast())) activeView="board";
     // Only default to their own team - don't yank them back when browsing others.
     if(!activeTab||!state.teams.includes(activeTab)) activeTab=me.team;
   }
