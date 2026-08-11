@@ -624,11 +624,11 @@
       </div>
     </div>
 
-    <!-- WEEKLY BOSS REVIEW -->
+    <!-- MEIYAN X VHINO REVIEW -->
     <div id="view-boss" class="hidden">
       <div class="mgmt-wrap">
         <div class="mgmt-hero">
-          <div><div class="kicker">Leadership</div><h2>Weekly Boss Review</h2><p>A meeting-ready view: what you focused on, what changed, what is at risk, and what you need.</p></div>
+          <div><div class="kicker">Leadership</div><h2>MeiYan x Vhino</h2><p>A meeting-ready view: what you focused on, what changed, what is at risk, and what you need.</p></div>
           <div class="mgmt-actions"><select id="boss-week" style="width:auto;"></select><button class="primary small" id="boss-save">Save review</button></div>
         </div>
         <div class="boss-grid">
@@ -645,11 +645,8 @@
           <h3>Your meeting narrative</h3><div class="section-sub">The system gives you the facts; these fields let you add your management judgment.</div>
           <div class="boss-grid">
             <div class="boss-box"><h4>What changed?</h4><textarea id="br-changed" placeholder="What materially changed since last week?"></textarea></div>
-            <div class="boss-box"><h4>Key wins</h4><textarea id="br-wins" placeholder="What should your boss know went well?"></textarea></div>
+            <div class="boss-box"><h4>Key wins</h4><textarea id="br-wins" placeholder="What should leadership know went well?"></textarea></div>
             <div class="boss-box"><h4>Risks / concerns</h4><textarea id="br-risks" placeholder="What may affect delivery, quality, people, or priorities?"></textarea></div>
-            <div class="boss-box"><h4>Decisions / asks</h4><textarea id="br-asks" placeholder="What decision, support, approval, or alignment do you need?"></textarea></div>
-            <div class="boss-box"><h4>Next week's focus</h4><textarea id="br-next" placeholder="What will you carry into next week?"></textarea></div>
-            <div class="boss-box"><h4>Boss talking point</h4><textarea id="br-talk" placeholder="One sentence you want to make sure gets discussed."></textarea></div>
           </div>
         </div>
       </div>
@@ -889,9 +886,9 @@
       <div class="storagebar" id="deck-bar"><i style="width:0%"></i></div>
     </div>
 
-    <!-- BROADCAST (admin / lead / manager) -->
+    <!-- BROADCAST (composer for admin/lead/manager) + MESSAGES (inbox, everyone) -->
     <div id="view-broadcast" class="hidden">
-      <div class="panel" style="margin-top:0;">
+      <div class="panel hidden" id="bc-composer" style="margin-top:0;">
         <div class="bcfield">
           <label class="fl">Quick messages — pick one to start, then edit if you like</label>
           <div class="bctmpls" id="bc-tmpls"></div>
@@ -916,18 +913,19 @@
           <span class="uphint" id="bc-hint"></span>
         </div>
       </div>
-      <h2 style="font-size:18px; margin:1.5rem 0 .25rem;">Recently sent</h2>
-      <div class="bcsent" id="bc-sent"></div>
-    </div>
-
-    <!-- MESSAGES (everyone) -->
-    <div id="view-messages" class="hidden">
-      <div class="controls">
-        <span class="uphint">Updates, reminders, and announcements sent to you by admins, leads, and managers.</span>
-        <span class="spacer"></span>
-        <button class="small" id="msg-markall">Mark all read</button>
+      <div class="hidden" id="bc-sent-wrap">
+        <h2 style="font-size:18px; margin:1.5rem 0 .25rem;">Recently sent</h2>
+        <div class="bcsent" id="bc-sent"></div>
       </div>
-      <div id="msg-wrap"></div>
+      <div id="bc-inbox-wrap">
+        <h2 style="font-size:18px; margin:1.5rem 0 .25rem;" id="bc-inbox-h">Your messages</h2>
+        <div class="controls">
+          <span class="uphint">Updates, reminders, and announcements sent to you by admins, leads, and managers.</span>
+          <span class="spacer"></span>
+          <button class="small" id="msg-markall">Mark all read</button>
+        </div>
+        <div id="msg-wrap"></div>
+      </div>
     </div>
 
     <footer>
@@ -1247,6 +1245,10 @@ function visibleTeams(){
   return state.teams.includes(me.team) ? [me.team] : [];
 }
 function isOwnTeam(team){ return me.role==="admin" || team===me.team; }
+// Leadership roles (admin, lead, manager) see every team on the Dashboard;
+// plain members only see their own team's tab and numbers there.
+function isLeadership(){ return me.role==="admin"||me.role==="lead"||me.role==="manager"; }
+function dashboardTeams(){ return isLeadership() ? state.teams : [me.team]; }
 function canEdit(entry){
   if(me.role==="admin") return true;
   // Other teams are strictly read-only, whatever your role or ownership.
@@ -1395,9 +1397,9 @@ function buildSidebar(){
   if(me.role==="admin"||me.role==="lead"||me.role==="manager"){
     const lblG=document.createElement("div"); lblG.className="navlabel"; lblG.textContent="Management"; sb.appendChild(lblG);
     const mfCount=(state.managerFocus||[]).filter(x=>x.ownerId===me.id && x.week===weekKeyNow()).length;
-    mkItem("My Focus", NICO.focus, activeView==="focus", ()=>{ activeView="focus"; refreshViews(); }, mfCount);
+    mkItem("My Focus", NICO.focus, activeView==="focus", ()=>{ activeView="focus"; if(typeof closeFocusForm==="function") closeFocusForm(); refreshViews(); }, mfCount);
     const br=Array.isArray(state.bossReviews)?state.bossReviews.find(x=>x.ownerId===me.id&&x.week===weekKeyNow()):null;
-    mkItem("Boss Review", NICO.boss, activeView==="boss", ()=>{ activeView="boss"; refreshViews(); }, br?1:null);
+    mkItem("MeiYan x Vhino", NICO.boss, activeView==="boss", ()=>{ activeView="boss"; refreshViews(); }, br?1:null);
   }
   const lblH=document.createElement("div"); lblH.className="navlabel"; lblH.textContent="Weekly"; sb.appendChild(lblH);
   const hlUnseen=unseenHighlights();
@@ -1409,15 +1411,12 @@ function buildSidebar(){
   const lbl3=document.createElement("div"); lbl3.className="navlabel"; lbl3.textContent="Present"; sb.appendChild(lbl3);
   mkItem("Presentations", NICO.deck, activeView==="deck", ()=>{ activeView="deck"; refreshViews(); },
     (state.decks||[]).filter(d=>!d.archived).length);
-  // Messaging: everyone gets an inbox; senders also get a Broadcast composer.
+  // Messaging: everyone gets a Broadcast tab now — it shows your inbox, and
+  // also a composer + send history if you're allowed to broadcast.
   const lblM=document.createElement("div"); lblM.className="navlabel"; lblM.textContent="Messages"; sb.appendChild(lblM);
   const unreadM=unreadMessages().length;
-  mkItem("Messages"+(unreadM?' <span class="navunread">'+unreadM+'</span>':""), NICO.mail, activeView==="messages",
-    ()=>{ activeView="messages"; refreshViews(); }, myMessages().length);
-  if(canBroadcast()){
-    mkItem("Broadcast", NICO.cast, activeView==="broadcast", ()=>{ activeView="broadcast"; refreshViews(); },
-      (state.broadcasts||[]).length);
-  }
+  mkItem("Broadcast"+(unreadM?' <span class="navunread">'+unreadM+'</span>':""), NICO.cast, activeView==="broadcast",
+    ()=>{ activeView="broadcast"; refreshViews(); }, canBroadcast()?(state.broadcasts||[]).length:myMessages().length);
   if(me.role==="admin"){
     const lbl2=document.createElement("div"); lbl2.className="navlabel"; lbl2.textContent="Manage"; sb.appendChild(lbl2);
     mkItem("Data", NICO.data, activeView==="data", ()=>{ activeView="data"; refreshViews(); });
@@ -1465,23 +1464,32 @@ function renderFocus(){
     '<div class="focus-field"><b>Why it matters</b>'+esc(x.why||"-")+'</div><div class="focus-field"><b>Target</b>'+esc(x.target||"-")+'</div>'+ 
     '<div class="focus-field"><b>Next step</b>'+esc(x.next||"-")+'</div><div class="focus-field"><b>Outcome</b>'+esc(x.outcome||"-")+'</div>'+ 
     '<div class="focus-field"><b>Support</b>'+esc(x.support||"-")+'</div></div></div>').join(""):'<div class="dempty">No focus areas yet. Add 3–5 priorities for the week.</div>';
-  document.getElementById("focus-form-wrap").classList.add("hidden");
+  // Only close the add/edit form here if it isn't actively open — otherwise a
+  // background refresh (e.g. live sync picking up someone else's edit) would
+  // silently slam the form shut while you're in the middle of typing.
+  if(!focusFormOpen) document.getElementById("focus-form-wrap").classList.add("hidden");
 }
 let editingFocusId=null;
+let focusFormOpen=false;
 function openFocusForm(item){
   editingFocusId=item?item.id:null;
+  focusFormOpen=true;
   document.getElementById("focus-form-wrap").classList.remove("hidden");
   document.getElementById("mf-focus").value=item?.focus||""; document.getElementById("mf-status").value=item?.status||"On track";
   document.getElementById("mf-why").value=item?.why||""; document.getElementById("mf-target").value=item?.target||""; document.getElementById("mf-next").value=item?.next||"";
   document.getElementById("mf-outcome").value=item?.outcome||""; document.getElementById("mf-support").value=item?.support||""; document.getElementById("mf-visibility").value=item?.visibility||"No";
   document.getElementById("mf-focus").focus();
 }
+function closeFocusForm(){
+  editingFocusId=null; focusFormOpen=false;
+  document.getElementById("focus-form-wrap").classList.add("hidden");
+}
 function saveFocus(){
   const wk=document.getElementById("focus-week").value, focus=document.getElementById("mf-focus").value.trim();
   if(!focus){ alert("Focus is required."); return; }
   const rec={id:editingFocusId||("mf_"+Date.now()),ownerId:me.id,owner:me.name,week:wk,focus,status:document.getElementById("mf-status").value,why:document.getElementById("mf-why").value.trim(),target:document.getElementById("mf-target").value.trim(),next:document.getElementById("mf-next").value.trim(),outcome:document.getElementById("mf-outcome").value.trim(),support:document.getElementById("mf-support").value.trim(),visibility:document.getElementById("mf-visibility").value,created:Date.now(),updated:Date.now()};
   const old=(state.managerFocus||[]).find(x=>String(x.id)===String(editingFocusId)); if(old){ rec.created=old.created||rec.created; Object.assign(old,rec); } else state.managerFocus.push(rec);
-  persist(); editingFocusId=null; renderFocus(); buildSidebar();
+  focusFormOpen=false; persist(); editingFocusId=null; renderFocus(); buildSidebar();
 }
 function autoBossData(wk){
   const entries=managerScope(wk), open=entries.filter(e=>e.status!=="Done");
@@ -1500,17 +1508,17 @@ function renderBossReview(){
   d.discuss.filter(e=>!d.blocked.includes(e)&&!d.overdue.includes(e)).slice(0,5).forEach(e=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(e.focus)+'</strong><span>Flagged for discussion · '+esc(e.owner||e.member||"-")+'</span></div></div>'));
   if(!rows.length) rows.push('<div class="dempty">No major management signals. Good week — use the narrative fields to capture wins and next steps.</div>');
   document.getElementById("boss-auto").innerHTML=rows.join("");
-  document.getElementById("br-changed").value=review?.changed||""; document.getElementById("br-wins").value=review?.wins||""; document.getElementById("br-risks").value=review?.risks||""; document.getElementById("br-asks").value=review?.asks||""; document.getElementById("br-next").value=review?.next||""; document.getElementById("br-talk").value=review?.talk||"";
+  document.getElementById("br-changed").value=review?.changed||""; document.getElementById("br-wins").value=review?.wins||""; document.getElementById("br-risks").value=review?.risks||"";
 }
 function saveBossReview(){
-  const wk=document.getElementById("boss-week").value, old=reviewFor(wk); const rec={id:old?.id||("br_"+Date.now()),ownerId:me.id,owner:me.name,week:wk,changed:document.getElementById("br-changed").value.trim(),wins:document.getElementById("br-wins").value.trim(),risks:document.getElementById("br-risks").value.trim(),asks:document.getElementById("br-asks").value.trim(),next:document.getElementById("br-next").value.trim(),talk:document.getElementById("br-talk").value.trim(),updated:Date.now()};
-  if(old) Object.assign(old,rec); else state.bossReviews.push(rec); persist(); buildSidebar(); alert("Weekly boss review saved.");
+  const wk=document.getElementById("boss-week").value, old=reviewFor(wk); const rec={id:old?.id||("br_"+Date.now()),ownerId:me.id,owner:me.name,week:wk,changed:document.getElementById("br-changed").value.trim(),wins:document.getElementById("br-wins").value.trim(),risks:document.getElementById("br-risks").value.trim(),updated:Date.now()};
+  if(old) Object.assign(old,rec); else state.bossReviews.push(rec); persist(); buildSidebar(); alert("Weekly review saved.");
 }
 function bindManagement(){
   document.getElementById("focus-week").onchange=()=>renderFocus();
   document.getElementById("boss-week").onchange=()=>renderBossReview();
   document.getElementById("focus-add").onclick=()=>openFocusForm();
-  document.getElementById("mf-cancel").onclick=()=>{editingFocusId=null;document.getElementById("focus-form-wrap").classList.add("hidden");};
+  document.getElementById("mf-cancel").onclick=closeFocusForm;
   document.getElementById("mf-save").onclick=saveFocus;
   document.getElementById("boss-save").onclick=saveBossReview;
   document.addEventListener("click",e=>{
@@ -1528,8 +1536,7 @@ function refreshViews(){
   document.getElementById("view-highlights").classList.toggle("hidden", activeView!=="highlights");
   document.getElementById("view-pinned").classList.toggle("hidden", activeView!=="pinned");
   document.getElementById("view-broadcast").classList.toggle("hidden", activeView!=="broadcast");
-  document.getElementById("view-messages").classList.toggle("hidden", activeView!=="messages");
-  const title={dashboard:"Dashboard", focus:"My Weekly Focus", boss:"Weekly Boss Review", board:activeTab, data:"Data", deck:"Presentations", highlights:"Weekly highlights", pinned:"Pinned highlights", broadcast:"Broadcast a message", messages:"Messages"}[activeView]||"Dashboard";
+  const title={dashboard:"Dashboard", focus:"My Weekly Focus", boss:"MeiYan x Vhino", board:activeTab, data:"Data", deck:"Presentations", highlights:"Weekly highlights", pinned:"Pinned highlights", broadcast:"Broadcast"}[activeView]||"Dashboard";
   document.getElementById("page-title").textContent=title;
   buildSidebar();
   if(activeView==="dashboard") renderDashboard();
@@ -1541,14 +1548,13 @@ function refreshViews(){
   if(activeView==="highlights"){ closeHighlightForm(); renderHighlights(); }
   if(activeView==="pinned") renderPinned();
   if(activeView==="broadcast") renderBroadcast();
-  if(activeView==="messages") renderMessages();
   renderAlerts();
 }
 function mountApp(){
   document.getElementById("week").innerHTML=weekLabel();
   const vt=visibleTeams();
   if(me.role!=="admin"){
-    if(activeView!=="deck"&&activeView!=="highlights"&&activeView!=="pinned"&&activeView!=="dashboard"&&activeView!=="messages"&&activeView!=="focus"&&activeView!=="boss"&&!(activeView==="broadcast"&&canBroadcast())) activeView="board";
+    if(activeView!=="deck"&&activeView!=="highlights"&&activeView!=="pinned"&&activeView!=="dashboard"&&activeView!=="focus"&&activeView!=="boss"&&activeView!=="broadcast") activeView="board";
     // Only default to their own team - don't yank them back when browsing others.
     if(!activeTab||!state.teams.includes(activeTab)) activeTab=me.team;
   }
@@ -1567,7 +1573,7 @@ function mountApp(){
 function renderDashboard(){
   const wk=document.getElementById("dash-week").value;
   const og=document.getElementById("ovgrid"); og.innerHTML="";
-  const dashTeams = me.role==="admin" ? state.teams : [me.team];
+  const dashTeams = dashboardTeams();
   dashTeams.forEach(team=>{
     const it=state.entries.filter(e=>e.team===team && (wk==="all"||entryWeek(e)===wk));
     const ac=it.filter(e=>e.status==="Active").length;
@@ -1590,8 +1596,9 @@ function renderDashboard(){
 }
 /* ============ LEAD DASHBOARD PANELS ============ */
 function dashScopeEntries(){
-  // Admin sees every team; everyone else sees their own team's numbers.
-  const teams = me.role==="admin" ? state.teams : [me.team];
+  // Leadership (admin/lead/manager) sees every team; plain members only see
+  // their own team's numbers.
+  const teams = dashboardTeams();
   return state.entries.filter(e=>teams.includes(e.team));
 }
 function bar(pct){ return '<span class="mbar"><span style="width:'+Math.max(2,Math.round(pct))+'%"></span></span>'; }
@@ -1667,7 +1674,7 @@ function renderDashPanels(wk){
   }
   // Admins compare across teams; everyone else only sees their own, so break
   // their view down by member instead of showing a single bar.
-  const byTeam = me.role==="admin" && state.teams.length>1;
+  const byTeam = isLeadership() && state.teams.length>1;
   const teamEl=document.getElementById("d-team");
   document.getElementById("d-team-h").textContent = byTeam ? "Active entries by team" : "Active entries by member";
   document.getElementById("d-team-s").textContent = byTeam ? "Who is carrying the most open work" : "Who on the team has the most open work";
@@ -1698,7 +1705,7 @@ function renderDashPanels(wk){
   }
 
   // --- Coverage: who logged nothing this week ---
-  const teams = me.role==="admin" ? state.teams : [me.team];
+  const teams = dashboardTeams();
   let cov="";
   teams.forEach(t=>{
     const roster=teamRoster(t);
@@ -3677,37 +3684,43 @@ function closeStage(){
 /* ============ BROADCAST / MESSAGES ============ */
 let bcTmplChosen=null;
 function renderBroadcast(){
-  if(!canBroadcast()){ activeView="messages"; refreshViews(); return; }
-  // templates
-  const tw=document.getElementById("bc-tmpls");
-  tw.innerHTML=BROADCAST_TEMPLATES.map((t,i)=>'<button data-bctmpl="'+i+'"'+(bcTmplChosen===i?' class="on"':"")+'>'+esc(t.label)+'</button>').join("");
-  // audience target dropdown
-  const aud=document.getElementById("bc-audience").value;
-  const tgt=document.getElementById("bc-target");
-  if(aud==="team"){
-    tgt.classList.remove("hidden");
-    tgt.innerHTML=state.teams.map(t=>'<option value="'+esc(t)+'">'+esc(t)+'</option>').join("");
-  } else if(aud==="member"){
-    tgt.classList.remove("hidden");
-    const roster=state.members.filter(m=>!(m.role==="admin"&&sameName(m.name,"admin")));
-    tgt.innerHTML=roster.map(m=>'<option value="'+esc(m.id)+'">'+esc(displayName(m.name))+' — '+esc(m.team)+'</option>').join("");
-  } else {
-    tgt.classList.add("hidden"); tgt.innerHTML="";
+  const allowed=canBroadcast();
+  document.getElementById("bc-composer").classList.toggle("hidden", !allowed);
+  document.getElementById("bc-sent-wrap").classList.toggle("hidden", !allowed);
+  document.getElementById("bc-inbox-h").textContent = allowed ? "Your messages" : "Broadcast";
+  if(allowed){
+    // templates
+    const tw=document.getElementById("bc-tmpls");
+    tw.innerHTML=BROADCAST_TEMPLATES.map((t,i)=>'<button data-bctmpl="'+i+'"'+(bcTmplChosen===i?' class="on"':"")+'>'+esc(t.label)+'</button>').join("");
+    // audience target dropdown
+    const aud=document.getElementById("bc-audience").value;
+    const tgt=document.getElementById("bc-target");
+    if(aud==="team"){
+      tgt.classList.remove("hidden");
+      tgt.innerHTML=state.teams.map(t=>'<option value="'+esc(t)+'">'+esc(t)+'</option>').join("");
+    } else if(aud==="member"){
+      tgt.classList.remove("hidden");
+      const roster=state.members.filter(m=>!(m.role==="admin"&&sameName(m.name,"admin")));
+      tgt.innerHTML=roster.map(m=>'<option value="'+esc(m.id)+'">'+esc(displayName(m.name))+' — '+esc(m.team)+'</option>').join("");
+    } else {
+      tgt.classList.add("hidden"); tgt.innerHTML="";
+    }
+    // recently sent
+    const sent=(state.broadcasts||[]).slice().sort((a,b)=>b.ts-a.ts);
+    const wrap=document.getElementById("bc-sent");
+    if(!sent.length){ wrap.innerHTML='<div class="msgempty">Nothing sent yet.</div>'; }
+    else {
+      wrap.innerHTML=sent.map(b=>{
+        const recips=state.members.filter(m=>broadcastReaches(b,m)&&!(m.role==="admin"&&sameName(m.name,"admin")));
+        const readN=recips.filter(m=>(b.readBy||[]).includes(m.id)).length;
+        return '<div class="bcsentrow"><div class="bh"><span class="to">'+esc(audienceLabel(b))+'</span>'+
+          '<span class="tm">'+esc(displayName(b.by))+' &middot; '+ago(b.ts)+'</span></div>'+
+          '<div class="btxt">'+esc(b.text)+'</div>'+
+          '<div class="bread">Read by '+readN+' of '+recips.length+'</div></div>';
+      }).join("");
+    }
   }
-  // recently sent
-  const sent=(state.broadcasts||[]).slice().sort((a,b)=>b.ts-a.ts);
-  const wrap=document.getElementById("bc-sent");
-  if(!sent.length){ wrap.innerHTML='<div class="msgempty">Nothing sent yet.</div>'; }
-  else {
-    wrap.innerHTML=sent.map(b=>{
-      const recips=state.members.filter(m=>broadcastReaches(b,m)&&!(m.role==="admin"&&sameName(m.name,"admin")));
-      const readN=recips.filter(m=>(b.readBy||[]).includes(m.id)).length;
-      return '<div class="bcsentrow"><div class="bh"><span class="to">'+esc(audienceLabel(b))+'</span>'+
-        '<span class="tm">'+esc(displayName(b.by))+' &middot; '+ago(b.ts)+'</span></div>'+
-        '<div class="btxt">'+esc(b.text)+'</div>'+
-        '<div class="bread">Read by '+readN+' of '+recips.length+'</div></div>';
-    }).join("");
-  }
+  renderMessages();
 }
 document.getElementById("bc-audience").onchange=()=>renderBroadcast();
 document.getElementById("bc-tmpls").addEventListener("click",e=>{
@@ -3779,7 +3792,7 @@ function renderAlerts(){
     items.push({
       key, cls:"msg", icon:"\u2709", title:"New message from "+displayName(b.by),
       meta:"Sent to "+audienceLabel(b)+" \u00b7 "+ago(b.ts), msg:b.text,
-      go:()=>{ activeView="messages"; dismissedAlerts.add(key); refreshViews(); renderAlerts(); }
+      go:()=>{ activeView="broadcast"; dismissedAlerts.add(key); refreshViews(); renderAlerts(); }
     });
   });
   stack.innerHTML=items.slice(0,4).map(it=>
