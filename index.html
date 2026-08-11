@@ -101,6 +101,7 @@
   .msgcard .mto{font-size:11.5px; color:var(--ink-faint); margin-top:2px;}
   .msgcard .mtxt{font-size:14px; color:var(--ink); margin-top:9px; white-space:pre-wrap; word-wrap:break-word; line-height:1.55;}
   .msgcard .newtag{font-size:10px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; padding:1px 7px; border-radius:999px; background:var(--red); color:#fff;}
+  .msgcard .mack{margin-top:11px;}
   .msgempty{font-size:13px; color:var(--ink-faint); padding:14px 0;}
   /* presentation deck */
   .decklist{margin-top:1rem; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;}
@@ -440,6 +441,11 @@
   .hlteamgroup{font-family:var(--serif); font-size:17px; font-weight:600; color:var(--ink); margin-top:26px; padding-bottom:6px; border-bottom:2px solid var(--ink); display:flex; align-items:baseline; gap:8px;}
   .hlteamgroup:first-child{margin-top:8px;}
   .hlteamgroup .hltgcount{font-family:var(--sans); font-size:12px; font-weight:500; color:var(--ink-faint);}
+  /* ===== Highlights per-team tabs (admin) ===== */
+  .hltabs{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;}
+  .hltabs button{font-size:13px; padding:6px 13px; border-radius:999px;}
+  .hltabs button.on{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .hltabs button.on .hltgcount{color:rgba(255,255,255,.85);}
   /* ===== Highlights notepad ===== */
   :root{ --note-bg:#eaf2fb; --note-line:#cddcf0; --note-margin:#e6a9a0; --note-ink:#20303f; }
   .notehead{display:flex; align-items:center; gap:10px; padding:12px 14px 0;}
@@ -802,6 +808,7 @@
 
     <!-- HIGHLIGHTS (NOTEPAD) -->
     <div id="view-highlights" class="hidden">
+      <div class="hltabs hidden" id="hl-teamtabs"></div>
       <div class="controls">
         <label style="font-size:13px; color:var(--ink-soft);">Week</label>
         <select id="hl-week" style="width:auto;"></select>
@@ -1394,7 +1401,7 @@ function buildSidebar(){
     const label=t+(teamUnread?' <span class="navunread">'+teamUnread+'</span>':"");
     mkItem(label, NICO.team, activeView==="board"&&activeTab===t, ()=>{ activeView="board"; activeTab=t; refreshViews(); }, teamEntries.length);
   });
-  if(me.role==="admin"||me.role==="lead"||me.role==="manager"){
+  if(me.role==="admin"){
     const lblG=document.createElement("div"); lblG.className="navlabel"; lblG.textContent="Management"; sb.appendChild(lblG);
     const mfCount=(state.managerFocus||[]).filter(x=>x.ownerId===me.id && x.week===weekKeyNow()).length;
     mkItem("My Focus", NICO.focus, activeView==="focus", ()=>{ activeView="focus"; if(typeof closeFocusForm==="function") closeFocusForm(); refreshViews(); }, mfCount);
@@ -1416,7 +1423,7 @@ function buildSidebar(){
   const lblM=document.createElement("div"); lblM.className="navlabel"; lblM.textContent="Messages"; sb.appendChild(lblM);
   const unreadM=unreadMessages().length;
   mkItem("Broadcast"+(unreadM?' <span class="navunread">'+unreadM+'</span>':""), NICO.cast, activeView==="broadcast",
-    ()=>{ activeView="broadcast"; refreshViews(); }, canBroadcast()?(state.broadcasts||[]).length:myMessages().length);
+    ()=>{ activeView="broadcast"; refreshViews(); }, canBroadcast()?(state.broadcasts||[]).length:unreadMessages().length);
   if(me.role==="admin"){
     const lbl2=document.createElement("div"); lbl2.className="navlabel"; lbl2.textContent="Manage"; sb.appendChild(lbl2);
     mkItem("Data", NICO.data, activeView==="data", ()=>{ activeView="data"; refreshViews(); });
@@ -1554,7 +1561,7 @@ function mountApp(){
   document.getElementById("week").innerHTML=weekLabel();
   const vt=visibleTeams();
   if(me.role!=="admin"){
-    if(activeView!=="deck"&&activeView!=="highlights"&&activeView!=="pinned"&&activeView!=="dashboard"&&activeView!=="focus"&&activeView!=="boss"&&activeView!=="broadcast") activeView="board";
+    if(activeView!=="deck"&&activeView!=="highlights"&&activeView!=="pinned"&&activeView!=="dashboard"&&activeView!=="broadcast") activeView="board";
     // Only default to their own team - don't yank them back when browsing others.
     if(!activeTab||!state.teams.includes(activeTab)) activeTab=me.team;
   }
@@ -3329,6 +3336,7 @@ function teamRoster(team){
 }
 function hlTargetTeam(){
   if(me.role!=="admin") return me.team;
+  if(hlActiveTeam && state.teams.includes(hlActiveTeam)) return hlActiveTeam;
   return (activeTab && state.teams.includes(activeTab)) ? activeTab : (state.teams[0]||"");
 }
 
@@ -3367,6 +3375,7 @@ function sanitizeNoteHTML(html){
 
 let hlEditingId=null;
 let hlPendingImages=[]; // not used for gallery any more, images live inline in body
+let hlActiveTeam=null; // admin-only: which team's tab is selected on the Highlights view
 function openHighlightForm(hl){
   if(!canPostHighlights()) return;
   hlEditingId = hl ? hl.id : null;
@@ -3438,17 +3447,36 @@ function populateHighlightFilters(){
   wsel.innerHTML='<option value="all">All weeks</option>'+keys.map(k=>'<option value="'+k+'"'+(k===prevW?" selected":"")+'>'+weekKeyLabel(k)+'</option>').join("");
   if(prevW && (prevW==="all"||keys.includes(prevW))) wsel.value=prevW;
 }
+function renderHighlightTeamTabs(){
+  const tabs=document.getElementById("hl-teamtabs");
+  if(me.role!=="admin"){ tabs.classList.add("hidden"); tabs.innerHTML=""; return; }
+  const teams=state.teams||[];
+  if(!hlActiveTeam || !teams.includes(hlActiveTeam)) hlActiveTeam=teams[0]||null;
+  tabs.classList.toggle("hidden", !teams.length);
+  tabs.innerHTML=teams.map(t=>{
+    const count=(state.highlights||[]).filter(h=>h.team===t).length;
+    return '<button class="'+(t===hlActiveTeam?"on":"")+'" data-hlteamtab="'+esc(t)+'">'+esc(t)+' <span class="hltgcount">'+count+'</span></button>';
+  }).join("");
+  tabs.querySelectorAll("[data-hlteamtab]").forEach(btn=>{
+    btn.onclick=()=>{ hlActiveTeam=btn.dataset.hlteamtab; renderHighlights(); };
+  });
+}
 function renderHighlights(){
   document.getElementById("hl-addbtn").classList.toggle("hidden", !canPostHighlights());
+  renderHighlightTeamTabs();
+  const scopeTeam = me.role==="admin" ? hlActiveTeam : hlTargetTeam();
   document.getElementById("hl-scope").textContent = me.role==="admin"
-    ? "All teams' notes, grouped by team."
+    ? (scopeTeam ? "Notes for "+scopeTeam+" only. Click another tab to switch teams." : "No teams yet.")
     : canPostHighlights()
-      ? "Notes for "+hlTargetTeam()+" — the whole team can read these."
+      ? "Notes for "+scopeTeam+" — the whole team can read these."
       : "Your team's notes. Pinned ones stay under Pinned.";
   populateHighlightFilters();
 
   const wk=document.getElementById("hl-week").value||"all";
+  // Per-team view only: admins see just the notes belonging to the selected
+  // team tab, never every team's notes at once.
   let items=myHighlights().filter(h=>(wk==="all"||h.week===wk));
+  if(me.role==="admin") items=items.filter(h=>h.team===hlActiveTeam);
   items.sort((a,b)=>(b.week||"").localeCompare(a.week||"")||(b.updated||0)-(a.updated||0));
 
   const unseenSet=new Set(items.filter(isUnseen).map(h=>h.id));
@@ -3459,7 +3487,7 @@ function renderHighlights(){
       : "No notes for your team yet.")+'</div>';
     return;
   }
-  wrap.innerHTML=groupedNotesHTML(items, unseenSet);
+  wrap.innerHTML=groupedNotesHTML(items, unseenSet, false);
   markHighlightsSeen();
 }
 function renderPinned(){
@@ -3471,31 +3499,34 @@ function renderPinned(){
     return;
   }
   const unseenSet=new Set(items.filter(isUnseen).map(h=>h.id));
-  wrap.innerHTML=groupedNotesHTML(items, unseenSet);
+  wrap.innerHTML=groupedNotesHTML(items, unseenSet, me.role==="admin");
 }
-// Shared grouping: by team (admin) then week, else by week. Newest week first.
-function groupedNotesHTML(items, unseenSet){
+// Shared grouping: optionally by team, then always by week. Newest week first.
+// groupByTeam is only used where a single list can still span multiple teams
+// (e.g. Pinned, for admins). The Highlights view itself is always scoped to
+// one team at a time via the per-team tabs, so it never needs team grouping.
+function groupedNotesHTML(items, unseenSet, groupByTeam){
   let out="";
-  const byWeekBlock=(rows)=>{
+  const byWeekBlock=(rows, sub)=>{
     const byWeek=new Map();
     rows.forEach(h=>{ const k=h.week||"—"; if(!byWeek.has(k)) byWeek.set(k,[]); byWeek.get(k).push(h); });
     let s="";
     Array.from(byWeek.keys()).sort((a,b)=>(b||"").localeCompare(a||"")).forEach(k=>{
-      s+='<div class="hlgroup'+(me.role==="admin"?" sub":"")+'">'+esc(weekKeyLabel(k))+'</div>';
+      s+='<div class="hlgroup'+(sub?" sub":"")+'">'+esc(weekKeyLabel(k))+'</div>';
       byWeek.get(k).forEach(h=>{ s+=noteCardHTML(h, unseenSet); });
     });
     return s;
   };
-  if(me.role==="admin"){
+  if(groupByTeam){
     const byTeam=new Map();
     items.forEach(h=>{ const t=h.team||"—"; if(!byTeam.has(t)) byTeam.set(t,[]); byTeam.get(t).push(h); });
     Array.from(byTeam.keys()).sort((a,b)=>a.localeCompare(b)).forEach(t=>{
       const rows=byTeam.get(t);
       out+='<div class="hlteamgroup">'+esc(t)+' <span class="hltgcount">'+rows.length+'</span></div>';
-      out+=byWeekBlock(rows);
+      out+=byWeekBlock(rows, true);
     });
   } else {
-    out=byWeekBlock(items);
+    out=byWeekBlock(items, false);
   }
   return out;
 }
@@ -3755,14 +3786,20 @@ function renderMessages(){
         '<div class="mfrom">'+esc(displayName(b.by))+(unread?' <span class="newtag">new</span>':"")+'</div>'+
         '<div class="mtime">'+ago(b.ts)+'</div></div>'+
         '<div class="mto">Sent to '+esc(audienceLabel(b))+'</div>'+
-        '<div class="mtxt">'+esc(b.text)+'</div></div>';
+        '<div class="mtxt">'+esc(b.text)+'</div>'+
+        (unread?'<div class="mack"><button class="small primary" data-mack="'+b.id+'">Acknowledge</button></div>':"")+
+      '</div>';
     }).join("");
   }
-  // Opening the inbox marks everything read.
-  let changed=false;
-  msgs.forEach(b=>{ if(!broadcastRead(b)){ b.readBy.push(me.id); changed=true; } });
-  if(changed){ persist(); buildSidebar(); }
+  // Messages only leave "unread" (and stop counting toward the tab total)
+  // once the person explicitly acknowledges them — opening the inbox alone
+  // no longer marks them read.
 }
+document.getElementById("msg-wrap").addEventListener("click", e=>{
+  const btn=e.target.closest("[data-mack]"); if(!btn) return;
+  const b=myMessages().find(x=>x.id===btn.dataset.mack);
+  if(b){ markMessageRead(b); renderMessages(); buildSidebar(); }
+});
 document.getElementById("msg-markall").onclick=()=>{
   let changed=false;
   myMessages().forEach(b=>{ if(!broadcastRead(b)){ b.readBy.push(me.id); changed=true; } });
