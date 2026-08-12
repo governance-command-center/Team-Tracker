@@ -251,6 +251,23 @@
   table.compiled tr:hover td{background:var(--line-soft);}
   table.compiled tr.cmtrow:hover td, table.compiled tr.cmtrow td{background:var(--paper);}
   table.compiled tr.cmtrow .comments{margin-top:0; border-top:none; padding-top:2px;}
+  /* ---- Catch Up Notes: entries table ---- */
+  .cu-tablewrap{overflow-x:auto; margin-top:12px; border:1px solid var(--line); border-radius:10px;}
+  table.cu-table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  table.cu-table th{text-align:left; font-size:11.5px; letter-spacing:.02em; text-transform:uppercase; color:var(--ink-faint); font-weight:600; padding:10px 12px; border-bottom:1px solid var(--line); background:var(--paper);}
+  table.cu-table td{padding:6px 8px; border-bottom:1px solid var(--line-soft); vertical-align:middle;}
+  table.cu-table tr:last-child td{border-bottom:none;}
+  table.cu-table tr:hover td{background:var(--line-soft);}
+  table.cu-table th:nth-child(3), table.cu-table td:nth-child(3){width:150px;}
+  table.cu-table th:last-child, table.cu-table td:last-child{width:36px; text-align:center;}
+  .cu-cell{width:100%; border:1px solid transparent; background:transparent; border-radius:6px; padding:7px 8px; font-family:var(--sans); font-size:13.5px; color:var(--ink);}
+  .cu-cell:hover{border-color:var(--line);}
+  .cu-cell:focus{border-color:var(--line); background:var(--card); outline:none;}
+  textarea.cu-cell.cu-details{display:block; width:280px; min-width:160px; max-width:100%; height:40px; resize:horizontal; overflow:auto; line-height:1.4; white-space:pre-wrap;}
+  .cu-row-remove{border:none; background:transparent; color:var(--ink-faint); cursor:pointer; font-size:15px; line-height:1; padding:6px; border-radius:6px;}
+  .cu-row-remove:hover{color:var(--red); background:var(--red-bg);}
+  .cu-emptyrow td{color:var(--ink-faint); font-size:13px; padding:16px 10px; text-align:center;}
+  .cu-carried{font-size:10px; font-weight:600; letter-spacing:.02em; text-transform:uppercase; color:var(--amber); background:var(--amber-bg); border-radius:8px; padding:1px 6px; margin-left:6px; vertical-align:1px;}
   /* ---- lead dashboard ---- */
   .dashgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px; margin-top:16px;}
   .dashcard{border:1px solid var(--line); border-radius:10px; padding:14px 16px; background:#fff;}
@@ -629,30 +646,15 @@
           <div id="cu-auto" class="boss-auto"></div>
         </div>
         <div class="mgmt-section">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
-            <div><h3>Your note</h3><div class="section-sub">Keep it outcome-oriented — this is your management view, not the team's task list.</div></div>
-            <button class="ghost small" id="cu-fields-btn" style="flex:none;">Manage fields</button>
+          <h3>Your note</h3><div class="section-sub">Keep it outcome-oriented — this is your management view, not the team's task list. Entries carried over from a prior week are marked <span class="cu-carried">Carried</span>.</div>
+          <div class="cu-tablewrap">
+            <table class="cu-table">
+              <thead><tr><th>Focus area</th><th>Details</th><th>Status</th><th></th></tr></thead>
+              <tbody id="cu-rows-body"></tbody>
+            </table>
           </div>
-          <div class="mgmt-form" style="grid-template-columns: 1fr 2fr; align-items:start;">
-            <label><span class="fl">Focus area <span class="req">required</span></span><input id="cu-focus" placeholder="e.g. Improve governance audit automation" /></label>
-            <div id="cu-dynamic-fields"></div>
-            <label class="full" style="max-width:220px;"><span class="fl">Status</span><select id="cu-status"><option>On track</option><option>Monitor</option><option>At risk</option><option>Done</option></select></label>
-          </div>
+          <button class="ghost small" id="cu-add-row" style="margin-top:10px;">+ Add entry</button>
         </div>
-      </div>
-    </div>
-
-    <!-- ADMIN FIELD EDITOR -->
-    <div class="modal hidden" id="fieldsmodal">
-      <div class="box">
-        <h3 id="fm-title">Manage fields</h3>
-        <p class="sub" id="fm-sub">Add, rename, or remove fields.</p>
-        <div id="fm-list"></div>
-        <div class="tmplrow" style="margin-top:12px; align-items:center;">
-          <input id="fm-newlabel" placeholder="New field name" style="flex:1;" />
-          <button class="small" id="fm-add">+ Add field</button>
-        </div>
-        <div class="btns"><button class="ghost" id="fm-close">Done</button></div>
       </div>
     </div>
 
@@ -1019,9 +1021,6 @@ function defaultState(){
     broadcasts: [],
     managerFocus: [],
     bossReviews: [],
-    catchupFields: [
-      {key:"remarks", label:"Remarks"}
-    ],
     catchupNotes: []
   };
 }
@@ -1245,6 +1244,17 @@ function migrate(){
     });
     state.catchupNotes=Object.keys(byKey).map((k,i)=>Object.assign({id:"cu_migrated_"+i+"_"+Date.now()}, byKey[k]));
   }
+  // Catch Up Notes moved from one flattened focus/status/fields note per
+  // person/week to a table of entries (focus area, details, status) per
+  // week. Fold any legacy single-note shape into a single starter row so
+  // nothing already written is lost.
+  (state.catchupNotes||[]).forEach(n=>{
+    if(Array.isArray(n.rows)) return;
+    const legacyStatus={"On track":"Active","Monitor":"In progress","At risk":"In progress","Done":"Done"}[n.status]||"Active";
+    const details=Object.values(n.fields||{}).map(v=>(v||"").trim()).filter(Boolean).join(" — ");
+    n.rows = (n.focus || details) ? [{id:newCatchupRowId(), focus:n.focus||"", details, status:legacyStatus}] : [];
+    delete n.focus; delete n.status; delete n.visibility; delete n.fields;
+  });
   // Categories used to be hardcoded in the markup; move them into state so
   // admins can edit them. Any category already on an entry is preserved.
   if(!Array.isArray(state.categories) || !state.categories.length){
@@ -1481,7 +1491,8 @@ function buildSidebar(){
   if(me.role==="admin"){
     const lblG=document.createElement("div"); lblG.className="navlabel"; lblG.textContent="Management"; sb.appendChild(lblG);
     const cuNote=Array.isArray(state.catchupNotes)?state.catchupNotes.find(x=>x.ownerId===me.id&&x.week===weekKeyNow()):null;
-    mkItem("Catch Up Notes", NICO.focus, activeView==="catchup", ()=>{ activeView="catchup"; refreshViews(); }, cuNote?1:null);
+    const cuOpenCount=cuNote&&Array.isArray(cuNote.rows)?cuNote.rows.filter(r=>r.status!=="Done").length:0;
+    mkItem("Catch Up Notes", NICO.focus, activeView==="catchup", ()=>{ activeView="catchup"; refreshViews(); }, cuOpenCount||null);
   }
   const lblH=document.createElement("div"); lblH.className="navlabel"; lblH.textContent="Weekly"; sb.appendChild(lblH);
   const hlUnseen=unseenHighlights();
@@ -1526,17 +1537,55 @@ function fillWeekSelect(id, value){
   el.innerHTML=keys.map(k=>'<option value="'+esc(k)+'">'+esc(weekKeyLabel(k))+'</option>').join("");
   if(keys.includes(value)) el.value=value; else if(keys.includes(weekKeyNow())) el.value=weekKeyNow(); else el.value=keys[keys.length-1];
 }
-function catchupFieldInputId(key){ return "cu-field-"+key; }
-function renderCatchupFormFields(note){
-  const host=document.getElementById("cu-dynamic-fields");
-  const fields=state.catchupFields||[];
-  host.innerHTML=fields.map(f=>
-    '<label><span class="fl">'+esc(f.label)+'</span><textarea id="'+catchupFieldInputId(f.key)+'" data-fkey="'+esc(f.key)+'" style="min-height:120px;" placeholder="Add details, progress, or context…"></textarea></label>'
-  ).join("");
-  fields.forEach(f=>{
-    const el=document.getElementById(catchupFieldInputId(f.key));
-    if(el) el.value=(note && note.fields && note.fields[f.key]) || "";
+const CU_STATUSES=["Active","In progress","Done"];
+function newCatchupRowId(){ return "cur_"+Date.now()+"_"+Math.random().toString(36).slice(2,7); }
+function emptyCatchupRow(){ return {id:newCatchupRowId(), focus:"", details:"", status:"Active"}; }
+// ---- Carry forward: any row not marked Done, sitting in a week earlier than
+// the current one, is moved into the current week's note automatically so it
+// stays visible for monitoring (mirrors the board's auto-carry behavior).
+function carryCatchupRowsForward(){
+  if(!me || !Array.isArray(state.catchupNotes)) return false;
+  const cur=weekKeyNow();
+  const mine=state.catchupNotes.filter(n=>n.ownerId===me.id && n.week && n.week<cur);
+  let moved=false;
+  mine.forEach(n=>{
+    if(!Array.isArray(n.rows)) return;
+    const carry=n.rows.filter(r=>r.status!=="Done");
+    if(!carry.length) return;
+    let target=catchupFor(cur);
+    if(!target){ target={id:"cu_"+Date.now()+"_"+Math.random().toString(36).slice(2,5), ownerId:me.id, owner:me.name, week:cur, rows:[], created:Date.now(), updated:Date.now()}; state.catchupNotes.push(target); }
+    if(!Array.isArray(target.rows)) target.rows=[];
+    carry.forEach(r=>{ target.rows.push(Object.assign({}, r, {id:newCatchupRowId(), carried:true, carriedFrom:n.week})); });
+    n.rows=n.rows.filter(r=>r.status==="Done");
+    n.updated=Date.now();
+    target.updated=Date.now();
+    moved=true;
   });
+  return moved;
+}
+function renderCatchupRows(note){
+  const host=document.getElementById("cu-rows-body");
+  const rows=(note && Array.isArray(note.rows)) ? note.rows : [];
+  if(!rows.length){
+    host.innerHTML='<tr class="cu-emptyrow"><td colspan="4">No entries yet — click "+ Add entry" to start your note for this week.</td></tr>';
+    return;
+  }
+  host.innerHTML=rows.map(r=>
+    '<tr data-row-id="'+esc(r.id)+'">'+
+      '<td><input type="text" class="cu-cell cu-row-focus" value="'+esc(r.focus||"")+'" placeholder="e.g. Governance audit automation" /></td>'+
+      '<td><textarea class="cu-cell cu-details cu-row-details" placeholder="Add details, progress, or context…">'+esc(r.details||"")+'</textarea></td>'+
+      '<td><select class="cu-cell cu-row-status">'+CU_STATUSES.map(s=>'<option'+(r.status===s?' selected':'')+'>'+s+'</option>').join("")+'</select>'+(r.carried?'<span class="cu-carried">Carried</span>':'')+'</td>'+
+      '<td><button type="button" class="cu-row-remove" data-remove-row="'+esc(r.id)+'" title="Remove entry">✕</button></td>'+
+    '</tr>'
+  ).join("");
+}
+function collectCatchupRowsFromDOM(){
+  return Array.from(document.querySelectorAll("#cu-rows-body tr[data-row-id]")).map(tr=>({
+    id: tr.dataset.rowId,
+    focus: tr.querySelector(".cu-row-focus").value.trim(),
+    details: tr.querySelector(".cu-row-details").value.trim(),
+    status: tr.querySelector(".cu-row-status").value
+  })).filter(r=>r.focus || r.details);
 }
 function autoCatchupData(wk){
   const entries=managerScope(wk), open=entries.filter(e=>e.status!=="Done");
@@ -1548,67 +1597,32 @@ function autoCatchupData(wk){
 function renderCatchup(){
   ensureManagerDefaults();
   const el=document.getElementById("cu-week"); if(!el) return;
+  carryCatchupRowsForward();
   fillWeekSelect("cu-week", el.value||weekKeyNow());
   const wk=el.value, note=catchupFor(wk), d=autoCatchupData(wk);
+  const openRows=(note?.rows||[]).filter(r=>r.status!=="Done").length;
+  const doneRows=(note?.rows||[]).filter(r=>r.status==="Done").length;
   document.getElementById("cu-kpis").innerHTML=
     '<div class="mgmt-card"><h3>Open</h3><div class="mgmt-kpi">'+d.open.length+'</div></div>'+
     '<div class="mgmt-card"><h3>Done</h3><div class="mgmt-kpi">'+d.done.length+'</div></div>'+
     '<div class="mgmt-card"><h3>At risk</h3><div class="mgmt-kpi">'+(d.blocked.length+d.overdue.length)+'</div></div>'+
-    '<div class="mgmt-card"><h3>My status</h3><div class="mgmt-kpi" style="font-size:16px;">'+esc(note?note.status:"Not set")+'</div></div>';
+    '<div class="mgmt-card"><h3>My entries</h3><div class="mgmt-kpi" style="font-size:16px;">'+openRows+' open · '+doneRows+' done</div></div>';
   const rows=[];
-  if(note && note.status==="At risk") rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(note.focus||"")+'</strong><span>My focus · '+esc(note.status)+'</span></div></div>');
+  (note?.rows||[]).filter(r=>r.status!=="Done").slice(0,3).forEach(r=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(r.focus||"(untitled)")+'</strong><span>My note · '+esc(r.status)+'</span></div></div>'));
   d.blocked.slice(0,6).forEach(e=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(e.focus)+'</strong><span>Blocked · '+esc(e.owner||e.member||"-")+(e.blockers?' · '+esc(e.blockers):'')+'</span></div></div>'));
   d.overdue.slice(0,6).forEach(e=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(e.focus)+'</strong><span>Overdue · '+esc(e.owner||e.member||"-")+'</span></div></div>'));
   d.discuss.filter(e=>!d.blocked.includes(e)&&!d.overdue.includes(e)).slice(0,5).forEach(e=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(e.focus)+'</strong><span>Flagged for discussion · '+esc(e.owner||e.member||"-")+'</span></div></div>'));
   if(!rows.length) rows.push('<div class="dempty">No major management signals. Good week — use the note below to capture wins and next steps.</div>');
   document.getElementById("cu-auto").innerHTML=rows.join("");
-  document.getElementById("cu-focus").value=note?.focus||"";
-  document.getElementById("cu-status").value=note?.status||"On track";
-  renderCatchupFormFields(note);
-  const cfb=document.getElementById("cu-fields-btn"); if(cfb) cfb.classList.toggle("hidden", !(me&&me.role==="admin"));
+  renderCatchupRows(note);
 }
 function saveCatchup(){
-  const wk=document.getElementById("cu-week").value, focus=document.getElementById("cu-focus").value.trim();
-  if(!focus){ alert("Focus is required."); return; }
-  const fields={};
-  (state.catchupFields||[]).forEach(f=>{
-    const el=document.getElementById(catchupFieldInputId(f.key));
-    fields[f.key]= el ? el.value.trim() : "";
-  });
+  const wk=document.getElementById("cu-week").value;
+  const rows=collectCatchupRowsFromDOM();
   const old=catchupFor(wk);
-  const rec={id:old?.id||("cu_"+Date.now()),ownerId:me.id,owner:me.name,week:wk,focus,status:document.getElementById("cu-status").value,fields,updated:Date.now()};
+  const rec={id:old?.id||("cu_"+Date.now()),ownerId:me.id,owner:me.name,week:wk,rows,updated:Date.now()};
   if(old){ rec.created=old.created||rec.updated; Object.assign(old,rec); } else { rec.created=Date.now(); state.catchupNotes.push(rec); }
   persist(); renderCatchup(); buildSidebar(); alert("Note saved.");
-}
-/* ---- Admin field manager: add / rename / remove custom fields for Catch Up Notes ---- */
-function fmFieldsArray(){ return state.catchupFields||(state.catchupFields=[]); }
-function newFieldKey(arr, label){
-  let base=(label||"field").toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"")||"field";
-  const keys=new Set(arr.map(f=>f.key));
-  let key=base, i=2;
-  while(keys.has(key)){ key=base+"_"+i; i++; }
-  return key;
-}
-function fmRefreshHost(){
-  if(activeView==="catchup") renderCatchup();
-}
-function openFieldsModal(){
-  if(!me || me.role!=="admin") return;
-  document.getElementById("fm-title").textContent = "Manage Catch Up Notes fields";
-  document.getElementById("fm-sub").textContent = "Add, rename, or remove fields.";
-  document.getElementById("fm-newlabel").value="";
-  renderFieldsModalList();
-  document.getElementById("fieldsmodal").classList.remove("hidden");
-}
-function closeFieldsModal(){
-  document.getElementById("fieldsmodal").classList.add("hidden");
-}
-function renderFieldsModalList(){
-  const arr=fmFieldsArray();
-  const wrap=document.getElementById("fm-list");
-  wrap.innerHTML = arr.length ? arr.map(f=>
-    '<div class="fm-row"><input type="text" value="'+esc(f.label)+'" data-fm-rename="'+esc(f.key)+'" /><button class="ghost small danger" data-fm-remove="'+esc(f.key)+'">Remove</button></div>'
-  ).join("") : '<div class="dempty">No fields yet. Add one below.</div>';
 }
 function bindManagement(){
   if(managementBound) return;
@@ -1618,36 +1632,25 @@ function bindManagement(){
   document.addEventListener("click",e=>{
     const rs=e.target.closest("[data-restore]"); if(rs){ restoreArchivedEntry(rs.dataset.restore); }
   });
-  // Field manager (admin-only) for Catch Up Notes fields
-  document.getElementById("cu-fields-btn").onclick=()=>openFieldsModal();
-  document.getElementById("fm-close").onclick=closeFieldsModal;
-  document.getElementById("fm-add").onclick=()=>{
-    const input=document.getElementById("fm-newlabel"); const label=input.value.trim();
-    if(!label) return;
-    const arr=fmFieldsArray();
-    arr.push({key:newFieldKey(arr,label), label});
-    input.value="";
-    persist(); renderFieldsModalList(); fmRefreshHost();
+  // Catch Up Notes entries table: add / remove rows inline (edits are saved
+  // together when "Save note" is clicked, same as the rest of the form).
+  document.getElementById("cu-add-row").onclick=()=>{
+    const wk=document.getElementById("cu-week").value;
+    let note=catchupFor(wk);
+    if(!note){ note={id:"cu_"+Date.now(),ownerId:me.id,owner:me.name,week:wk,rows:[],created:Date.now(),updated:Date.now()}; state.catchupNotes.push(note); }
+    if(!Array.isArray(note.rows)) note.rows=[];
+    note.rows=collectCatchupRowsFromDOM();
+    note.rows.push(emptyCatchupRow());
+    renderCatchupRows(note);
+    const inputs=document.querySelectorAll("#cu-rows-body .cu-row-focus");
+    if(inputs.length) inputs[inputs.length-1].focus();
   };
-  document.getElementById("fm-newlabel").addEventListener("keydown", e=>{
-    if(e.key==="Enter"){ e.preventDefault(); document.getElementById("fm-add").click(); }
-  });
-  document.getElementById("fm-list").addEventListener("input", e=>{
-    const inp=e.target.closest("[data-fm-rename]"); if(!inp) return;
-    const f=fmFieldsArray().find(x=>x.key===inp.dataset.fmRename);
-    if(f) f.label=inp.value;
-  });
-  document.getElementById("fm-list").addEventListener("change", e=>{
-    const inp=e.target.closest("[data-fm-rename]"); if(!inp) return;
-    persist(); fmRefreshHost();
-  });
-  document.getElementById("fm-list").addEventListener("click", e=>{
-    const btn=e.target.closest("[data-fm-remove]"); if(!btn) return;
-    if(!confirm("Remove this field? Existing saved values for it will no longer be shown.")) return;
-    const arr=fmFieldsArray();
-    const idx=arr.findIndex(x=>x.key===btn.dataset.fmRemove);
-    if(idx>-1) arr.splice(idx,1);
-    persist(); renderFieldsModalList(); fmRefreshHost();
+  document.getElementById("cu-rows-body").addEventListener("click", e=>{
+    const btn=e.target.closest("[data-remove-row]"); if(!btn) return;
+    const tr=btn.closest("tr[data-row-id]"); if(tr) tr.remove();
+    if(!document.querySelectorAll("#cu-rows-body tr[data-row-id]").length){
+      document.getElementById("cu-rows-body").innerHTML='<tr class="cu-emptyrow"><td colspan="4">No entries yet — click "+ Add entry" to start your note for this week.</td></tr>';
+    }
   });
 }
 function refreshViews(){
