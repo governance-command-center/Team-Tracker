@@ -524,23 +524,25 @@
 .mgmt-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.mgmt-card{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:15px}.mgmt-card h3{font-size:13px;margin:0 0 4px}.mgmt-card .sub{font-size:12px;color:var(--ink-faint)}
 .mgmt-kpi{font-size:28px;font-weight:750;margin-top:10px}.mgmt-kpi small{font-size:12px;font-weight:500;color:var(--ink-soft)}
 .mgmt-section{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:16px}.mgmt-section h3{margin:0 0 4px;font-size:16px}.mgmt-section .section-sub{font-size:12px;color:var(--ink-faint);margin-bottom:14px}
-.focus-list{display:grid;gap:10px}.focus-row{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--bg)}.focus-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.focus-title{font-weight:700}.focus-meta{font-size:11px;color:var(--ink-faint);margin-top:4px}.focus-body{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;font-size:12px}.focus-field{padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card)}.focus-field b{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);margin-bottom:3px}
+.focus-list{display:flex;flex-direction:column}
+.focus-table{width:100%;border-collapse:collapse;font-size:13px}
+.focus-table th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);padding:8px 10px;border-bottom:2px solid var(--ink);white-space:nowrap}
+.focus-table td{padding:11px 10px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+.focus-table tr:last-child td{border-bottom:none}
+.focus-table tr:hover td{background:var(--line-soft)}
+.focus-title{font-weight:700}
+.focus-meta{font-size:11px;color:var(--ink-faint);margin-top:3px}
+.focus-detail-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;min-width:180px}
+.focus-detail-list li{font-size:12px}
+.focus-detail-list b{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);margin-bottom:1px;font-weight:600}
+.fm-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line-soft)}
+.fm-row:last-child{border-bottom:none}
+.fm-row input{flex:1}
 .mgmt-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mgmt-form .full{grid-column:1/-1}.mgmt-form label{display:block}.mgmt-form textarea{min-height:74px;resize:vertical}.mgmt-form .hint{font-size:11px;color:var(--ink-faint);margin-top:4px}.mgmt-form-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px}
-.boss-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:12px}.boss-box{border:1px solid var(--line);border-radius:10px;padding:13px;background:var(--bg)}.boss-box h4{margin:0 0 8px;font-size:13px}.boss-box textarea{width:100%;min-height:100px;resize:vertical}.boss-box select{width:100%}.boss-box input{width:100%}.boss-item{padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}.boss-item:last-child{border-bottom:0}.boss-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 6px;border-radius:8px;background:var(--accent-bg);color:var(--accent);margin-right:6px}
-/* meeting narrative fields render as a single stacked list so admins can add
-   any number of custom fields without the layout getting cramped */
-.narrative-list{display:flex;flex-direction:column;gap:12px;margin-top:12px}
-/* "My Focus" entries: a plain vertical list of rows, each with its enabled
-   fields shown as a stacked label/value list rather than a card grid */
-.focus-fieldlist{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
-.focus-fieldlist li{font-size:12.5px;color:var(--ink-soft);border-bottom:1px solid var(--line-soft);padding:6px 0}
-.focus-fieldlist li:last-child{border-bottom:none}
-.focus-fieldlist b{color:var(--ink-faint);text-transform:uppercase;font-size:10px;letter-spacing:.04em;margin-right:6px}
-.fieldcfg-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
-.fieldcfg-row input{flex:1;min-width:160px;max-width:280px}
-.fieldcfg-row.disabled{opacity:.55}
+.boss-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:12px}.boss-box{border:1px solid var(--line);border-radius:10px;padding:13px;background:var(--bg)}.boss-box h4{margin:0 0 8px;font-size:13px}.boss-box textarea{width:100%;min-height:100px;resize:vertical}.boss-item{padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}.boss-item:last-child{border-bottom:0}.boss-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 6px;border-radius:8px;background:var(--accent-bg);color:var(--accent);margin-right:6px}
+.narrative-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 .boss-auto{display:grid;gap:8px}.auto-row{display:flex;gap:9px;align-items:flex-start;padding:9px;border:1px solid var(--line);border-radius:9px;background:var(--card);font-size:12px}.auto-dot{width:8px;height:8px;border-radius:50%;background:currentColor;margin-top:4px;flex:0 0 auto}.auto-row strong{display:block}.auto-row span{color:var(--ink-soft)}
-@media(max-width:900px){.mgmt-grid,.boss-grid{grid-template-columns:1fr}.mgmt-form{grid-template-columns:1fr}.focus-body{grid-template-columns:1fr}.mgmt-hero{flex-direction:column}}
+@media(max-width:900px){.mgmt-grid,.boss-grid,.narrative-fields{grid-template-columns:1fr}.mgmt-form{grid-template-columns:1fr}.focus-body{grid-template-columns:1fr}.mgmt-hero{flex-direction:column}}
 </style>
 </head>
 <body>
@@ -618,28 +620,22 @@
       <div class="mgmt-wrap">
         <div class="mgmt-hero">
           <div><div class="kicker">Management</div><h2>My Weekly Focus</h2><p>Keep your own priorities separate from team activity, then use them to build the leadership story.</p></div>
-          <div class="mgmt-actions"><select id="focus-week" style="width:auto;"></select><button class="small" id="focus-fields-toggle">Manage fields</button><button class="primary small" id="focus-add">+ Add focus</button></div>
+          <div class="mgmt-actions"><select id="focus-week" style="width:auto;"></select><button class="ghost small" id="focus-fields-btn">Manage fields</button><button class="primary small" id="focus-add">+ Add focus</button></div>
         </div>
         <div class="mgmt-grid" id="focus-kpis"></div>
-        <div class="mgmt-section hidden" id="focus-fields-panel">
-          <h3>Manage focus fields</h3><div class="section-sub">Rename any field, or hide the built-in ones you don't need. "Focus" is the title of each entry and always stays on.</div>
-          <div id="focus-fields-list"></div>
-          <div class="panel">
-            <div class="grid g3">
-              <div><label class="fl">Field label</label><input id="focus-ff-new-label" placeholder="e.g. Stakeholders" /></div>
-              <div><label class="fl">Field type</label><select id="focus-ff-new-type"><option value="textarea">Long text</option><option value="text">Short text</option><option value="select">Dropdown</option></select></div>
-              <div><label class="fl">Options (dropdown only, comma separated)</label><input id="focus-ff-new-opts" placeholder="e.g. Low, Medium, High" /></div>
-            </div>
-            <div style="margin-top:10px;"><button class="primary small" id="focus-ff-new-add">Add field</button></div>
-          </div>
-        </div>
         <div class="mgmt-section">
           <h3>This week's priorities</h3><div class="section-sub">Aim for 3–5 items. These are the things you personally want to move, decide, or improve.</div>
           <div id="focus-list" class="focus-list"></div>
         </div>
         <div class="mgmt-section hidden" id="focus-form-wrap">
           <h3>Add / edit focus</h3><div class="section-sub">Keep the entry outcome-oriented. This is for your management work, not the team's task list.</div>
-          <div class="mgmt-form" id="focus-fields-form"></div>
+          <div class="mgmt-form">
+            <label><span class="fl">Focus <span class="req">required</span></span><input id="mf-focus" placeholder="e.g. Improve governance audit automation" /></label>
+            <label><span class="fl">Status</span><select id="mf-status"><option>On track</option><option>Monitor</option><option>At risk</option><option>Done</option></select></label>
+            <div id="mf-dynamic-fields" class="mgmt-form" style="padding:0; border:none; grid-column:1/-1;"></div>
+            <label><span class="fl">Leadership visibility</span><select id="mf-visibility"><option>No</option><option>Yes</option></select></label>
+            <div class="mgmt-form-actions"><button class="ghost small" id="mf-cancel">Cancel</button><button class="primary small" id="mf-save">Save focus</button></div>
+          </div>
         </div>
       </div>
     </div>
@@ -663,25 +659,28 @@
         </div>
         <div class="mgmt-section">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
-            <div><h3>Your meeting narrative</h3><div class="section-sub">The system gives you the facts; these fields let you add your management judgment.</div></div>
-            <button class="small" id="boss-fields-toggle">Manage fields</button>
+            <div><h3 style="margin-bottom:0;">Your meeting narrative</h3><div class="section-sub">The system gives you the facts; these fields let you add your management judgment.</div></div>
+            <button class="ghost small" id="narrative-fields-btn">Manage fields</button>
           </div>
-          <div class="mgmt-section hidden" id="boss-fields-panel">
-            <h3>Manage narrative fields</h3><div class="section-sub">Rename any field, or hide the ones you don't need.</div>
-            <div id="boss-fields-list"></div>
-            <div class="panel">
-              <div class="grid g3">
-                <div><label class="fl">Field label</label><input id="boss-ff-new-label" placeholder="e.g. Team morale" /></div>
-                <div><label class="fl">Field type</label><select id="boss-ff-new-type"><option value="textarea">Long text</option><option value="text">Short text</option><option value="select">Dropdown</option></select></div>
-                <div><label class="fl">Options (dropdown only, comma separated)</label><input id="boss-ff-new-opts" placeholder="e.g. Low, Medium, High" /></div>
-              </div>
-              <div style="margin-top:10px;"><button class="primary small" id="boss-ff-new-add">Add field</button></div>
-            </div>
-          </div>
-          <div class="narrative-list" id="boss-narrative-fields"></div>
+          <div class="narrative-fields" id="br-fields"></div>
         </div>
       </div>
     </div>
+
+    <!-- ADMIN FIELD EDITOR (used for both My Focus fields and meeting-narrative fields) -->
+    <div class="modal hidden" id="fieldsmodal">
+      <div class="box">
+        <h3 id="fm-title">Manage fields</h3>
+        <p class="sub" id="fm-sub">Add, rename, or remove fields.</p>
+        <div id="fm-list"></div>
+        <div class="tmplrow" style="margin-top:12px; align-items:center;">
+          <input id="fm-newlabel" placeholder="New field name" style="flex:1;" />
+          <button class="small" id="fm-add">+ Add field</button>
+        </div>
+        <div class="btns"><button class="ghost" id="fm-close">Done</button></div>
+      </div>
+    </div>
+
 
     <!-- BOARD -->
     <div id="view-board" class="hidden">
@@ -1039,59 +1038,19 @@ function defaultState(){
     broadcasts: [],
     managerFocus: [],
     bossReviews: [],
-    fieldConfig: defaultFieldConfig(),
-    fieldConfigVersion: 2
-  };
-}
-// Field definitions for the two admin-authored narrative sections ("My Focus"
-// and "Your meeting narrative"). Admins can rename any field, disable/enable
-// the built-in ("core") ones, and add/delete their own custom fields — see
-// ensureFieldConfig() and the Manage fields panels in each view.
-function defaultFieldConfig(){
-  return {
-    focus: [
-      {key:"focus", label:"Focus area", type:"text", core:true, locked:true, enabled:true},
-      {key:"remarks", label:"Remarks", type:"textarea", core:true, enabled:true},
-      {key:"status", label:"Status", type:"select", options:["On track","Monitor","At risk","Done"], core:true, enabled:true}
+    focusFields: [
+      {key:"why", label:"Why it matters"},
+      {key:"target", label:"Target this week"},
+      {key:"next", label:"Next step"},
+      {key:"outcome", label:"Outcome / result"},
+      {key:"support", label:"Support needed"}
     ],
-    boss: [
-      {key:"changed", label:"What changed?", type:"textarea", core:true, enabled:true},
-      {key:"wins", label:"Key wins", type:"textarea", core:true, enabled:true},
-      {key:"risks", label:"Risks / concerns", type:"textarea", core:true, enabled:true}
+    narrativeFields: [
+      {key:"changed", label:"What changed?"},
+      {key:"wins", label:"Key wins"},
+      {key:"risks", label:"Risks / concerns"}
     ]
   };
-}
-// Bump this when the shipped default field set changes, so existing saved
-// states pick up the new defaults once, without wiping fields an admin has
-// since added or renamed on top of them.
-const FIELD_CONFIG_VERSION=2;
-// Backfill/repair state.fieldConfig so older saved states (and any partial
-// edits) always have both sections with usable field definitions.
-function ensureFieldConfig(){
-  if(!state.fieldConfig || typeof state.fieldConfig!=="object") state.fieldConfig=defaultFieldConfig();
-  const def=defaultFieldConfig();
-  ["focus","boss"].forEach(section=>{
-    if(!Array.isArray(state.fieldConfig[section]) || !state.fieldConfig[section].length){
-      state.fieldConfig[section]=def[section];
-    }
-  });
-  // One-time reset of the "My Focus" fields to the current shipped default
-  // (Focus area / Remarks / Status) for states saved before this default
-  // changed. Runs once per state, guarded by the version stamp, so any admin
-  // customization made afterward sticks.
-  if(state.fieldConfigVersion!==FIELD_CONFIG_VERSION){
-    state.fieldConfig.focus=def.focus;
-    state.fieldConfigVersion=FIELD_CONFIG_VERSION;
-  }
-  ["focus","boss"].forEach(section=>{
-    state.fieldConfig[section].forEach(f=>{
-      if(typeof f.enabled!=="boolean") f.enabled=true;
-      if(typeof f.core!=="boolean") f.core=false;
-      if(typeof f.locked!=="boolean") f.locked=false;
-      if(!f.type) f.type="text";
-      if(f.type==="select" && !Array.isArray(f.options)) f.options=[];
-    });
-  });
 }
 const ORDER=["Active","In progress","Done"];
 const BCLASS={"Active":"b-ac","In progress":"b-ip","Done":"b-dn"};
@@ -1245,7 +1204,38 @@ function migrate(){
   if(!Array.isArray(state.highlights)) state.highlights=[];
   if(!Array.isArray(state.managerFocus)) state.managerFocus=[];
   if(!Array.isArray(state.bossReviews)) state.bossReviews=[];
-  ensureFieldConfig();
+  if(!Array.isArray(state.focusFields) || !state.focusFields.length){
+    state.focusFields=[
+      {key:"why", label:"Why it matters"},
+      {key:"target", label:"Target this week"},
+      {key:"next", label:"Next step"},
+      {key:"outcome", label:"Outcome / result"},
+      {key:"support", label:"Support needed"}
+    ];
+  }
+  if(!Array.isArray(state.narrativeFields) || !state.narrativeFields.length){
+    state.narrativeFields=[
+      {key:"changed", label:"What changed?"},
+      {key:"wins", label:"Key wins"},
+      {key:"risks", label:"Risks / concerns"}
+    ];
+  }
+  // Older focus entries stored why/target/next/outcome/support as flat props;
+  // fold them into a generic fields map keyed by focusFields[].key so custom
+  // (admin-added) fields work the same way as the original built-ins.
+  state.managerFocus.forEach(x=>{
+    if(!x.fields || typeof x.fields!=="object") x.fields={};
+    ["why","target","next","outcome","support"].forEach(k=>{
+      if(x[k]!=null && x.fields[k]==null){ x.fields[k]=x[k]; }
+    });
+  });
+  // Older boss reviews stored changed/wins/risks as flat props.
+  state.bossReviews.forEach(r=>{
+    if(!r.fields || typeof r.fields!=="object") r.fields={};
+    ["changed","wins","risks"].forEach(k=>{
+      if(r[k]!=null && r.fields[k]==null){ r.fields[k]=r[k]; }
+    });
+  });
   // Categories used to be hardcoded in the markup; move them into state so
   // admins can edit them. Any category already on an entry is preserved.
   if(!Array.isArray(state.categories) || !state.categories.length){
@@ -1410,7 +1400,7 @@ function finishLogin(m){
   document.getElementById("gate-err").textContent="";
   document.getElementById("gate").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
-  mounted=true;
+  mounted=true; bindManagement();
 mountApp();
 }
 function tryLogin(){
@@ -1533,162 +1523,84 @@ function fillWeekSelect(id, value){
   el.innerHTML=keys.map(k=>'<option value="'+esc(k)+'">'+esc(weekKeyLabel(k))+'</option>').join("");
   if(keys.includes(value)) el.value=value; else if(keys.includes(weekKeyNow())) el.value=weekKeyNow(); else el.value=keys[keys.length-1];
 }
-/* ---- Field config helpers (shared by My Focus + meeting narrative) ---- */
-function fieldsFor(section){ ensureFieldConfig(); return state.fieldConfig[section]||[]; }
-function enabledFields(section){ return fieldsFor(section).filter(f=>f.enabled!==false); }
-function fieldControlHTML(f, idPrefix){
-  const id=idPrefix+f.key;
-  if(f.type==="textarea") return '<textarea id="'+id+'" placeholder="'+esc(f.label)+'"></textarea>';
-  if(f.type==="select") return '<select id="'+id+'">'+(f.options||[]).map(o=>'<option>'+esc(o)+'</option>').join("")+'</select>';
-  return '<input id="'+id+'" placeholder="'+esc(f.label)+'" />';
+function focusFieldInputId(key){ return "mf-field-"+key; }
+function renderFocusFormFields(item){
+  const host=document.getElementById("mf-dynamic-fields");
+  const fields=state.focusFields||[];
+  host.innerHTML=fields.map(f=>
+    '<label class="full"><span class="fl">'+esc(f.label)+'</span><textarea id="'+focusFieldInputId(f.key)+'" data-fkey="'+esc(f.key)+'"></textarea></label>'
+  ).join("");
+  fields.forEach(f=>{
+    const el=document.getElementById(focusFieldInputId(f.key));
+    if(el) el.value=(item && item.fields && item.fields[f.key]) || "";
+  });
 }
-function renderFieldConfigList(section){
-  const list=document.getElementById(section+"-fields-list"); if(!list) return;
-  list.innerHTML=fieldsFor(section).map((f,i)=>{
-    const disabled=f.enabled===false;
-    const typeNote=f.type==="select"?"Dropdown":(f.type==="textarea"?"Long text":"Short text");
-    let actions='<button class="small" data-ffrename="'+section+':'+i+'">Rename</button>';
-    if(!f.locked) actions+=' <button class="small" data-fftoggle="'+section+':'+i+'">'+(disabled?"Enable":"Disable")+'</button>';
-    if(!f.core) actions+=' <button class="small danger" data-ffdel="'+section+':'+i+'">Delete</button>';
-    return '<div class="fieldcfg-row'+(disabled?" disabled":"")+'">'+
-      '<input value="'+esc(f.label)+'" data-ffidx="'+section+':'+i+'" />'+
-      '<span class="uphint">'+typeNote+(f.locked?' · required':'')+'</span>'+
-      actions+'</div>';
-  }).join("");
-}
-document.addEventListener("click",e=>{
-  const rn=e.target.closest("[data-ffrename]"), tg=e.target.closest("[data-fftoggle]"), dl=e.target.closest("[data-ffdel]");
-  if(rn){
-    const [section,iStr]=rn.dataset.ffrename.split(":"); const i=+iStr;
-    const inp=document.querySelector('[data-ffidx="'+section+':'+i+'"]');
-    const nw=inp.value.trim(); const f=fieldsFor(section)[i]; if(!f) return;
-    if(!nw){ alert("Field label can't be empty."); inp.value=f.label; return; }
-    f.label=nw; persist(); renderFieldConfigList(section);
-    if(section==="focus"){ if(focusFormOpen) renderFocusFormInputs(); renderFocus(); } else { renderBossReview(); }
-  }
-  if(tg){
-    const [section,iStr]=tg.dataset.fftoggle.split(":"); const i=+iStr;
-    const f=fieldsFor(section)[i]; if(!f||f.locked) return;
-    if(f.enabled!==false && enabledFields(section).length<=1){ alert("At least one field needs to stay on."); return; }
-    f.enabled = f.enabled===false;
-    persist(); renderFieldConfigList(section);
-    if(section==="focus"){ if(focusFormOpen) renderFocusFormInputs(); renderFocus(); } else { renderBossReview(); }
-  }
-  if(dl){
-    const [section,iStr]=dl.dataset.ffdel.split(":"); const i=+iStr;
-    const f=fieldsFor(section)[i]; if(!f||f.core) return;
-    if(!confirm('Delete the "'+f.label+'" field? Existing entries keep whatever was saved in it, but it will no longer show.')) return;
-    fieldsFor(section).splice(i,1);
-    persist(); renderFieldConfigList(section);
-    if(section==="focus"){ if(focusFormOpen) renderFocusFormInputs(); renderFocus(); } else { renderBossReview(); }
-  }
-});
-function bindNewFieldForm(section, prefix){
-  const btn=document.getElementById(prefix+"-new-add"); if(!btn) return;
-  btn.onclick=()=>{
-    const label=document.getElementById(prefix+"-new-label").value.trim();
-    if(!label){ alert("Give the field a label."); return; }
-    const type=document.getElementById(prefix+"-new-type").value;
-    const opts=document.getElementById(prefix+"-new-opts").value.split(",").map(s=>s.trim()).filter(Boolean);
-    if(type==="select" && !opts.length){ alert("Add at least one option for a dropdown field."); return; }
-    const key="custom_"+Date.now();
-    fieldsFor(section).push({key,label,type,options:type==="select"?opts:undefined,core:false,locked:false,enabled:true});
-    document.getElementById(prefix+"-new-label").value=""; document.getElementById(prefix+"-new-opts").value="";
-    persist(); renderFieldConfigList(section);
-    if(section==="focus") renderFocus(); else renderBossReview();
-  };
-}
-/* ---- My Focus ---- */
 function renderFocus(){
   ensureManagerDefaults();
   const el=document.getElementById("focus-week"); if(!el) return;
   fillWeekSelect("focus-week", el.value||weekKeyNow());
   const wk=el.value, rows=focusFor(wk), entries=managerScope(wk), open=entries.filter(e=>e.status!=="Done");
   const atRisk=rows.filter(x=>x.status==="At risk").length;
+  const leadership=rows.filter(x=>x.visibility==="Yes").length;
   document.getElementById("focus-kpis").innerHTML=
     '<div class="mgmt-card"><h3>My priorities</h3><div class="sub">Personal management focus</div><div class="mgmt-kpi">'+rows.length+' <small>items</small></div></div>'+ 
     '<div class="mgmt-card"><h3>At risk</h3><div class="sub">Needs your intervention</div><div class="mgmt-kpi">'+atRisk+' <small>focus areas</small></div></div>'+ 
     '<div class="mgmt-card"><h3>Team signals</h3><div class="sub">Open work in the selected week</div><div class="mgmt-kpi">'+open.length+' <small>open items</small></div></div>';
-  // Entries render as a plain vertical list: a title/meta row per entry, with
-  // its enabled fields stacked underneath as label/value lines.
-  const fields=enabledFields("focus");
-  const titleField=fields.find(f=>f.locked)||fields[0]||{key:"focus",label:"Focus"};
-  const showStatus=fields.some(f=>f.key==="status"), showVisibility=fields.some(f=>f.key==="visibility");
-  const detailFields=fields.filter(f=>f.key!==titleField.key && f.key!=="status" && f.key!=="visibility");
+  // Entries render as a real list (a table of rows), one row per focus area,
+  // with its custom fields shown as a bulleted detail list in that row.
   const list=document.getElementById("focus-list");
-  list.innerHTML=rows.length?rows.map(x=>{
-    const metaBits=[];
-    if(showStatus && x.status) metaBits.push(esc(x.status));
-    if(showVisibility) metaBits.push(x.visibility==="Yes"?"Leadership visible":"Internal");
-    const detailsHTML=detailFields.map(f=>'<li><b>'+esc(f.label)+'</b>'+esc(x[f.key]||"-")+'</li>').join("");
-    return '<div class="focus-row"><div class="focus-top"><div><div class="focus-title">'+esc(x[titleField.key]||"")+'</div>'+
-      (metaBits.length?'<div class="focus-meta">'+metaBits.join(" · ")+'</div>':'')+'</div>'+
-      '<div><button class="small" data-mf-edit="'+esc(String(x.id))+'">Edit</button> <button class="small" data-mf-del="'+esc(String(x.id))+'">Delete</button></div></div>'+
-      (detailsHTML?'<ul class="focus-fieldlist">'+detailsHTML+'</ul>':'')+
-    '</div>';
-  }).join(""):'<div class="dempty">No focus areas yet. Add 3–5 priorities for the week.</div>';
+  if(!rows.length){
+    list.innerHTML='<div class="dempty">No focus areas yet. Add 3–5 priorities for the week.</div>';
+  } else {
+    const fdefs=state.focusFields||[];
+    list.innerHTML='<table class="focus-table"><thead><tr><th>Focus</th><th>Status</th><th>Details</th><th></th></tr></thead><tbody>'+
+      rows.map(x=>{
+        const details=fdefs.map(f=>{
+          const val=(x.fields && x.fields[f.key]) || "";
+          return val ? '<li><b>'+esc(f.label)+'</b>'+esc(val)+'</li>' : "";
+        }).join("");
+        return '<tr>'+
+          '<td><div class="focus-title">'+esc(x.focus)+'</div></td>'+
+          '<td><div class="focus-meta">'+esc(x.status)+'<br>'+(x.visibility==="Yes"?"Leadership visible":"Internal")+'</div></td>'+
+          '<td>'+(details?'<ul class="focus-detail-list">'+details+'</ul>':'<span class="focus-meta">No details added.</span>')+'</td>'+
+          '<td><button class="small" data-mf-edit="'+esc(String(x.id))+'">Edit</button> <button class="small danger" data-mf-del="'+esc(String(x.id))+'">Delete</button></td>'+
+        '</tr>';
+      }).join("")+
+    '</tbody></table>';
+  }
+  const ffb=document.getElementById("focus-fields-btn"); if(ffb) ffb.classList.toggle("hidden", !(me&&me.role==="admin"));
   // Only close the add/edit form here if it isn't actively open — otherwise a
   // background refresh (e.g. live sync picking up someone else's edit) would
   // silently slam the form shut while you're in the middle of typing.
   if(!focusFormOpen) document.getElementById("focus-form-wrap").classList.add("hidden");
-  renderFieldConfigList("focus");
 }
 let editingFocusId=null;
 let focusFormOpen=false;
-let mgmtBound=false;
-function renderFocusFormInputs(){
-  const wrap=document.getElementById("focus-fields-form"); if(!wrap) return;
-  const fields=enabledFields("focus");
-  wrap.innerHTML=fields.map(f=>{
-    const req=f.locked?' <span class="req">required</span>':'';
-    const cls=f.type==="textarea"?" full":"";
-    return '<label class="'+cls.trim()+'"><span class="fl">'+esc(f.label)+req+'</span>'+fieldControlHTML(f,"mf-")+'</label>';
-  }).join("")+'<div class="mgmt-form-actions"><button class="ghost small" id="mf-cancel">Cancel</button><button class="primary small" id="mf-save">Save focus</button></div>';
-  document.getElementById("mf-cancel").onclick=closeFocusForm;
-  document.getElementById("mf-save").onclick=saveFocus;
-}
 function openFocusForm(item){
   editingFocusId=item?item.id:null;
   focusFormOpen=true;
   document.getElementById("focus-form-wrap").classList.remove("hidden");
-  renderFocusFormInputs();
-  const fields=enabledFields("focus");
-  fields.forEach(f=>{
-    const el=document.getElementById("mf-"+f.key); if(!el) return;
-    el.value = item ? (item[f.key]!==undefined?item[f.key]:"") : "";
-  });
-  const first=fields[0]; if(first){ const el=document.getElementById("mf-"+first.key); if(el) el.focus(); }
+  document.getElementById("mf-focus").value=item?.focus||""; document.getElementById("mf-status").value=item?.status||"On track";
+  renderFocusFormFields(item);
+  document.getElementById("mf-visibility").value=item?.visibility||"No";
+  document.getElementById("mf-focus").focus();
 }
 function closeFocusForm(){
   editingFocusId=null; focusFormOpen=false;
   document.getElementById("focus-form-wrap").classList.add("hidden");
 }
 function saveFocus(){
-  const wk=document.getElementById("focus-week").value;
-  const fields=enabledFields("focus");
-  const titleField=fields.find(f=>f.locked)||fields[0]||{key:"focus",label:"Focus"};
-  const titleEl=document.getElementById("mf-"+titleField.key);
-  const titleVal=titleEl?titleEl.value.trim():"";
-  if(!titleVal){ alert(titleField.label+" is required."); return; }
-  const rec={id:editingFocusId||("mf_"+Date.now()),ownerId:me.id,owner:me.name,week:wk,updated:Date.now()};
-  fields.forEach(f=>{
-    const el=document.getElementById("mf-"+f.key); if(!el) return;
-    rec[f.key]=el.value.trim();
+  const wk=document.getElementById("focus-week").value, focus=document.getElementById("mf-focus").value.trim();
+  if(!focus){ alert("Focus is required."); return; }
+  const fields={};
+  (state.focusFields||[]).forEach(f=>{
+    const el=document.getElementById(focusFieldInputId(f.key));
+    fields[f.key]= el ? el.value.trim() : "";
   });
-  const old=(state.managerFocus||[]).find(x=>String(x.id)===String(editingFocusId));
-  if(old){
-    // Fields currently hidden (disabled) aren't in the form — keep whatever
-    // was already saved on them instead of wiping them out.
-    fieldsFor("focus").forEach(f=>{ if(rec[f.key]===undefined && old[f.key]!==undefined) rec[f.key]=old[f.key]; });
-    rec.created=old.created||Date.now();
-    Object.assign(old,rec);
-  } else {
-    rec.created=Date.now();
-    state.managerFocus.push(rec);
-  }
+  const rec={id:editingFocusId||("mf_"+Date.now()),ownerId:me.id,owner:me.name,week:wk,focus,status:document.getElementById("mf-status").value,fields,visibility:document.getElementById("mf-visibility").value,created:Date.now(),updated:Date.now()};
+  const old=(state.managerFocus||[]).find(x=>String(x.id)===String(editingFocusId)); if(old){ rec.created=old.created||rec.created; Object.assign(old,rec); } else state.managerFocus.push(rec);
   focusFormOpen=false; persist(); editingFocusId=null; renderFocus(); buildSidebar();
 }
-/* ---- MeiYan x Vhino (meeting narrative) ---- */
 function autoBossData(wk){
   const entries=managerScope(wk), open=entries.filter(e=>e.status!=="Done");
   const blocked=open.filter(e=>e.blocked), overdue=open.filter(e=>{const n=daysUntilDue(e);return n!==null&&n<0;}), discuss=open.filter(e=>e.discuss), stale=open.filter(e=>daysSinceUpdate(e)>=STALE_DAYS);
@@ -1696,14 +1608,17 @@ function autoBossData(wk){
   const done=entries.filter(e=>e.status==="Done"); const focus=focusFor(wk);
   return {entries,open,blocked,overdue,discuss,stale,carry,done,focus};
 }
+function narrativeFieldInputId(key){ return "br-field-"+key; }
 function renderNarrativeFields(review){
-  const wrap=document.getElementById("boss-narrative-fields"); if(!wrap) return;
-  const fields=enabledFields("boss");
-  wrap.innerHTML=fields.map(f=>'<div class="boss-box"><h4>'+esc(f.label)+'</h4>'+fieldControlHTML(f,"br-")+'</div>').join("")
-    || '<div class="dempty">No narrative fields are turned on. Use Manage fields to add one.</div>';
+  const host=document.getElementById("br-fields");
+  const fields=state.narrativeFields||[];
+  if(!fields.length){ host.innerHTML='<div class="dempty">No narrative fields yet. Use <b>Manage fields</b> to add one.</div>'; return; }
+  host.innerHTML=fields.map(f=>
+    '<div class="boss-box"><h4>'+esc(f.label)+'</h4><textarea id="'+narrativeFieldInputId(f.key)+'" data-fkey="'+esc(f.key)+'"></textarea></div>'
+  ).join("");
   fields.forEach(f=>{
-    const el=document.getElementById("br-"+f.key); if(!el) return;
-    el.value = review ? (review[f.key]||"") : "";
+    const el=document.getElementById(narrativeFieldInputId(f.key));
+    if(el) el.value=(review && review.fields && review.fields[f.key]) || "";
   });
 }
 function renderBossReview(){
@@ -1716,40 +1631,104 @@ function renderBossReview(){
   d.discuss.filter(e=>!d.blocked.includes(e)&&!d.overdue.includes(e)).slice(0,5).forEach(e=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(e.focus)+'</strong><span>Flagged for discussion · '+esc(e.owner||e.member||"-")+'</span></div></div>'));
   if(!rows.length) rows.push('<div class="dempty">No major management signals. Good week — use the narrative fields to capture wins and next steps.</div>');
   document.getElementById("boss-auto").innerHTML=rows.join("");
+  const nfb=document.getElementById("narrative-fields-btn"); if(nfb) nfb.classList.toggle("hidden", !(me&&me.role==="admin"));
   renderNarrativeFields(review);
-  renderFieldConfigList("boss");
 }
 function saveBossReview(){
   const wk=document.getElementById("boss-week").value, old=reviewFor(wk);
-  const rec={id:old?.id||("br_"+Date.now()),ownerId:me.id,owner:me.name,week:wk,updated:Date.now()};
-  enabledFields("boss").forEach(f=>{
-    const el=document.getElementById("br-"+f.key); if(!el) return;
-    rec[f.key]=el.value.trim();
+  const fields={};
+  (state.narrativeFields||[]).forEach(f=>{
+    const el=document.getElementById(narrativeFieldInputId(f.key));
+    fields[f.key]= el ? el.value.trim() : "";
   });
-  if(old){
-    fieldsFor("boss").forEach(f=>{ if(rec[f.key]===undefined && old[f.key]!==undefined) rec[f.key]=old[f.key]; });
-    Object.assign(old,rec);
-  } else state.bossReviews.push(rec);
-  persist(); buildSidebar(); alert("Weekly review saved.");
+  const rec={id:old?.id||("br_"+Date.now()),ownerId:me.id,owner:me.name,week:wk,fields,updated:Date.now()};
+  if(old) Object.assign(old,rec); else state.bossReviews.push(rec); persist(); buildSidebar(); alert("Weekly review saved.");
+}
+/* ---- Admin field manager: add / rename / remove custom fields for
+   My Focus entries ("focus") and the meeting narrative ("narrative") ---- */
+function fmFieldsArray(kind){ return kind==="narrative" ? (state.narrativeFields||(state.narrativeFields=[])) : (state.focusFields||(state.focusFields=[])); }
+function newFieldKey(arr, label){
+  let base=(label||"field").toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"")||"field";
+  const keys=new Set(arr.map(f=>f.key));
+  let key=base, i=2;
+  while(keys.has(key)){ key=base+"_"+i; i++; }
+  return key;
+}
+let fmKind=null;
+function fmRefreshHost(kind){
+  if(kind==="narrative"){ if(activeView==="boss") renderBossReview(); }
+  else {
+    if(activeView==="focus"){
+      renderFocus();
+      if(focusFormOpen){
+        const item=editingFocusId?(state.managerFocus||[]).find(x=>String(x.id)===String(editingFocusId)):null;
+        renderFocusFormFields(item);
+      }
+    }
+  }
+}
+function openFieldsModal(kind){
+  if(!me || me.role!=="admin") return;
+  fmKind=kind;
+  document.getElementById("fm-title").textContent = kind==="narrative" ? "Manage meeting narrative fields" : "Manage My Focus fields";
+  document.getElementById("fm-sub").textContent = "Add, rename, or remove fields.";
+  document.getElementById("fm-newlabel").value="";
+  renderFieldsModalList();
+  document.getElementById("fieldsmodal").classList.remove("hidden");
+}
+function closeFieldsModal(){
+  document.getElementById("fieldsmodal").classList.add("hidden");
+  fmKind=null;
+}
+function renderFieldsModalList(){
+  const arr=fmFieldsArray(fmKind);
+  const wrap=document.getElementById("fm-list");
+  wrap.innerHTML = arr.length ? arr.map(f=>
+    '<div class="fm-row"><input type="text" value="'+esc(f.label)+'" data-fm-rename="'+esc(f.key)+'" /><button class="ghost small danger" data-fm-remove="'+esc(f.key)+'">Remove</button></div>'
+  ).join("") : '<div class="dempty">No fields yet. Add one below.</div>';
 }
 function bindManagement(){
   document.getElementById("focus-week").onchange=()=>renderFocus();
   document.getElementById("boss-week").onchange=()=>renderBossReview();
   document.getElementById("focus-add").onclick=()=>openFocusForm();
+  document.getElementById("mf-cancel").onclick=closeFocusForm;
+  document.getElementById("mf-save").onclick=saveFocus;
   document.getElementById("boss-save").onclick=saveBossReview;
-  document.getElementById("focus-fields-toggle").onclick=()=>{
-    document.getElementById("focus-fields-panel").classList.toggle("hidden");
-    renderFieldConfigList("focus");
-  };
-  document.getElementById("boss-fields-toggle").onclick=()=>{
-    document.getElementById("boss-fields-panel").classList.toggle("hidden");
-    renderFieldConfigList("boss");
-  };
-  bindNewFieldForm("focus","focus-ff");
-  bindNewFieldForm("boss","boss-ff");
   document.addEventListener("click",e=>{
     const ed=e.target.closest("[data-mf-edit]"); if(ed){const x=(state.managerFocus||[]).find(x=>String(x.id)===String(ed.dataset.mfEdit));if(x)openFocusForm(x);}
     const de=e.target.closest("[data-mf-del]"); if(de){if(!confirm("Delete this focus area?"))return;state.managerFocus=state.managerFocus.filter(x=>String(x.id)!==String(de.dataset.mfDel));persist();renderFocus();buildSidebar();}
+  });
+  // Field manager (admin-only, shared modal for both My Focus and the meeting narrative)
+  document.getElementById("focus-fields-btn").onclick=()=>openFieldsModal("focus");
+  document.getElementById("narrative-fields-btn").onclick=()=>openFieldsModal("narrative");
+  document.getElementById("fm-close").onclick=closeFieldsModal;
+  document.getElementById("fm-add").onclick=()=>{
+    const input=document.getElementById("fm-newlabel"); const label=input.value.trim();
+    if(!label) return;
+    const arr=fmFieldsArray(fmKind);
+    arr.push({key:newFieldKey(arr,label), label});
+    input.value="";
+    persist(); renderFieldsModalList(); fmRefreshHost(fmKind);
+  };
+  document.getElementById("fm-newlabel").addEventListener("keydown", e=>{
+    if(e.key==="Enter"){ e.preventDefault(); document.getElementById("fm-add").click(); }
+  });
+  document.getElementById("fm-list").addEventListener("input", e=>{
+    const inp=e.target.closest("[data-fm-rename]"); if(!inp) return;
+    const f=fmFieldsArray(fmKind).find(x=>x.key===inp.dataset.fmRename);
+    if(f) f.label=inp.value;
+  });
+  document.getElementById("fm-list").addEventListener("change", e=>{
+    const inp=e.target.closest("[data-fm-rename]"); if(!inp) return;
+    persist(); fmRefreshHost(fmKind);
+  });
+  document.getElementById("fm-list").addEventListener("click", e=>{
+    const btn=e.target.closest("[data-fm-remove]"); if(!btn) return;
+    if(!confirm("Remove this field? Existing saved values for it will no longer be shown.")) return;
+    const arr=fmFieldsArray(fmKind);
+    const idx=arr.findIndex(x=>x.key===btn.dataset.fmRemove);
+    if(idx>-1) arr.splice(idx,1);
+    persist(); renderFieldsModalList(); fmRefreshHost(fmKind);
   });
 }
 function refreshViews(){
@@ -1777,7 +1756,6 @@ function refreshViews(){
   renderAlerts();
 }
 function mountApp(){
-  if(!mgmtBound){ bindManagement(); mgmtBound=true; }
   document.getElementById("week").innerHTML=weekLabel();
   const vt=visibleTeams();
   if(me.role!=="admin"){
