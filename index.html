@@ -616,58 +616,31 @@
 
 
     <!-- MY FOCUS / MANAGEMENT LAYER -->
-    <div id="view-focus" class="hidden">
+    <!-- CATCH UP NOTES (merged My Focus + MeiYan x Vhino) -->
+    <div id="view-catchup" class="hidden">
       <div class="mgmt-wrap">
         <div class="mgmt-hero">
-          <div><div class="kicker">Management</div><h2>My Weekly Focus</h2><p>Keep your own priorities separate from team activity, then use them to build the leadership story.</p></div>
-          <div class="mgmt-actions"><select id="focus-week" style="width:auto;"></select><button class="ghost small" id="focus-fields-btn">Manage fields</button><button class="primary small" id="focus-add">+ Add focus</button></div>
+          <div><div class="kicker">Management</div><h2>Catch Up Notes</h2><p>Your weekly management note: priorities, status, and the story for leadership, all in one place.</p></div>
+          <div class="mgmt-actions"><select id="cu-week" style="width:auto;"></select><button class="ghost small" id="cu-fields-btn">Manage fields</button><button class="primary small" id="cu-save">Save note</button></div>
         </div>
-        <div class="mgmt-grid" id="focus-kpis"></div>
+        <div class="mgmt-grid" id="cu-kpis"></div>
         <div class="mgmt-section">
-          <h3>This week's priorities</h3><div class="section-sub">Aim for 3–5 items. These are the things you personally want to move, decide, or improve.</div>
-          <div id="focus-list" class="focus-list"></div>
+          <h3>Auto-generated talking points</h3><div class="section-sub">Pulled from team updates and management signals for the selected week.</div>
+          <div id="cu-auto" class="boss-auto"></div>
         </div>
-        <div class="mgmt-section hidden" id="focus-form-wrap">
-          <h3>Add / edit focus</h3><div class="section-sub">Keep the entry outcome-oriented. This is for your management work, not the team's task list.</div>
+        <div class="mgmt-section">
+          <h3>Your note</h3><div class="section-sub">Keep it outcome-oriented — this is your management view, not the team's task list.</div>
           <div class="mgmt-form">
-            <label><span class="fl">Focus <span class="req">required</span></span><input id="mf-focus" placeholder="e.g. Improve governance audit automation" /></label>
-            <label><span class="fl">Status</span><select id="mf-status"><option>On track</option><option>Monitor</option><option>At risk</option><option>Done</option></select></label>
-            <div id="mf-dynamic-fields" class="mgmt-form" style="padding:0; border:none; grid-column:1/-1;"></div>
-            <label><span class="fl">Leadership visibility</span><select id="mf-visibility"><option>No</option><option>Yes</option></select></label>
-            <div class="mgmt-form-actions"><button class="ghost small" id="mf-cancel">Cancel</button><button class="primary small" id="mf-save">Save focus</button></div>
+            <label><span class="fl">Focus <span class="req">required</span></span><input id="cu-focus" placeholder="e.g. Improve governance audit automation" /></label>
+            <label><span class="fl">Status</span><select id="cu-status"><option>On track</option><option>Monitor</option><option>At risk</option><option>Done</option></select></label>
+            <label><span class="fl">Leadership visibility</span><select id="cu-visibility"><option>No</option><option>Yes</option></select></label>
+            <div id="cu-dynamic-fields" class="mgmt-form" style="padding:0; border:none; grid-column:1/-1;"></div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- MEIYAN X VHINO REVIEW -->
-    <div id="view-boss" class="hidden">
-      <div class="mgmt-wrap">
-        <div class="mgmt-hero">
-          <div><div class="kicker">Leadership</div><h2>MeiYan x Vhino</h2><p>A meeting-ready view: what you focused on, what changed, what is at risk, and what you need.</p></div>
-          <div class="mgmt-actions"><select id="boss-week" style="width:auto;"></select><button class="primary small" id="boss-save">Save review</button></div>
-        </div>
-        <div class="boss-grid">
-          <div class="mgmt-section">
-            <h3>Auto-generated talking points</h3><div class="section-sub">Pulled from team updates, your focus areas, and management signals for the selected week.</div>
-            <div id="boss-auto" class="boss-auto"></div>
-          </div>
-          <div class="mgmt-section">
-            <h3>Leadership snapshot</h3><div class="section-sub">A quick read before the meeting.</div>
-            <div id="boss-kpis" class="mgmt-grid" style="grid-template-columns:1fr 1fr;"></div>
-          </div>
-        </div>
-        <div class="mgmt-section">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
-            <div><h3 style="margin-bottom:0;">Your meeting narrative</h3><div class="section-sub">The system gives you the facts; these fields let you add your management judgment.</div></div>
-            <button class="ghost small" id="narrative-fields-btn">Manage fields</button>
-          </div>
-          <div class="narrative-fields" id="br-fields"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ADMIN FIELD EDITOR (used for both My Focus fields and meeting-narrative fields) -->
+    <!-- ADMIN FIELD EDITOR -->
     <div class="modal hidden" id="fieldsmodal">
       <div class="box">
         <h3 id="fm-title">Manage fields</h3>
@@ -827,6 +800,11 @@
             <button class="primary" id="c-add">Add category</button>
           </div>
         </div>
+      </div>
+      <div class="datasec" id="archived-sec">
+        <h2 style="font-size:20px; margin:0 0 4px;">Archived entries <span id="archived-count" style="font-weight:400; color:var(--ink-soft); font-size:14px;"></span></h2>
+        <p style="font-size:13px; color:var(--ink-soft); margin:0 0 14px;">Done entries older than 8 weeks are moved here automatically to keep the board tidy. Nothing is deleted - restore any entry back to the active board.</p>
+        <div id="archived-wrap"></div>
       </div>
     </div>
 
@@ -1035,21 +1013,21 @@ function defaultState(){
       {id:3,team:"TOD",member:"Diego, Elle",owner:"Diego",focus:"Q3 reporting dashboard",category:"Order monitoring",remarks:"",status:"Active",prio:"Medium",due:isoInDays(-2),blocked:false,blockers:"",update:"Kicks off Thursday",img:"",discuss:false,created:now,updated:now,by:"Diego"}
     ],
     highlights: [],
+    archivedEntries: [],
     broadcasts: [],
     managerFocus: [],
     bossReviews: [],
-    focusFields: [
+    catchupFields: [
       {key:"why", label:"Why it matters"},
       {key:"target", label:"Target this week"},
       {key:"next", label:"Next step"},
       {key:"outcome", label:"Outcome / result"},
-      {key:"support", label:"Support needed"}
-    ],
-    narrativeFields: [
+      {key:"support", label:"Support needed"},
       {key:"changed", label:"What changed?"},
       {key:"wins", label:"Key wins"},
       {key:"risks", label:"Risks / concerns"}
-    ]
+    ],
+    catchupNotes: []
   };
 }
 const ORDER=["Active","In progress","Done"];
@@ -1074,7 +1052,7 @@ const NICO={
 };
 let state=null, me=null, activeView="dashboard", activeTab=null;
 let dashWeek="all", boardWeek="all";
-let db=null, docRef=null, storage=null, useCloud=false, suppress=false, mounted=false;
+let db=null, docRef=null, storage=null, useCloud=false, suppress=false, mounted=false, managementBound=false;
 let pendingFile=null;
 let openThreads=new Set();
 let histOpen=new Set();
@@ -1195,6 +1173,7 @@ function myOpenNudges(){
 }
 function migrate(){
   if(typeof state.reviewedAt!=="number") state.reviewedAt=0;
+  if(!Array.isArray(state.archivedEntries)) state.archivedEntries=[];
   if(!Array.isArray(state.broadcasts)) state.broadcasts=[];
   state.broadcasts.forEach(b=>{
     if(!Array.isArray(b.readBy)) b.readBy=[];
@@ -1236,6 +1215,41 @@ function migrate(){
       if(r[k]!=null && r.fields[k]==null){ r.fields[k]=r[k]; }
     });
   });
+  // "My Focus" and "MeiYan x Vhino" were merged into one "Catch Up Notes"
+  // tab (single note per person per week, all fields flattened together).
+  // Normalize the new state and, one time only, fold any existing focus
+  // items + boss reviews into that shape so past notes aren't lost. The old
+  // managerFocus/bossReviews arrays are left untouched as a backup; they're
+  // just no longer shown in the UI.
+  if(!Array.isArray(state.catchupFields) || !state.catchupFields.length){
+    const seenKeys=new Set(), merged=[];
+    (state.focusFields||[]).concat(state.narrativeFields||[]).forEach(f=>{
+      let key=f.key, i=2;
+      while(seenKeys.has(key)){ key=f.key+"_"+i; i++; }
+      seenKeys.add(key);
+      merged.push({key, label:f.label});
+    });
+    state.catchupFields=merged;
+  }
+  if(!Array.isArray(state.catchupNotes)) state.catchupNotes=[];
+  if(!state.catchupNotes.length && (state.managerFocus.length || state.bossReviews.length)){
+    const byKey={};
+    // Multiple focus items could exist per person/week; keep the most
+    // recently updated one as the seed for focus/status/visibility.
+    state.managerFocus.forEach(x=>{
+      const k=x.ownerId+"|"+x.week;
+      if(!byKey[k] || (x.updated||0)>(byKey[k].updated||0)){
+        byKey[k]={ownerId:x.ownerId, owner:x.owner, week:x.week, focus:x.focus, status:x.status, visibility:x.visibility, fields:Object.assign({},x.fields), created:x.created||x.updated, updated:x.updated};
+      }
+    });
+    state.bossReviews.forEach(r=>{
+      const k=r.ownerId+"|"+r.week;
+      if(!byKey[k]) byKey[k]={ownerId:r.ownerId, owner:r.owner, week:r.week, focus:"", status:"On track", visibility:"No", fields:{}, created:r.updated, updated:r.updated};
+      byKey[k].fields=Object.assign({}, byKey[k].fields, r.fields);
+      byKey[k].updated=Math.max(byKey[k].updated||0, r.updated||0);
+    });
+    state.catchupNotes=Object.keys(byKey).map((k,i)=>Object.assign({id:"cu_migrated_"+i+"_"+Date.now()}, byKey[k]));
+  }
   // Categories used to be hardcoded in the markup; move them into state so
   // admins can edit them. Any category already on an entry is preserved.
   if(!Array.isArray(state.categories) || !state.categories.length){
@@ -1400,7 +1414,7 @@ function finishLogin(m){
   document.getElementById("gate-err").textContent="";
   document.getElementById("gate").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
-  mounted=true; bindManagement();
+  mounted=true;
 mountApp();
 }
 function tryLogin(){
@@ -1471,10 +1485,8 @@ function buildSidebar(){
   });
   if(me.role==="admin"){
     const lblG=document.createElement("div"); lblG.className="navlabel"; lblG.textContent="Management"; sb.appendChild(lblG);
-    const mfCount=(state.managerFocus||[]).filter(x=>x.ownerId===me.id && x.week===weekKeyNow()).length;
-    mkItem("My Focus", NICO.focus, activeView==="focus", ()=>{ activeView="focus"; if(typeof closeFocusForm==="function") closeFocusForm(); refreshViews(); }, mfCount);
-    const br=Array.isArray(state.bossReviews)?state.bossReviews.find(x=>x.ownerId===me.id&&x.week===weekKeyNow()):null;
-    mkItem("MeiYan x Vhino", NICO.boss, activeView==="boss", ()=>{ activeView="boss"; refreshViews(); }, br?1:null);
+    const cuNote=Array.isArray(state.catchupNotes)?state.catchupNotes.find(x=>x.ownerId===me.id&&x.week===weekKeyNow()):null;
+    mkItem("Catch Up Notes", NICO.focus, activeView==="catchup", ()=>{ activeView="catchup"; refreshViews(); }, cuNote?1:null);
   }
   const lblH=document.createElement("div"); lblH.className="navlabel"; lblH.textContent="Weekly"; sb.appendChild(lblH);
   const hlUnseen=unseenHighlights();
@@ -1483,9 +1495,7 @@ function buildSidebar(){
   const pinnedCount=pinnedHighlights().length;
   mkItem('<span class="pinnav">'+PIN_SVG+'Pinned</span>', "", activeView==="pinned",
     ()=>{ activeView="pinned"; refreshViews(); }, pinnedCount, true);
-  const lbl3=document.createElement("div"); lbl3.className="navlabel"; lbl3.textContent="Present"; sb.appendChild(lbl3);
-  mkItem("Presentations", NICO.deck, activeView==="deck", ()=>{ activeView="deck"; refreshViews(); },
-    (state.decks||[]).filter(d=>!d.archived).length);
+  // Presentations tab removed
   // Messaging: everyone gets a Broadcast tab now — it shows your inbox, and
   // also a composer + send history if you're allowed to broadcast.
   const lblM=document.createElement("div"); lblM.className="navlabel"; lblM.textContent="Messages"; sb.appendChild(lblM);
@@ -1508,11 +1518,9 @@ function buildSidebar(){
 /* ============ MANAGEMENT FUNCTIONS ============ */
 function managerWeeks(){ return allWeekKeys().length ? allWeekKeys() : [weekKeyNow()]; }
 function ensureManagerDefaults(){
-  if(!Array.isArray(state.managerFocus)) state.managerFocus=[];
-  if(!Array.isArray(state.bossReviews)) state.bossReviews=[];
+  if(!Array.isArray(state.catchupNotes)) state.catchupNotes=[];
 }
-function focusFor(wk){ return (state.managerFocus||[]).filter(x=>x.ownerId===me.id && x.week===wk).sort((a,b)=>(a.created||0)-(b.created||0)); }
-function reviewFor(wk){ return (state.bossReviews||[]).find(x=>x.ownerId===me.id && x.week===wk); }
+function catchupFor(wk){ return (state.catchupNotes||[]).find(x=>x.ownerId===me.id && x.week===wk); }
 function managerScope(wk){
   const teams=me.role==="admin"?state.teams:[me.team];
   return (state.entries||[]).filter(e=>teams.includes(e.team) && (wk==="all"||entryWeek(e)===wk));
@@ -1523,130 +1531,63 @@ function fillWeekSelect(id, value){
   el.innerHTML=keys.map(k=>'<option value="'+esc(k)+'">'+esc(weekKeyLabel(k))+'</option>').join("");
   if(keys.includes(value)) el.value=value; else if(keys.includes(weekKeyNow())) el.value=weekKeyNow(); else el.value=keys[keys.length-1];
 }
-function focusFieldInputId(key){ return "mf-field-"+key; }
-function renderFocusFormFields(item){
-  const host=document.getElementById("mf-dynamic-fields");
-  const fields=state.focusFields||[];
+function catchupFieldInputId(key){ return "cu-field-"+key; }
+function renderCatchupFormFields(note){
+  const host=document.getElementById("cu-dynamic-fields");
+  const fields=state.catchupFields||[];
   host.innerHTML=fields.map(f=>
-    '<label class="full"><span class="fl">'+esc(f.label)+'</span><textarea id="'+focusFieldInputId(f.key)+'" data-fkey="'+esc(f.key)+'"></textarea></label>'
+    '<label class="full"><span class="fl">'+esc(f.label)+'</span><textarea id="'+catchupFieldInputId(f.key)+'" data-fkey="'+esc(f.key)+'"></textarea></label>'
   ).join("");
   fields.forEach(f=>{
-    const el=document.getElementById(focusFieldInputId(f.key));
-    if(el) el.value=(item && item.fields && item.fields[f.key]) || "";
+    const el=document.getElementById(catchupFieldInputId(f.key));
+    if(el) el.value=(note && note.fields && note.fields[f.key]) || "";
   });
 }
-function renderFocus(){
-  ensureManagerDefaults();
-  const el=document.getElementById("focus-week"); if(!el) return;
-  fillWeekSelect("focus-week", el.value||weekKeyNow());
-  const wk=el.value, rows=focusFor(wk), entries=managerScope(wk), open=entries.filter(e=>e.status!=="Done");
-  const atRisk=rows.filter(x=>x.status==="At risk").length;
-  const leadership=rows.filter(x=>x.visibility==="Yes").length;
-  document.getElementById("focus-kpis").innerHTML=
-    '<div class="mgmt-card"><h3>My priorities</h3><div class="sub">Personal management focus</div><div class="mgmt-kpi">'+rows.length+' <small>items</small></div></div>'+ 
-    '<div class="mgmt-card"><h3>At risk</h3><div class="sub">Needs your intervention</div><div class="mgmt-kpi">'+atRisk+' <small>focus areas</small></div></div>'+ 
-    '<div class="mgmt-card"><h3>Team signals</h3><div class="sub">Open work in the selected week</div><div class="mgmt-kpi">'+open.length+' <small>open items</small></div></div>';
-  // Entries render as a real list (a table of rows), one row per focus area,
-  // with its custom fields shown as a bulleted detail list in that row.
-  const list=document.getElementById("focus-list");
-  if(!rows.length){
-    list.innerHTML='<div class="dempty">No focus areas yet. Add 3–5 priorities for the week.</div>';
-  } else {
-    const fdefs=state.focusFields||[];
-    list.innerHTML='<table class="focus-table"><thead><tr><th>Focus</th><th>Status</th><th>Details</th><th></th></tr></thead><tbody>'+
-      rows.map(x=>{
-        const details=fdefs.map(f=>{
-          const val=(x.fields && x.fields[f.key]) || "";
-          return val ? '<li><b>'+esc(f.label)+'</b>'+esc(val)+'</li>' : "";
-        }).join("");
-        return '<tr>'+
-          '<td><div class="focus-title">'+esc(x.focus)+'</div></td>'+
-          '<td><div class="focus-meta">'+esc(x.status)+'<br>'+(x.visibility==="Yes"?"Leadership visible":"Internal")+'</div></td>'+
-          '<td>'+(details?'<ul class="focus-detail-list">'+details+'</ul>':'<span class="focus-meta">No details added.</span>')+'</td>'+
-          '<td><button class="small" data-mf-edit="'+esc(String(x.id))+'">Edit</button> <button class="small danger" data-mf-del="'+esc(String(x.id))+'">Delete</button></td>'+
-        '</tr>';
-      }).join("")+
-    '</tbody></table>';
-  }
-  const ffb=document.getElementById("focus-fields-btn"); if(ffb) ffb.classList.toggle("hidden", !(me&&me.role==="admin"));
-  // Only close the add/edit form here if it isn't actively open — otherwise a
-  // background refresh (e.g. live sync picking up someone else's edit) would
-  // silently slam the form shut while you're in the middle of typing.
-  if(!focusFormOpen) document.getElementById("focus-form-wrap").classList.add("hidden");
-}
-let editingFocusId=null;
-let focusFormOpen=false;
-function openFocusForm(item){
-  editingFocusId=item?item.id:null;
-  focusFormOpen=true;
-  document.getElementById("focus-form-wrap").classList.remove("hidden");
-  document.getElementById("mf-focus").value=item?.focus||""; document.getElementById("mf-status").value=item?.status||"On track";
-  renderFocusFormFields(item);
-  document.getElementById("mf-visibility").value=item?.visibility||"No";
-  document.getElementById("mf-focus").focus();
-}
-function closeFocusForm(){
-  editingFocusId=null; focusFormOpen=false;
-  document.getElementById("focus-form-wrap").classList.add("hidden");
-}
-function saveFocus(){
-  const wk=document.getElementById("focus-week").value, focus=document.getElementById("mf-focus").value.trim();
-  if(!focus){ alert("Focus is required."); return; }
-  const fields={};
-  (state.focusFields||[]).forEach(f=>{
-    const el=document.getElementById(focusFieldInputId(f.key));
-    fields[f.key]= el ? el.value.trim() : "";
-  });
-  const rec={id:editingFocusId||("mf_"+Date.now()),ownerId:me.id,owner:me.name,week:wk,focus,status:document.getElementById("mf-status").value,fields,visibility:document.getElementById("mf-visibility").value,created:Date.now(),updated:Date.now()};
-  const old=(state.managerFocus||[]).find(x=>String(x.id)===String(editingFocusId)); if(old){ rec.created=old.created||rec.created; Object.assign(old,rec); } else state.managerFocus.push(rec);
-  focusFormOpen=false; persist(); editingFocusId=null; renderFocus(); buildSidebar();
-}
-function autoBossData(wk){
+function autoCatchupData(wk){
   const entries=managerScope(wk), open=entries.filter(e=>e.status!=="Done");
   const blocked=open.filter(e=>e.blocked), overdue=open.filter(e=>{const n=daysUntilDue(e);return n!==null&&n<0;}), discuss=open.filter(e=>e.discuss), stale=open.filter(e=>daysSinceUpdate(e)>=STALE_DAYS);
   const carry=open.filter(e=>(e.history||[]).length>=1);
-  const done=entries.filter(e=>e.status==="Done"); const focus=focusFor(wk);
-  return {entries,open,blocked,overdue,discuss,stale,carry,done,focus};
+  const done=entries.filter(e=>e.status==="Done");
+  return {entries,open,blocked,overdue,discuss,stale,carry,done};
 }
-function narrativeFieldInputId(key){ return "br-field-"+key; }
-function renderNarrativeFields(review){
-  const host=document.getElementById("br-fields");
-  const fields=state.narrativeFields||[];
-  if(!fields.length){ host.innerHTML='<div class="dempty">No narrative fields yet. Use <b>Manage fields</b> to add one.</div>'; return; }
-  host.innerHTML=fields.map(f=>
-    '<div class="boss-box"><h4>'+esc(f.label)+'</h4><textarea id="'+narrativeFieldInputId(f.key)+'" data-fkey="'+esc(f.key)+'"></textarea></div>'
-  ).join("");
-  fields.forEach(f=>{
-    const el=document.getElementById(narrativeFieldInputId(f.key));
-    if(el) el.value=(review && review.fields && review.fields[f.key]) || "";
-  });
-}
-function renderBossReview(){
-  ensureManagerDefaults(); const sel=document.getElementById("boss-week"); fillWeekSelect("boss-week", sel.value||weekKeyNow()); const wk=sel.value; const d=autoBossData(wk), review=reviewFor(wk);
-  document.getElementById("boss-kpis").innerHTML='<div class="mgmt-card"><h3>Open</h3><div class="mgmt-kpi">'+d.open.length+'</div></div><div class="mgmt-card"><h3>Done</h3><div class="mgmt-kpi">'+d.done.length+'</div></div><div class="mgmt-card"><h3>At risk</h3><div class="mgmt-kpi">'+(d.blocked.length+d.overdue.length)+'</div></div><div class="mgmt-card"><h3>My focus</h3><div class="mgmt-kpi">'+d.focus.length+'</div></div>';
+function renderCatchup(){
+  ensureManagerDefaults();
+  const el=document.getElementById("cu-week"); if(!el) return;
+  fillWeekSelect("cu-week", el.value||weekKeyNow());
+  const wk=el.value, note=catchupFor(wk), d=autoCatchupData(wk);
+  document.getElementById("cu-kpis").innerHTML=
+    '<div class="mgmt-card"><h3>Open</h3><div class="mgmt-kpi">'+d.open.length+'</div></div>'+
+    '<div class="mgmt-card"><h3>Done</h3><div class="mgmt-kpi">'+d.done.length+'</div></div>'+
+    '<div class="mgmt-card"><h3>At risk</h3><div class="mgmt-kpi">'+(d.blocked.length+d.overdue.length)+'</div></div>'+
+    '<div class="mgmt-card"><h3>My status</h3><div class="mgmt-kpi" style="font-size:16px;">'+esc(note?note.status:"Not set")+'</div></div>';
   const rows=[];
-  d.focus.filter(x=>x.visibility==="Yes"||x.status==="At risk").forEach(x=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(x.focus)+'</strong><span>My focus · '+esc(x.status)+(x.visibility==="Yes"?' · leadership visible':'')+'</span></div></div>'));
+  if(note && (note.visibility==="Yes"||note.status==="At risk")) rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(note.focus||"")+'</strong><span>My focus · '+esc(note.status)+(note.visibility==="Yes"?' · leadership visible':'')+'</span></div></div>');
   d.blocked.slice(0,6).forEach(e=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(e.focus)+'</strong><span>Blocked · '+esc(e.owner||e.member||"-")+(e.blockers?' · '+esc(e.blockers):'')+'</span></div></div>'));
   d.overdue.slice(0,6).forEach(e=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(e.focus)+'</strong><span>Overdue · '+esc(e.owner||e.member||"-")+'</span></div></div>'));
   d.discuss.filter(e=>!d.blocked.includes(e)&&!d.overdue.includes(e)).slice(0,5).forEach(e=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(e.focus)+'</strong><span>Flagged for discussion · '+esc(e.owner||e.member||"-")+'</span></div></div>'));
-  if(!rows.length) rows.push('<div class="dempty">No major management signals. Good week — use the narrative fields to capture wins and next steps.</div>');
-  document.getElementById("boss-auto").innerHTML=rows.join("");
-  const nfb=document.getElementById("narrative-fields-btn"); if(nfb) nfb.classList.toggle("hidden", !(me&&me.role==="admin"));
-  renderNarrativeFields(review);
+  if(!rows.length) rows.push('<div class="dempty">No major management signals. Good week — use the note below to capture wins and next steps.</div>');
+  document.getElementById("cu-auto").innerHTML=rows.join("");
+  document.getElementById("cu-focus").value=note?.focus||"";
+  document.getElementById("cu-status").value=note?.status||"On track";
+  document.getElementById("cu-visibility").value=note?.visibility||"No";
+  renderCatchupFormFields(note);
+  const cfb=document.getElementById("cu-fields-btn"); if(cfb) cfb.classList.toggle("hidden", !(me&&me.role==="admin"));
 }
-function saveBossReview(){
-  const wk=document.getElementById("boss-week").value, old=reviewFor(wk);
+function saveCatchup(){
+  const wk=document.getElementById("cu-week").value, focus=document.getElementById("cu-focus").value.trim();
+  if(!focus){ alert("Focus is required."); return; }
   const fields={};
-  (state.narrativeFields||[]).forEach(f=>{
-    const el=document.getElementById(narrativeFieldInputId(f.key));
+  (state.catchupFields||[]).forEach(f=>{
+    const el=document.getElementById(catchupFieldInputId(f.key));
     fields[f.key]= el ? el.value.trim() : "";
   });
-  const rec={id:old?.id||("br_"+Date.now()),ownerId:me.id,owner:me.name,week:wk,fields,updated:Date.now()};
-  if(old) Object.assign(old,rec); else state.bossReviews.push(rec); persist(); buildSidebar(); alert("Weekly review saved.");
+  const old=catchupFor(wk);
+  const rec={id:old?.id||("cu_"+Date.now()),ownerId:me.id,owner:me.name,week:wk,focus,status:document.getElementById("cu-status").value,visibility:document.getElementById("cu-visibility").value,fields,updated:Date.now()};
+  if(old){ rec.created=old.created||rec.updated; Object.assign(old,rec); } else { rec.created=Date.now(); state.catchupNotes.push(rec); }
+  persist(); renderCatchup(); buildSidebar(); alert("Note saved.");
 }
-/* ---- Admin field manager: add / rename / remove custom fields for
-   My Focus entries ("focus") and the meeting narrative ("narrative") ---- */
-function fmFieldsArray(kind){ return kind==="narrative" ? (state.narrativeFields||(state.narrativeFields=[])) : (state.focusFields||(state.focusFields=[])); }
+/* ---- Admin field manager: add / rename / remove custom fields for Catch Up Notes ---- */
+function fmFieldsArray(){ return state.catchupFields||(state.catchupFields=[]); }
 function newFieldKey(arr, label){
   let base=(label||"field").toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"")||"field";
   const keys=new Set(arr.map(f=>f.key));
@@ -1654,23 +1595,12 @@ function newFieldKey(arr, label){
   while(keys.has(key)){ key=base+"_"+i; i++; }
   return key;
 }
-let fmKind=null;
-function fmRefreshHost(kind){
-  if(kind==="narrative"){ if(activeView==="boss") renderBossReview(); }
-  else {
-    if(activeView==="focus"){
-      renderFocus();
-      if(focusFormOpen){
-        const item=editingFocusId?(state.managerFocus||[]).find(x=>String(x.id)===String(editingFocusId)):null;
-        renderFocusFormFields(item);
-      }
-    }
-  }
+function fmRefreshHost(){
+  if(activeView==="catchup") renderCatchup();
 }
-function openFieldsModal(kind){
+function openFieldsModal(){
   if(!me || me.role!=="admin") return;
-  fmKind=kind;
-  document.getElementById("fm-title").textContent = kind==="narrative" ? "Manage meeting narrative fields" : "Manage My Focus fields";
+  document.getElementById("fm-title").textContent = "Manage Catch Up Notes fields";
   document.getElementById("fm-sub").textContent = "Add, rename, or remove fields.";
   document.getElementById("fm-newlabel").value="";
   renderFieldsModalList();
@@ -1678,77 +1608,70 @@ function openFieldsModal(kind){
 }
 function closeFieldsModal(){
   document.getElementById("fieldsmodal").classList.add("hidden");
-  fmKind=null;
 }
 function renderFieldsModalList(){
-  const arr=fmFieldsArray(fmKind);
+  const arr=fmFieldsArray();
   const wrap=document.getElementById("fm-list");
   wrap.innerHTML = arr.length ? arr.map(f=>
     '<div class="fm-row"><input type="text" value="'+esc(f.label)+'" data-fm-rename="'+esc(f.key)+'" /><button class="ghost small danger" data-fm-remove="'+esc(f.key)+'">Remove</button></div>'
   ).join("") : '<div class="dempty">No fields yet. Add one below.</div>';
 }
 function bindManagement(){
-  document.getElementById("focus-week").onchange=()=>renderFocus();
-  document.getElementById("boss-week").onchange=()=>renderBossReview();
-  document.getElementById("focus-add").onclick=()=>openFocusForm();
-  document.getElementById("mf-cancel").onclick=closeFocusForm;
-  document.getElementById("mf-save").onclick=saveFocus;
-  document.getElementById("boss-save").onclick=saveBossReview;
+  if(managementBound) return;
+  managementBound=true;
+  document.getElementById("cu-week").onchange=()=>renderCatchup();
+  document.getElementById("cu-save").onclick=saveCatchup;
   document.addEventListener("click",e=>{
-    const ed=e.target.closest("[data-mf-edit]"); if(ed){const x=(state.managerFocus||[]).find(x=>String(x.id)===String(ed.dataset.mfEdit));if(x)openFocusForm(x);}
-    const de=e.target.closest("[data-mf-del]"); if(de){if(!confirm("Delete this focus area?"))return;state.managerFocus=state.managerFocus.filter(x=>String(x.id)!==String(de.dataset.mfDel));persist();renderFocus();buildSidebar();}
+    const rs=e.target.closest("[data-restore]"); if(rs){ restoreArchivedEntry(rs.dataset.restore); }
   });
-  // Field manager (admin-only, shared modal for both My Focus and the meeting narrative)
-  document.getElementById("focus-fields-btn").onclick=()=>openFieldsModal("focus");
-  document.getElementById("narrative-fields-btn").onclick=()=>openFieldsModal("narrative");
+  // Field manager (admin-only) for Catch Up Notes fields
+  document.getElementById("cu-fields-btn").onclick=()=>openFieldsModal();
   document.getElementById("fm-close").onclick=closeFieldsModal;
   document.getElementById("fm-add").onclick=()=>{
     const input=document.getElementById("fm-newlabel"); const label=input.value.trim();
     if(!label) return;
-    const arr=fmFieldsArray(fmKind);
+    const arr=fmFieldsArray();
     arr.push({key:newFieldKey(arr,label), label});
     input.value="";
-    persist(); renderFieldsModalList(); fmRefreshHost(fmKind);
+    persist(); renderFieldsModalList(); fmRefreshHost();
   };
   document.getElementById("fm-newlabel").addEventListener("keydown", e=>{
     if(e.key==="Enter"){ e.preventDefault(); document.getElementById("fm-add").click(); }
   });
   document.getElementById("fm-list").addEventListener("input", e=>{
     const inp=e.target.closest("[data-fm-rename]"); if(!inp) return;
-    const f=fmFieldsArray(fmKind).find(x=>x.key===inp.dataset.fmRename);
+    const f=fmFieldsArray().find(x=>x.key===inp.dataset.fmRename);
     if(f) f.label=inp.value;
   });
   document.getElementById("fm-list").addEventListener("change", e=>{
     const inp=e.target.closest("[data-fm-rename]"); if(!inp) return;
-    persist(); fmRefreshHost(fmKind);
+    persist(); fmRefreshHost();
   });
   document.getElementById("fm-list").addEventListener("click", e=>{
     const btn=e.target.closest("[data-fm-remove]"); if(!btn) return;
     if(!confirm("Remove this field? Existing saved values for it will no longer be shown.")) return;
-    const arr=fmFieldsArray(fmKind);
+    const arr=fmFieldsArray();
     const idx=arr.findIndex(x=>x.key===btn.dataset.fmRemove);
     if(idx>-1) arr.splice(idx,1);
-    persist(); renderFieldsModalList(); fmRefreshHost(fmKind);
+    persist(); renderFieldsModalList(); fmRefreshHost();
   });
 }
 function refreshViews(){
   document.getElementById("view-dashboard").classList.toggle("hidden", activeView!=="dashboard");
-  document.getElementById("view-focus").classList.toggle("hidden", activeView!=="focus");
-  document.getElementById("view-boss").classList.toggle("hidden", activeView!=="boss");
+  document.getElementById("view-catchup").classList.toggle("hidden", activeView!=="catchup");
   document.getElementById("view-board").classList.toggle("hidden", activeView!=="board");
   document.getElementById("view-data").classList.toggle("hidden", activeView!=="data");
   document.getElementById("view-deck").classList.toggle("hidden", activeView!=="deck");
   document.getElementById("view-highlights").classList.toggle("hidden", activeView!=="highlights");
   document.getElementById("view-pinned").classList.toggle("hidden", activeView!=="pinned");
   document.getElementById("view-broadcast").classList.toggle("hidden", activeView!=="broadcast");
-  const title={dashboard:"Dashboard", focus:"My Weekly Focus", boss:"MeiYan x Vhino", board:activeTab, data:"Data", deck:"Presentations", highlights:"Weekly highlights", pinned:"Pinned highlights", broadcast:"Broadcast"}[activeView]||"Dashboard";
+  const title={dashboard:"Dashboard", catchup:"Catch Up Notes", board:activeTab, data:"Data", deck:"Presentations", highlights:"Weekly highlights", pinned:"Pinned highlights", broadcast:"Broadcast"}[activeView]||"Dashboard";
   document.getElementById("page-title").textContent=title;
   buildSidebar();
   if(activeView==="dashboard") renderDashboard();
-  if(activeView==="focus") renderFocus();
-  if(activeView==="boss") renderBossReview();
+  if(activeView==="catchup") renderCatchup();
   if(activeView==="board") render();
-  if(activeView==="data"){ renderRoster(); renderTeams(); renderCategories(); }
+  if(activeView==="data"){ renderRoster(); renderTeams(); renderCategories(); if(me.role==="admin") renderArchivedEntries(); }
   if(activeView==="deck") renderDecks();
   if(activeView==="highlights"){ closeHighlightForm(); renderHighlights(); }
   if(activeView==="pinned") renderPinned();
@@ -1756,10 +1679,11 @@ function refreshViews(){
   renderAlerts();
 }
 function mountApp(){
+  bindManagement();
   document.getElementById("week").innerHTML=weekLabel();
   const vt=visibleTeams();
   if(me.role!=="admin"){
-    if(activeView!=="deck"&&activeView!=="highlights"&&activeView!=="pinned"&&activeView!=="dashboard"&&activeView!=="broadcast") activeView="board";
+    if(activeView!=="highlights"&&activeView!=="pinned"&&activeView!=="dashboard"&&activeView!=="broadcast") activeView="board";
     // Only default to their own team - don't yank them back when browsing others.
     if(!activeTab||!state.teams.includes(activeTab)) activeTab=me.team;
   }
@@ -1773,6 +1697,7 @@ function mountApp(){
   document.getElementById("dash-week").innerHTML=opts(dashWeek);
   document.getElementById("board-week").innerHTML=opts(boardWeek);
   runAutoCarry();
+  runAutoArchive();
   refreshViews();
 }
 function renderDashboard(){
@@ -2641,6 +2566,53 @@ function runAutoCarry(){
 }
 // Check every 5 minutes so an open tab rolls over into the new week on its own.
 setInterval(runAutoCarry, 5*60*1000);
+// ---- Automatic archiving of old, done entries --------------------------
+// Entries marked Done that have sat for 8+ weeks are moved out of the active
+// board into state.archivedEntries so the board and "All weeks" list don't
+// grow forever. Nothing is deleted - admins can restore from the Data tab.
+const ARCHIVE_AFTER_WEEKS=8;
+function autoArchiveOld(){
+  const due=state.entries.filter(e=>e.status==="Done" && weekAgeOf(e)>=ARCHIVE_AFTER_WEEKS);
+  if(!due.length) return false;
+  if(!Array.isArray(state.archivedEntries)) state.archivedEntries=[];
+  due.forEach(e=>{ e.archivedAt=Date.now(); state.archivedEntries.push(e); });
+  const ids=new Set(due.map(e=>e.id));
+  state.entries=state.entries.filter(e=>!ids.has(e.id));
+  return true;
+}
+function runAutoArchive(){
+  if(!me) return;
+  if(autoArchiveOld()){
+    persist();
+    if(typeof buildSidebar==="function") buildSidebar();
+    if(activeView==="board") render();
+    else refreshViews();
+    if(activeView==="data") renderArchivedEntries();
+  }
+}
+setInterval(runAutoArchive, 5*60*1000);
+function restoreArchivedEntry(id){
+  const idx=(state.archivedEntries||[]).findIndex(e=>String(e.id)===String(id));
+  if(idx<0) return;
+  const [e]=state.archivedEntries.splice(idx,1);
+  delete e.archivedAt;
+  // Bring it back into the current week so it shows up on the active board.
+  e.week=weekKeyNow();
+  state.entries.push(e);
+  persist();
+  renderArchivedEntries();
+  if(typeof buildSidebar==="function") buildSidebar();
+}
+function renderArchivedEntries(){
+  const wrap=document.getElementById("archived-wrap");
+  if(!wrap) return;
+  const list=(state.archivedEntries||[]).slice().sort((a,b)=>(b.archivedAt||0)-(a.archivedAt||0));
+  document.getElementById("archived-count").textContent=list.length?("("+list.length+")"):"";
+  if(!list.length){ wrap.innerHTML='<p style="font-size:13px; color:var(--ink-soft);">No archived entries yet. Done items older than '+ARCHIVE_AFTER_WEEKS+' weeks are moved here automatically.</p>'; return; }
+  wrap.innerHTML='<table class="roster"><thead><tr><th>Focus</th><th>Team</th><th>Member</th><th>Week</th><th>Archived</th><th></th></tr></thead><tbody>'+
+    list.map(e=>'<tr><td>'+esc(e.focus||"")+'</td><td>'+esc(e.team||"")+'</td><td>'+esc(e.member||"")+'</td><td>'+esc(weekKeyLabel(entryWeek(e)))+'</td><td>'+esc(new Date(e.archivedAt||0).toLocaleDateString())+'</td><td><button class="ghost small" data-restore="'+e.id+'">Restore</button></td></tr>').join("")+
+    '</tbody></table>';
+}
 document.getElementById("savebtn").onclick=async()=>{
   const focus=document.getElementById("f-focus").value.trim();
   const focusField=document.getElementById("f-focus");
