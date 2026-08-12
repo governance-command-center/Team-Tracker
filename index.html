@@ -621,7 +621,7 @@
       <div class="mgmt-wrap">
         <div class="mgmt-hero">
           <div><div class="kicker">Management</div><h2>Catch Up Notes</h2><p>Your weekly management note: priorities, status, and the story for leadership, all in one place.</p></div>
-          <div class="mgmt-actions"><select id="cu-week" style="width:auto;"></select><button class="ghost small" id="cu-fields-btn">Manage fields</button><button class="primary small" id="cu-save">Save note</button></div>
+          <div class="mgmt-actions"><select id="cu-week" style="width:auto;"></select><button class="primary small" id="cu-save">Save note</button></div>
         </div>
         <div class="mgmt-grid" id="cu-kpis"></div>
         <div class="mgmt-section">
@@ -629,12 +629,14 @@
           <div id="cu-auto" class="boss-auto"></div>
         </div>
         <div class="mgmt-section">
-          <h3>Your note</h3><div class="section-sub">Keep it outcome-oriented — this is your management view, not the team's task list.</div>
-          <div class="mgmt-form">
-            <label><span class="fl">Focus <span class="req">required</span></span><input id="cu-focus" placeholder="e.g. Improve governance audit automation" /></label>
-            <label><span class="fl">Status</span><select id="cu-status"><option>On track</option><option>Monitor</option><option>At risk</option><option>Done</option></select></label>
-            <label><span class="fl">Leadership visibility</span><select id="cu-visibility"><option>No</option><option>Yes</option></select></label>
-            <div id="cu-dynamic-fields" class="mgmt-form" style="padding:0; border:none; grid-column:1/-1;"></div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+            <div><h3>Your note</h3><div class="section-sub">Keep it outcome-oriented — this is your management view, not the team's task list.</div></div>
+            <button class="ghost small" id="cu-fields-btn" style="flex:none;">Manage fields</button>
+          </div>
+          <div class="mgmt-form" style="grid-template-columns: 1fr 2fr; align-items:start;">
+            <label><span class="fl">Focus area <span class="req">required</span></span><input id="cu-focus" placeholder="e.g. Improve governance audit automation" /></label>
+            <div id="cu-dynamic-fields"></div>
+            <label class="full" style="max-width:220px;"><span class="fl">Status</span><select id="cu-status"><option>On track</option><option>Monitor</option><option>At risk</option><option>Done</option></select></label>
           </div>
         </div>
       </div>
@@ -1018,14 +1020,7 @@ function defaultState(){
     managerFocus: [],
     bossReviews: [],
     catchupFields: [
-      {key:"why", label:"Why it matters"},
-      {key:"target", label:"Target this week"},
-      {key:"next", label:"Next step"},
-      {key:"outcome", label:"Outcome / result"},
-      {key:"support", label:"Support needed"},
-      {key:"changed", label:"What changed?"},
-      {key:"wins", label:"Key wins"},
-      {key:"risks", label:"Risks / concerns"}
+      {key:"remarks", label:"Remarks"}
     ],
     catchupNotes: []
   };
@@ -1536,7 +1531,7 @@ function renderCatchupFormFields(note){
   const host=document.getElementById("cu-dynamic-fields");
   const fields=state.catchupFields||[];
   host.innerHTML=fields.map(f=>
-    '<label class="full"><span class="fl">'+esc(f.label)+'</span><textarea id="'+catchupFieldInputId(f.key)+'" data-fkey="'+esc(f.key)+'"></textarea></label>'
+    '<label><span class="fl">'+esc(f.label)+'</span><textarea id="'+catchupFieldInputId(f.key)+'" data-fkey="'+esc(f.key)+'" style="min-height:120px;" placeholder="Add details, progress, or context…"></textarea></label>'
   ).join("");
   fields.forEach(f=>{
     const el=document.getElementById(catchupFieldInputId(f.key));
@@ -1561,7 +1556,7 @@ function renderCatchup(){
     '<div class="mgmt-card"><h3>At risk</h3><div class="mgmt-kpi">'+(d.blocked.length+d.overdue.length)+'</div></div>'+
     '<div class="mgmt-card"><h3>My status</h3><div class="mgmt-kpi" style="font-size:16px;">'+esc(note?note.status:"Not set")+'</div></div>';
   const rows=[];
-  if(note && (note.visibility==="Yes"||note.status==="At risk")) rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(note.focus||"")+'</strong><span>My focus · '+esc(note.status)+(note.visibility==="Yes"?' · leadership visible':'')+'</span></div></div>');
+  if(note && note.status==="At risk") rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(note.focus||"")+'</strong><span>My focus · '+esc(note.status)+'</span></div></div>');
   d.blocked.slice(0,6).forEach(e=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(e.focus)+'</strong><span>Blocked · '+esc(e.owner||e.member||"-")+(e.blockers?' · '+esc(e.blockers):'')+'</span></div></div>'));
   d.overdue.slice(0,6).forEach(e=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(e.focus)+'</strong><span>Overdue · '+esc(e.owner||e.member||"-")+'</span></div></div>'));
   d.discuss.filter(e=>!d.blocked.includes(e)&&!d.overdue.includes(e)).slice(0,5).forEach(e=>rows.push('<div class="auto-row"><div class="auto-dot"></div><div><strong>'+esc(e.focus)+'</strong><span>Flagged for discussion · '+esc(e.owner||e.member||"-")+'</span></div></div>'));
@@ -1569,7 +1564,6 @@ function renderCatchup(){
   document.getElementById("cu-auto").innerHTML=rows.join("");
   document.getElementById("cu-focus").value=note?.focus||"";
   document.getElementById("cu-status").value=note?.status||"On track";
-  document.getElementById("cu-visibility").value=note?.visibility||"No";
   renderCatchupFormFields(note);
   const cfb=document.getElementById("cu-fields-btn"); if(cfb) cfb.classList.toggle("hidden", !(me&&me.role==="admin"));
 }
@@ -1582,7 +1576,7 @@ function saveCatchup(){
     fields[f.key]= el ? el.value.trim() : "";
   });
   const old=catchupFor(wk);
-  const rec={id:old?.id||("cu_"+Date.now()),ownerId:me.id,owner:me.name,week:wk,focus,status:document.getElementById("cu-status").value,visibility:document.getElementById("cu-visibility").value,fields,updated:Date.now()};
+  const rec={id:old?.id||("cu_"+Date.now()),ownerId:me.id,owner:me.name,week:wk,focus,status:document.getElementById("cu-status").value,fields,updated:Date.now()};
   if(old){ rec.created=old.created||rec.updated; Object.assign(old,rec); } else { rec.created=Date.now(); state.catchupNotes.push(rec); }
   persist(); renderCatchup(); buildSidebar(); alert("Note saved.");
 }
